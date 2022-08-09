@@ -16,6 +16,7 @@ function message = load_solo_helper_fxs
     assignin('caller','get_animal_ids',@get_animal_ids);
     assignin('caller','get_experimenter',@get_experimenter);
     assignin('caller','get_animal_settings_dir',@get_animal_settings_dir);
+    assignin('caller','generate_modified_filepath', @generate_modified_filepath);
     
     message = 'Solo helper functions imported to workspace';
     
@@ -80,7 +81,7 @@ end
 
 %% GET_ANIMAL_SETTINGS_DIR
 
-% Function to find & retturn the directory on Brody Lab cup where animals
+% Function to find & return the directory on Brody Lab cup where animals
 % settings file is located
 % 
 % inputs:
@@ -98,7 +99,38 @@ function dirpath = get_animal_settings_dir(animalid)
     dirpath = ['X:/RATTER/SoloData/Settings/' experimenter '/' animalid '/'];
 end
 
+%% GENERATE_MODIFIED_FILEPATH
+%
+% Function to update date for a settings file given the current date/string
+% to make sure it's the file used in the next session
+% 
+% inputs:
+% -------  
+%   filepath : string current settings file being modified
+%
+% returns:
+% --------
+%   newpath : updated file path with new date/string to put at top of list
+%
+% example:
+% -------
+% Generate modified filepath for settings files. e.g., an input of
+%   'C:/RATTER/SoloData/Settings/Emily/E172/...210710a.mat'
+% will return
+%   'C:/RATTER/SoloData/Settings/Emily/E172/...210710x.mat'
 
+
+function newpath = generate_modified_filepath(filepath)
+    if ~ismember(filepath(end - 4), ['x', 'y', 'z'])
+        sessionchar = 'x';
+    else
+        sessionchar = char(filepath(end - 4) + 1);
+        if sessionchar == '{'
+            sessionchar = 'z';
+        end
+    end
+    newpath = [filepath(1 : end - 5) sessionchar '.mat'];
+end
 
 
 

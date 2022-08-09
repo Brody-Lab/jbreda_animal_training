@@ -33,8 +33,9 @@ function message = update_water_info(animal_ids)
         right_water = data.saved.WaterValvesSection_Right_volume;
         
         fprintf('\nAnimal: %s, %s\n', animal_ids{ianimal}, rec_date);
-        fprintf('\nleft volume in uL = %.2f\n', left_water);
-        fprintf('right volume in uL = %.2f\n\n', right_water);
+        fprintf('\n left volume in uL = %.2f\n', left_water
+        sRight water = %.2f\n\n', ...
+            left_water, right_water);
         
         reply = input('Do you want to change the water volumes? y/n : ', "s");
         
@@ -52,10 +53,11 @@ function message = update_water_info(animal_ids)
         updated_file_path = generate_modified_filepath(file_path);
         fprintf('\nOld file: %s\n', file_path(end - 35 : end - 4));
         fprintf('New file:   %s\n', updated_file_path(end - 35 : end - 4));
-        input('\nPress enter to confirm (or ctrl-c to cancel)');
+        input('Press enter to confirm (or ctrl-c to cancel)');
         save(updated_file_path, '-struct', 'data');
      
     end 
-    message = 'all waters updated';     
+    message = 'done';
+        
 end
 
