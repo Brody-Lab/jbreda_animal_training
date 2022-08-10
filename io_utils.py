@@ -4,6 +4,12 @@ dj.blob.use_32bit_dims = True
 import pandas as pd
 import pandas as pd
 
+
+MAP_SA_TO_SB = {
+    12000:3000,
+    3000:12000,
+}
+
 def mymblob_to_dict(np_array, as_int=True):
     '''
     Transform a numpy array to dictionary:
@@ -49,7 +55,7 @@ def mymblob_to_dict(np_array, as_int=True):
 
     return out_dict
 
-def make_protocol_df(protocol_dict):
+def make_protocol_df(protocol_dict, animal_id, session_date, sessid):
     """
     Takes protocol_dict and turns into dataframe 
 
@@ -60,6 +66,8 @@ def make_protocol_df(protocol_dict):
         and created by mymblob_to_dict
         note : pd must be saved with all features having same length, 
         see DMS and PWM2 protocols for example in `make_and_send_summary`
+    
+    TODO: add additional inputs 
 
     returns:
     -------
@@ -67,7 +75,7 @@ def make_protocol_df(protocol_dict):
         data frame created from dictionary with crashed trials removed
     """
 
-    # clean up data types
+    # clean up data types for dataframe
     protocol_dict['dms_type'] = protocol_dict['dms_type'].astype(bool)
     protocol_dict['sides'] = list(protocol_dict['sides'])
 
@@ -75,12 +83,13 @@ def make_protocol_df(protocol_dict):
     if len(protocol_dict['sa']) != len(protocol_dict['sb']):
         correct_sb(protocol_dict)
 
-    # make dataframe
+    # make dataframe & clean
     protocol_df = pd.DataFrame.from_dict(protocol_dict)
-    protocol_df.insert(0, 'trial', range(1, len(protocol_df) + 1)) # trial n column
-    protocol_df = protocol_df[protocol_df.result != 5] # remove crashes
+    protocol_df = clean_protcol_df(protocol_df, animal_id, session_date, sessid)
 
     return protocol_df
+
+
 
 def correct_sb(protocol_dict):
 
@@ -113,15 +122,47 @@ def correct_sb(protocol_dict):
         for trial in range(len(sa)):
             if match[trial]:
                 sb[trial] = sa[trial] # update sb
-            elif sa[trial] == 12000.0:
-                sb[trial] = 3000.0
-            elif sa[trial] == 3000.0:
-                sb[trial] = 12000.0
             else:
-                assert False, 'sa/sb match combo unknown!'
+                assert sa[trial] in MAP_SA_TO_SB, "sa not known"
+                sb[trial] = MAP_SA_TO_SB[sa[trial]]
+            # elif sa[trial] == 12000.0:
+            #     sb[trial] = 3000.0
+            # elif sa[trial] == 3000.0:
+            #     sb[trial] = 12000.0
+            # else:
+            #     assert False, 'sa/sb match combo unknown!'
     else:
         print('sb values incorrect, only fixing length')
     
     sb = sb[0:-1] # remove extra entry
     protocol_dict['sb'] = sb # update
 
+
+
+
+def clean_protcol_df(protocol_df, animal_id, session_date, sessid):
+    """
+    TODO write strings
+    """
+    # make trials, date, session id & animal id columns
+    protocol_df.insert(0, 'trial', range(1, len(protocol_df) + 1)) 
+    protocol_df = protocol_df[protocol_df.result != 5] # remove crashes
+    protocol_df.insert(1, 'animal_id', [animal_id] * len(protocol_df))
+    protocol_df.insert(2, 'date', [session_date] * len(protocol_df)) 
+    protocol_df.insert(3, 'sessid', [sessid] * len(protocol_df))
+
+    # convert units to kHz
+    protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda x: x / 1000) # convert to kHz
+
+    # convert data types (matlab makes everything a float)
+    # TODO make pandas see date as a date
+    int_columns = ['hits', 'temperror', 'result', 'helper', 'stage']
+    protocol_df[int_columns] = protocol_df[int_columns].astype('Int64')
+    category_columns = ['result', 'stage']
+    protocol_df[category_columns] = protocol_df[category_columns].astype('category')
+
+    return protocol_df
+
+
+
+#TODO: write a add_history_info function to add things like choice, prev_choice, etc
