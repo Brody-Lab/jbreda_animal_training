@@ -4,6 +4,7 @@ dj.blob.use_32bit_dims = True
 import pandas as pd
 import pandas as pd
 from pathlib import Path
+from datetime import date 
 
 ## VARIABLES
 
@@ -19,58 +20,55 @@ ANIMAL_IDS = ['R500', 'R501', 'R502', 'R503', 'R600']
 ## FUNCTIONS
 #TODO: write a add_history_info function to add things like choice, prev_choice, etc
 
-def fetch_latest_protocol_data(animal_ids=None, as_dict=True, save_dir=None):
+def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
     """
     Function to query bdata via datajoint to get trial by trial
-    protocol data for an animal(s), clean it, save out and return.
-    Each animal will have all it's sessions collapsed into a single 
-    data frame.
+    protocol data for an animal(s), clean it, save out and return
+    as a single data frame.
 
     inputs 
     ------
     animal_ids : list, optional
         animal(s) to query database with, (default = ANIMAL_IDS)
-    as_dict : bool, optional
-        if protocol data frames should be saved into a dictionary 
-        with animal_id as key or a list (default = True)
     save_dir : str, optional
         path to directory where data frames will be saved for each
         animal, (default = PROTOCOL_DATA_PATH)
 
     returns
     -------
-    dfs : dict or list
-        protocol_data for every session completed by an animal converted
-        to a single data frame and stored either as values in a dictionary 
-        with animal_ids as keys or a list with len = n animal_ids
+    animals_protocol_df : data frame
+        data frame containing protocol data for every animal in 
+        animal_ids and every session
     """
     save_dir = PROTOCOL_DATA_PATH if save_dir is None else save_dir
     animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
     assert type(animal_ids) == list, "animal ids must be in a list"
 
-    dfs = [] # where data frame for each animal will be appended
+    animals_protocol_dfs = [] # where data frame for each animal will be appended
 
     # connect to data joint & grab sessions table
     bdata = dj.create_virtual_module('new_acquisition', 'bdatatest')
     
     for animal_id in animal_ids:
-        # fetch, convert & clean
+        # fetch data, convert to df & clean for an animal
         subject_session_key = {'ratname': animal_id} # fetch by animal id
         sess_ids, dates = (bdata.Sessions & subject_session_key).fetch('sessid','sessiondate')
         protocol_blobs  = (bdata.Sessions & subject_session_key).fetch('protocol_data', as_dict=True)
         protocol_dicts = convert_to_dict(protocol_blobs)
-        flattened_protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates)
+        protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates)
         
-        # update & save out
+        # update user
         print(f"fetched {len(dates)} sessions for {animal_id}")
-        file_name = f"{animal_id}_protocol_data.csv"
-        flattened_protocol_df.to_csv(Path(save_dir, file_name))
-        dfs.append(flattened_protocol_df)
+        animals_protocol_dfs.append(protocol_df)
 
-    if as_dict:
-        dfs = dict(zip(animal_ids, dfs))
-    
-    return dfs
+    # save out 
+    animals_protocol_df = pd.concat(animals_protocol_dfs) # collapse across animals
+    date_today = date.today() # create date string for .csv save out
+    date_today = date_today.strftime("%y%m%d") # YYMMDD format
+    file_name = f"{date_today}_protocol_data.csv"
+    animals_protocol_df.to_csv(Path(save_dir, file_name))
+
+    return animals_protocol_df
 
 def convert_to_dict(protocol_blobs):
     """
@@ -185,8 +183,10 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
         # check to see if protocol_data is pre HistorySection bug fix
         if len(protocol_dicts[isession]['sa']) != len(protocol_dicts[isession]['sb']):
             correct_sb(protocol_dicts[isession])
+        if len(protocol_dicts[isession]['sa']) != len(protocol_dicts[isession]['result']):
+            correct_results_post_crash(protocol_dicts[isession])
 
-        # make dataframe & clean
+        # TODO assert euqal length at this point or print lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
         protocol_df = clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession])
         protocol_dfs.append(protocol_df)
@@ -231,6 +231,20 @@ def correct_sb(protocol_dict):
     sb = sb[0:-1] # remove extra entry
     protocol_dict['sb'] = sb # update
 
+def correct_results_post_crash(protocol_dict):
+
+    # rename for ease
+    results = protocol_dict['result']
+    sa = protocol_dict['sa']
+
+    # pack with crash result value (5)
+    crash_appended_results = np.ones((len(sa))) * 5 
+    crash_appended_results[0 : len(results)] = results
+
+    protocol_dict['result'] = crash_appended_results
+
+
+
 def clean_protocol_df(protocol_df, animal_id, session_id, date):
     """
     Function that takes a protocol_df generated from a protocol_data 
@@ -257,8 +271,12 @@ def clean_protocol_df(protocol_df, animal_id, session_id, date):
         (4) certain columns converted to ints & categories
     """
     # make trials, date, session id & animal id columns
-    protocol_df.insert(0, 'trial', range(1, len(protocol_df) + 1)) 
-    protocol_df = protocol_df[protocol_df.result != 5] # remove crashes
+    full_len = len(protocol_df)
+    protocol_df.insert(0, 'trial', np.arange(1, len(protocol_df) + 1, dtype=int)) 
+    protocol_df.drop(protocol_df[protocol_df['result'] == 5].index, inplace=True)  
+    nocrash_len = len(protocol_df)
+    if full_len > nocrash_len:
+        print(f"{full_len - nocrash_len} crash trials found for {animal_id} on {session_id}")
     protocol_df.insert(1, 'animal_id', [animal_id] * len(protocol_df))
     protocol_df.insert(2, 'date', [date] * len(protocol_df)) 
     protocol_df.insert(3, 'sessid', [session_id] * len(protocol_df))
