@@ -1,3 +1,4 @@
+from multiprocessing.spawn import prepare
 import numpy as np
 import datajoint as dj
 dj.blob.use_32bit_dims = True
@@ -36,7 +37,7 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
 
     returns
     -------
-    animals_protocol_df : data frame
+    all_animals_protocol_df : data frame
         data frame containing protocol data for every animal in 
         animal_ids and every session
     """
@@ -62,13 +63,13 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
         animals_protocol_dfs.append(protocol_df)
 
     # save out 
-    animals_protocol_df = pd.concat(animals_protocol_dfs) # collapse across animals
+    all_animals_protocol_df = pd.concat(animals_protocol_dfs) # collapse across animals
     date_today = date.today() # create date string for .csv save out
     date_today = date_today.strftime("%y%m%d") # YYMMDD format
     file_name = f"{date_today}_protocol_data.csv"
-    animals_protocol_df.to_csv(Path(save_dir, file_name))
+    all_animals_protocol_df.to_csv(Path(save_dir, file_name))
 
-    return animals_protocol_df
+    return all_animals_protocol_df
 
 def convert_to_dict(protocol_blobs):
     """
@@ -163,42 +164,81 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
         dates fetched from sessions table that correspond to a
         protocol_data dictionary in protocol_dicts 
     
-    note : pd data structure must be saved to sessions table with all 
-        features having same length, see DMS and PWM2 protocols for 
-        example in `make_and_send_summary`
+    !note!
+        pd data structure must be saved to sessions table with all 
+        features having same length (n_started_trials). see DMS or PWM2 
+        protocols' HistorySection.m for example in `make_and_send_summary`
+        Early stages of testing these new protocols didn't follow this 
+        rule & caused bugs that are outlined & fixed via `truncate_sb_length` 
+        and `fill_results_post_crash`
 
     returns:
     -------
-    flattened_protocol_df: date frame
+    all_sessions_protocol_df: date frame
         protocol_data for each session flattened into a single data frame for
         an animal that has been cleaned 
     """
-    protocol_dfs = [] # where data frame for each session with be appended
+    session_protocol_dfs = [] 
 
+    # for each session, turn protocol data dict into data frame 
+    # and then concatenate together into single data frame
     for isession in range(len(protocol_dicts)):
-        # clean up data types for dataframe
-        protocol_dicts[isession]['dms_type'] = protocol_dicts[isession]['dms_type'].astype(bool)
-        protocol_dicts[isession]['sides'] = list(protocol_dicts[isession]['sides'])
-
-        # check to see if protocol_data is pre HistorySection bug fix
-        if len(protocol_dicts[isession]['sa']) != len(protocol_dicts[isession]['sb']):
-            correct_sb(protocol_dicts[isession])
-        if len(protocol_dicts[isession]['sa']) != len(protocol_dicts[isession]['result']):
-            correct_results_post_crash(protocol_dicts[isession])
-
-        # TODO assert euqal length at this point or print lengths
+        prepare_dict_for_df(protocol_dicts[isession]) # ensure correct lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
-        protocol_df = clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession])
-        protocol_dfs.append(protocol_df)
+        clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession])
+        session_protocol_dfs.append(protocol_df)
     
-    flattened_protocol_df = pd.concat(protocol_dfs) # collapse across sessions
+    all_sessions_protocol_df = pd.concat(session_protocol_dfs) 
 
-    return flattened_protocol_df
+    return all_sessions_protocol_df
 
-def correct_sb(protocol_dict):
+def prepare_dict_for_df(protocol_dict):
+    """
+    Function to clean up a session's protocol dictionary lengths, 
+    names & types to ensure there are no errors & interpretation 
+    issues upon converting it into a data frame. 
+
+    inputs
+    ------
+    protocol_dict : dict
+        dictionary for a single sessions protocol_data
+
+    modifies
+    --------
+    protocol_dict : dict
+        corrects side vector format, updates DMS match/nonmatch
+        variable names, corrects for bugs found in HistorySection.m
+        that led to differing variables lengths
+    """
+    # lllrllr to [l, l, l, r....]
+    protocol_dict['sides'] = list(protocol_dict['sides'])
+    
+    # if DMS, convert match/nonmatch category variable to bool
+    # with more informative name
+    if 'dms_type' in protocol_dict:       
+        protocol_dict['is_match'] = protocol_dict.pop('dms_type') 
+        protocol_dict['is_match'] = protocol_dict['is_match'].astype(bool)
+
+    # check to see if protocol_data is pre HistorySection.m bug fixes 
+    # where len(each value) was not equal. Using sa as reference length
+    # template but this could lead to errors if sa has bug
+    if len(protocol_dict['sa']) != len(protocol_dict['sb']):
+            truncate_sb_length(protocol_dict)
+    if len(protocol_dict['sa']) != len(protocol_dict['result']):
+            fill_result_post_crash(protocol_dict)
+    
+    # catch any remaining length errors 
+    lens = map(len, protocol_dict.values())
+    n_unique_lens = len(set(lens))
+    assert n_unique_lens == 1, ("length of dict values unequal!")
+
+
+def truncate_sb_length(protocol_dict):
     """
     Function to correct for bug in HistorySection, see commit:
-    4a2fadb802d64b7ed66891a263a366a8d2580483 in Brodylab/Protocols/DMS
+    https://github.com/Brody-Lab/Protocols/commit/4a2fadb802d64b7ed66891a263a366a8d2580483
+    sb vector was 1 greater than n_started_trials due to an
+    appending error
 
     inputs
     ------
@@ -215,10 +255,10 @@ def correct_sb(protocol_dict):
     # rename for ease
     sa = protocol_dict['sa']
     sb = protocol_dict['sb']
-    match = protocol_dict['dms_type']
+    match = protocol_dict['is_match']
 
     # if DMS task, can infer values
-    if 'dms_type' in protocol_dict:
+    if 'is_match' in protocol_dict:
         for trial in range(len(sa)):
             if match[trial]:
                 sb[trial] = sa[trial] # update sb
@@ -231,7 +271,25 @@ def correct_sb(protocol_dict):
     sb = sb[0:-1] # remove extra entry
     protocol_dict['sb'] = sb # update
 
-def correct_results_post_crash(protocol_dict):
+def fill_result_post_crash(protocol_dict):
+    """
+    Function to correct for bug in HistorySection, see commit:
+    https://github.com/Brody-Lab/Protocols/commit/3bdde4377ffde011cc34d098acfeb77b74c9e606
+    result vector was shorter than n_started_trials because program
+    crashed & results_history vector was not being properly filled
+    during crash clean up
+
+    inputs
+    ------
+    protocol_dict : dict
+        dictionary for a single sessions protocol_data
+    
+    modifies
+    -------
+    protocol_dict : dict
+        updated protocol_dict with sb column length & contents corrected
+        if DMS. length only corrected if PWM2 protocol is being used
+    """
 
     # rename for ease
     results = protocol_dict['result']
@@ -289,5 +347,3 @@ def clean_protocol_df(protocol_df, animal_id, session_id, date):
     protocol_df[int_columns] = protocol_df[int_columns].astype('Int64')
     category_columns = ['result', 'stage']
     protocol_df[category_columns] = protocol_df[category_columns].astype('category')
-
-    return protocol_df

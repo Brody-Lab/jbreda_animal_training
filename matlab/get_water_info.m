@@ -9,7 +9,8 @@
 % TODO: turn into a function, make flexible to a specified number
 %       of dates, write automatically to a log
 
-animals = {'R500', 'R501', 'R502', 'R503', 'R600'};
+% animals = {'R500', 'R501', 'R502', 'R503', 'R600'};
+animals = {'R501', 'R502', 'R600'};
 
 for ianimal = 1 : length(animals)
    
