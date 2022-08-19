@@ -24,48 +24,52 @@ ANIMAL_IDS = ['R500', 'R501', 'R502', 'R503', 'R600']
 def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
     """
     Function to query bdata via datajoint to get trial by trial
-    protocol data for an animal(s), clean it, save out and return
-    as a single data frame.
+    protocol data for a(n) animal(s), clean it, save out and return
+    as a single pandas data frame.
 
     inputs 
     ------
     animal_ids : list, optional
         animal(s) to query database with, (default = ANIMAL_IDS)
     save_dir : str, optional
-        path to directory where data frames will be saved for each
-        animal, (default = PROTOCOL_DATA_PATH)
+        path to directory where data frame will be saved, 
+        (default = PROTOCOL_DATA_PATH)
 
     returns
     -------
     all_animals_protocol_df : data frame
-        data frame containing protocol data for every animal in 
-        animal_ids and every session
+        data frame containing protocol data for every session for
+        every animal animal_ids 
     """
     save_dir = PROTOCOL_DATA_PATH if save_dir is None else save_dir
     animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
     assert type(animal_ids) == list, "animal ids must be in a list"
 
-    animals_protocol_dfs = [] # where data frame for each animal will be appended
+    animals_protocol_dfs = [] 
 
-    # connect to data joint & grab sessions table
+    # currently using `bdatatest` table but this may change & 
+    # will need to f/u with alvaro luna on which table has
+    # protocol data
     bdata = dj.create_virtual_module('new_acquisition', 'bdatatest')
     
+    # fetch data, clean it & convert to df for each animal
     for animal_id in animal_ids:
-        # fetch data, convert to df & clean for an animal
-        subject_session_key = {'ratname': animal_id} # fetch by animal id
-        sess_ids, dates = (bdata.Sessions & subject_session_key).fetch('sessid','sessiondate')
+        subject_session_key = {'ratname': animal_id} 
+
+        # protocol data needs to be fetched on it's own from sessions table
         protocol_blobs  = (bdata.Sessions & subject_session_key).fetch('protocol_data', as_dict=True)
+        sess_ids, dates = (bdata.Sessions & subject_session_key).fetch('sessid','sessiondate')
+
         protocol_dicts = convert_to_dict(protocol_blobs)
         protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates)
-        
-        # update user
-        print(f"fetched {len(dates)} sessions for {animal_id}")
         animals_protocol_dfs.append(protocol_df)
-
-    # save out 
-    all_animals_protocol_df = pd.concat(animals_protocol_dfs) # collapse across animals
-    date_today = date.today() # create date string for .csv save out
-    date_today = date_today.strftime("%y%m%d") # YYMMDD format
+        # using dates because can have multiple sess_ids in one session
+        print(f"fetched {len(dates)} sessions for {animal_id}") 
+    
+    # concatenate across animals & save out 
+    all_animals_protocol_df = pd.concat(animals_protocol_dfs) 
+    date_today = date.today()
+    date_today = date_today.strftime("%y%m%d") # reformat to YYMMDD 
     file_name = f"{date_today}_protocol_data.csv"
     all_animals_protocol_df.to_csv(Path(save_dir, file_name))
 
@@ -78,13 +82,13 @@ def convert_to_dict(protocol_blobs):
 
     inputs
     ------
-    protocol_blobs : list of
+    protocol_blobs : list of arrays
         list returned when fetching protocol_data from Sessions table
         with len = n sessions
     
     returns
     -------
-    protocol_dicts : list of ditonaries
+    protocol_dicts : list of dictionaries
         list of protocol_data dictionaries where len = n sessions and 
         each session has a dictionary  
     """
@@ -94,6 +98,7 @@ def convert_to_dict(protocol_blobs):
         protocol_dicts.append(dict)
     return protocol_dicts
 
+# TODO- update with new functions written by alvaro for recursive readins
 def mymblob_to_dict(np_array, as_int=True):
     """
     Transform a numpy array to dictionary:
@@ -108,11 +113,12 @@ def mymblob_to_dict(np_array, as_int=True):
     returns:
     --------
     out_dict : dict
-        dictonary of protocol_data for a single session with
+        dictionary of protocol_data for a single session with
         keys = to fields of the protocol_data struct
     
     Written by Alvaro
     """
+    assert dj.blob.use_32bit_dims, "need to turn on 32 bit dims to read brodylab blobs!"
 
     # Transform numpy array to DF
     out_dict = pd.DataFrame(np_array.flatten())
@@ -158,11 +164,11 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
         id of animal that protocol_data is associated with, note this
         function currently assumes 1 animal per query
     session_ids : arr
-        session ids fetched from sessions table that correspond to a
-        protocol_data dictionary in protocol_dicts
+        session ids fetched from sessions table that correspond to 
+        values in protocol_dicts
     dates : arr
-        dates fetched from sessions table that correspond to a
-        protocol_data dictionary in protocol_dicts 
+        dates fetched from sessions table that correspond to 
+        values in protocol_dicts 
     
     !note!
         pd data structure must be saved to sessions table with all 
@@ -175,21 +181,19 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
     returns:
     -------
     all_sessions_protocol_df: date frame
-        protocol_data for each session flattened into a single data frame for
-        an animal that has been cleaned 
+        protocol_data for every session for an animal 
     """
     session_protocol_dfs = [] 
 
     # for each session, turn protocol data dict into data frame 
     # and then concatenate together into single data frame
     for isession in range(len(protocol_dicts)):
-        prepare_dict_for_df(protocol_dicts[isession]) # ensure correct lengths
+        prepare_dict_for_df(protocol_dicts[isession]) # ensures correct lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
         clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession])
         session_protocol_dfs.append(protocol_df)
     
     all_sessions_protocol_df = pd.concat(session_protocol_dfs) 
-
     return all_sessions_protocol_df
 
 def prepare_dict_for_df(protocol_dict):
@@ -201,7 +205,7 @@ def prepare_dict_for_df(protocol_dict):
     inputs
     ------
     protocol_dict : dict
-        dictionary for a single sessions protocol_data
+        dictionary for a single session's protocol_data
 
     modifies
     --------
@@ -243,7 +247,7 @@ def truncate_sb_length(protocol_dict):
     inputs
     ------
     protocol_dict : dict
-        dictionary for a single sessions protocol_data
+        dictionary for a single session's protocol_data
     
     modifies
     -------
@@ -282,13 +286,13 @@ def fill_result_post_crash(protocol_dict):
     inputs
     ------
     protocol_dict : dict
-        dictionary for a single sessions protocol_data
+        dictionary for a single session's protocol_data
     
     modifies
     -------
     protocol_dict : dict
-        updated protocol_dict with sb column length & contents corrected
-        if DMS. length only corrected if PWM2 protocol is being used
+        updated protocol_dict with results column length corrected to 
+        reflect crash trials
     """
 
     # rename for ease
@@ -305,9 +309,8 @@ def fill_result_post_crash(protocol_dict):
 
 def clean_protocol_df(protocol_df, animal_id, session_id, date):
     """
-    Function that takes a protocol_df generated from a protocol_data 
-    dictionary and cleans it to correct for data types and format
-    per JRBs taste
+    Function that takes a protocol_df and cleans it to correct for
+    data types and format per JRBs preferences
 
     inputs
     ------
@@ -328,19 +331,24 @@ def clean_protocol_df(protocol_df, animal_id, session_id, date):
         (3) sa/sb converted from Hz to kHz
         (4) certain columns converted to ints & categories
     """
-    # make trials, date, session id & animal id columns
-    full_len = len(protocol_df)
-    protocol_df.insert(0, 'trial', np.arange(1, len(protocol_df) + 1, dtype=int)) 
-    protocol_df.drop(protocol_df[protocol_df['result'] == 5].index, inplace=True)  
-    nocrash_len = len(protocol_df)
-    if full_len > nocrash_len:
-        print(f"{full_len - nocrash_len} crash trials found for {animal_id} on {session_id}")
+    
+    n_started_trials = len(protocol_df)
+    # create trials column incase df index gets reset
+    protocol_df.insert(0, 'trial', np.arange(1, n_started_trials + 1, dtype=int)) 
+    
+    # drop any trials where dispatcher reported a crash
+    protocol_df.drop(protocol_df[protocol_df['result'] == 5].index, inplace=True) 
+    n_completed_trials = len(protocol_df) 
+    if n_started_trials > n_completed_trials:
+        print(f"{n_started_trials - n_completed_trials} crash trials found for {animal_id} on {session_id}")
+
+    # add animal id, data and sessid value for each trial    
     protocol_df.insert(1, 'animal_id', [animal_id] * len(protocol_df))
     protocol_df.insert(2, 'date', [date] * len(protocol_df)) 
     protocol_df.insert(3, 'sessid', [session_id] * len(protocol_df))
 
     # convert units to kHz
-    protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda x: x / 1000) # convert to kHz
+    protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda x: x / 1000)
 
     # convert data types (matlab makes everything a float)
     int_columns = ['hits', 'temperror', 'result', 'helper', 'stage']
