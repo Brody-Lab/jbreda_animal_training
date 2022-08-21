@@ -21,7 +21,7 @@ ANIMAL_IDS = ['R500', 'R501', 'R502', 'R503', 'R600']
 ## FUNCTIONS
 #TODO: write a add_history_info function to add things like choice, prev_choice, etc
 
-def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
+def fetch_latest_protocol_data(animal_ids=None, save_dir=None,crashed_trials_report=False):
     """
     Function to query bdata via datajoint to get trial by trial
     protocol data for a(n) animal(s), clean it, save out and return
@@ -61,13 +61,13 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None):
         sess_ids, dates = (bdata.Sessions & subject_session_key).fetch('sessid','sessiondate')
 
         protocol_dicts = convert_to_dict(protocol_blobs)
-        protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates)
+        protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates, crashed_trials_report)
         animals_protocol_dfs.append(protocol_df)
         # using dates because can have multiple sess_ids in one session
         print(f"fetched {len(dates)} sessions for {animal_id}") 
     
     # concatenate across animals & save out 
-    all_animals_protocol_df = pd.concat(animals_protocol_dfs) 
+    all_animals_protocol_df = pd.concat(animals_protocol_dfs, ignore_index=True) 
     date_today = date.today()
     date_today = date_today.strftime("%y%m%d") # reformat to YYMMDD 
     file_name = f"{date_today}_protocol_data.csv"
@@ -152,7 +152,7 @@ def mymblob_to_dict(np_array, as_int=True):
 
     return out_dict
 
-def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
+def make_protocol_df(protocol_dicts, animal_id, session_ids, dates, crashed_trials_report):
     """
     Converts 
 
@@ -190,7 +190,9 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates):
     for isession in range(len(protocol_dicts)):
         prepare_dict_for_df(protocol_dicts[isession]) # ensures correct lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
-        clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession])
+        if len(protocol_df)==0: # skip sessions with no trials
+            continue    
+        clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession], crashed_trials_report)
         session_protocol_dfs.append(protocol_df)
     
     all_sessions_protocol_df = pd.concat(session_protocol_dfs) 
@@ -235,6 +237,7 @@ def prepare_dict_for_df(protocol_dict):
     lens = map(len, protocol_dict.values())
     n_unique_lens = len(set(lens))
     assert n_unique_lens == 1, ("length of dict values unequal!")
+
 
 
 def truncate_sb_length(protocol_dict):
@@ -307,7 +310,8 @@ def fill_result_post_crash(protocol_dict):
 
 
 
-def clean_protocol_df(protocol_df, animal_id, session_id, date):
+def clean_protocol_df(protocol_df, animal_id, session_id, date, 
+                      crashed_trials_report=False):
     """
     Function that takes a protocol_df and cleans it to correct for
     data types and format per JRBs preferences
@@ -339,19 +343,22 @@ def clean_protocol_df(protocol_df, animal_id, session_id, date):
     # drop any trials where dispatcher reported a crash
     protocol_df.drop(protocol_df[protocol_df['result'] == 5].index, inplace=True) 
     n_completed_trials = len(protocol_df) 
-    if n_started_trials > n_completed_trials:
-        print(f"{n_started_trials - n_completed_trials} crash trials found for {animal_id} on {session_id}")
+    if crashed_trials_report:
+        if n_started_trials > n_completed_trials:
+            print(f"{n_started_trials - n_completed_trials} crash trials found for {animal_id} on {session_id}")
 
     # add animal id, data and sessid value for each trial    
     protocol_df.insert(1, 'animal_id', [animal_id] * len(protocol_df))
     protocol_df.insert(2, 'date', [date] * len(protocol_df)) 
-    protocol_df.insert(3, 'sessid', [session_id] * len(protocol_df))
+    protocol_df.insert(3, 'session_id', [session_id] * len(protocol_df))
 
     # convert units to kHz
     protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda x: x / 1000)
+    # create a unique pair column used for sorting in plots
+    protocol_df['sound_pair'] = protocol_df.apply(lambda row: str(row.sa) + ', ' + str(row.sb), axis=1)
 
     # convert data types (matlab makes everything a float)
-    int_columns = ['hits', 'temperror', 'result', 'helper', 'stage']
+    int_columns = ['hits', 'temperror', 'result', 'helper', 'stage', 'session_id']
     protocol_df[int_columns] = protocol_df[int_columns].astype('Int64')
-    category_columns = ['result', 'stage']
+    category_columns = ['result', 'stage', 'session_id', 'sound_pair']
     protocol_df[category_columns] = protocol_df[category_columns].astype('category')
