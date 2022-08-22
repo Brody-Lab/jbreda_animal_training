@@ -68,8 +68,7 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None,crashed_trials_rep
     
     # concatenate across animals & save out 
     all_animals_protocol_df = pd.concat(animals_protocol_dfs, ignore_index=True) 
-    date_today = date.today()
-    date_today = date_today.strftime("%y%m%d") # reformat to YYMMDD 
+    date_today = date.today().strftime("%y%m%d")# reformat to YYMMDD 
     file_name = f"{date_today}_protocol_data.csv"
     all_animals_protocol_df.to_csv(Path(save_dir, file_name))
 
@@ -353,12 +352,14 @@ def clean_protocol_df(protocol_df, animal_id, session_id, date,
     protocol_df.insert(3, 'session_id', [session_id] * len(protocol_df))
 
     # convert units to kHz
-    protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda x: x / 1000)
-    # create a unique pair column used for sorting in plots
+    protocol_df[['sa', 'sb']] = protocol_df[['sa', 'sb']].apply(lambda row: row / 1000)
+    # create a unique pair column & violation column used for sorting in plots
     protocol_df['sound_pair'] = protocol_df.apply(lambda row: str(row.sa) + ', ' + str(row.sb), axis=1)
+    protocol_df['violations'] = protocol_df.apply(lambda row: 1 if row.result == 3 else 0, axis=1)
+    protocol_df.insert(5, 'violations', protocol_df.pop('violations'))
 
     # convert data types (matlab makes everything a float)
-    int_columns = ['hits', 'temperror', 'result', 'helper', 'stage', 'session_id']
+    int_columns = ['hits', 'violations', 'temperror', 'result', 'helper', 'stage', 'session_id']
     protocol_df[int_columns] = protocol_df[int_columns].astype('Int64')
     category_columns = ['result', 'stage', 'session_id', 'sound_pair']
     protocol_df[category_columns] = protocol_df[category_columns].astype('category')
