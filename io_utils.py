@@ -21,7 +21,12 @@ ANIMAL_IDS = ['R500', 'R501', 'R502', 'R503', 'R600']
 ## FUNCTIONS
 #TODO: write a add_history_info function to add things like choice, prev_choice, etc
 
-def fetch_latest_protocol_data(animal_ids=None, save_dir=None,crashed_trials_report=False):
+def fetch_latest_protocol_data(
+            animal_ids=None, 
+            save_dir=None,
+            crashed_trials_report=False, 
+            print_session_id=False
+        ):
     """
     Function to query bdata via datajoint to get trial by trial
     protocol data for a(n) animal(s), clean it, save out and return
@@ -34,6 +39,8 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None,crashed_trials_rep
     save_dir : str, optional
         path to directory where data frame will be saved, 
         (default = PROTOCOL_DATA_PATH)
+    crashed_trials_report : bool TODO
+    print_session_id : bool TODO
 
     returns
     -------
@@ -61,7 +68,14 @@ def fetch_latest_protocol_data(animal_ids=None, save_dir=None,crashed_trials_rep
         sess_ids, dates = (bdata.Sessions & subject_session_key).fetch('sessid','sessiondate')
 
         protocol_dicts = convert_to_dict(protocol_blobs)
-        protocol_df = make_protocol_df(protocol_dicts, animal_id, sess_ids, dates, crashed_trials_report)
+        protocol_df = make_protocol_df(
+                protocol_dicts, 
+                animal_id, 
+                sess_ids, 
+                dates, 
+                crashed_trials_report,
+                print_session_id
+            )
         animals_protocol_dfs.append(protocol_df)
         # using dates because can have multiple sess_ids in one session
         print(f"fetched {len(dates)} sessions for {animal_id}") 
@@ -151,7 +165,14 @@ def mymblob_to_dict(np_array, as_int=True):
 
     return out_dict
 
-def make_protocol_df(protocol_dicts, animal_id, session_ids, dates, crashed_trials_report):
+def make_protocol_df(
+            protocol_dicts, 
+            animal_id, 
+            session_ids, 
+            dates, 
+            crashed_trials_report,
+            print_session_id
+        ):
     """
     Converts 
 
@@ -168,6 +189,8 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates, crashed_tria
     dates : arr
         dates fetched from sessions table that correspond to 
         values in protocol_dicts 
+    crashed_trials_report : bool TODO
+    print_session_id : bool TODO
     
     !note!
         pd data structure must be saved to sessions table with all 
@@ -186,12 +209,24 @@ def make_protocol_df(protocol_dicts, animal_id, session_ids, dates, crashed_tria
 
     # for each session, turn protocol data dict into data frame 
     # and then concatenate together into single data frame
-    for isession in range(len(protocol_dicts)):
+    for isession in range(len(protocol_dicts)): 
+        if print_session_id:
+            print(f"preparing session id: {session_ids[isession]} for {animal_id}")
+        
+        # skip sessions with 0 or 1 trials bc they cause len problems in 
+        # later functions & aren't worth analyzing
+        if len(protocol_dicts[isession]['sides']) in [0,1]:
+            continue
+
         prepare_dict_for_df(protocol_dicts[isession]) # ensures correct lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
-        if len(protocol_df)==0: # skip sessions with no trials
-            continue    
-        clean_protocol_df(protocol_df, animal_id, session_ids[isession], dates[isession], crashed_trials_report)
+        clean_protocol_df(
+                protocol_df, 
+                animal_id, 
+                session_ids[isession], 
+                dates[isession], 
+                crashed_trials_report
+            )
         session_protocol_dfs.append(protocol_df)
     
     all_sessions_protocol_df = pd.concat(session_protocol_dfs) 
