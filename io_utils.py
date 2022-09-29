@@ -81,7 +81,9 @@ def fetch_latest_protocol_data(
         )
         animals_protocol_dfs.append(protocol_df)
         # using dates because can have multiple sess_ids in one session
-        print(f"fetched {len(dates)} sessions for {animal_id}")
+        print(
+            f"fetched {len(dates)} sessions for {animal_id} with latest date {max(dates)}"
+        )
 
     # concatenate across animals & save out
     all_animals_protocol_df = pd.concat(animals_protocol_dfs, ignore_index=True)

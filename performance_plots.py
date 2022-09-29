@@ -100,8 +100,18 @@ def plot_pair_performance(df, ax, title=None):
         "12.0, 3.0": "mediumorchid",
     }
 
-    perf_by_sound.plot.line(color=colors, ax=ax, rot=45)
+    perf_by_sound.plot.line(color=colors, ax=ax, rot=45, style=".-")
 
     _ = ax.set(ylim=[0, 1], ylabel="fraction correct")
     sns.despine()
     ax.legend(bbox_to_anchor=(1, 1), loc="upper left", borderaxespad=0, frameon=False)
+
+
+def single_day_pair_perf(df, ax):
+    # TODO Colors are not right and should be queried via dict
+    latest_df = df[df.date == df.date.max()]
+
+    pal = ("skyblue", "thistle", "mediumorchid", "steelblue")
+    sns.barplot(data=latest_df, x="sound_pair", y="hits", palette=pal, ax=ax)
+    ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]}")
+    sns.despine()
