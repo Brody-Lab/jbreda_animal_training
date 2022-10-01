@@ -109,6 +109,7 @@ def plot_pair_performance(df, ax, title=None):
 
 def single_day_pair_perf(df, ax):
     # TODO Colors are not right and should be queried via dict
+    # TODO add count
     latest_df = df[df.date == df.date.max()]
 
     pal = ("skyblue", "thistle", "mediumorchid", "steelblue")
