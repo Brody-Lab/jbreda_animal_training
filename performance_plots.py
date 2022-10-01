@@ -102,7 +102,7 @@ def plot_pair_performance(df, ax, title=None):
 
     perf_by_sound.plot.line(color=colors, ax=ax, rot=45, style=".-")
 
-    _ = ax.set(ylim=[0, 1], ylabel="fraction correct")
+    _ = ax.set(ylim=[0, 1], ylabel="fraction correct", title=title)
     sns.despine()
     ax.legend(bbox_to_anchor=(1, 1), loc="upper left", borderaxespad=0, frameon=False)
 
