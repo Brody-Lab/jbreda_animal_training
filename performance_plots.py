@@ -108,11 +108,53 @@ def plot_pair_performance(df, ax, title=None):
 
 
 def single_day_pair_perf(df, ax):
-    # TODO Colors are not right and should be queried via dict
-    # TODO add count
+
     latest_df = df[df.date == df.date.max()]
 
-    pal = ("skyblue", "thistle", "mediumorchid", "steelblue")
-    sns.barplot(data=latest_df, x="sound_pair", y="hits", palette=pal, ax=ax)
+    # this sorting is necessary to keep colors and count labeling correct
+    latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+
+    palette = create_palette_given_sounds(latest_df)
+    sound_pair_counts = latest_df.sound_pair.value_counts(sort=False)
+
+    sns.barplot(
+        data=latest_df,
+        x="sound_pair",
+        y="hits",
+        palette=palette,
+        ax=ax,
+    )
+    # value_counts returns in the reverse order of the sorting done above
+    ax.bar_label(ax.containers[0], sound_pair_counts[::-1], label_type="center")
+
     ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]}")
     sns.despine()
+
+
+def _sound_pairs_sorter(column):
+
+    "Function to order df columns by match and then nonmatch sound pairs"
+
+    sp_order = ["3.0, 3.0", "12.0, 12.0", "3.0, 12.0", "12.0, 3.0"]
+    correspondence = {sp: order for order, sp in enumerate(sp_order)}
+    return column.map(correspondence)
+
+
+def create_palette_given_sounds(df):
+    """
+    Function to allow for assignment of specific colors to a sound pair
+    that is consistent across sessions where number of unique pairs varies
+    """
+    palette = []
+    sound_pairs = df.sound_pair.unique()
+
+    sound_pair_colormap = {
+        "3.0, 3.0": "skyblue",
+        "12.0, 12.0": "steelblue",
+        "3.0, 12.0": "thistle",
+        "12.0, 3.0": "mediumorchid",
+    }
+
+    for sp in sound_pairs:
+        palette.append(sound_pair_colormap[sp])
+    return palette
