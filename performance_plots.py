@@ -116,6 +116,7 @@ def single_day_pair_perf(df, ax):
 
     palette = create_palette_given_sounds(latest_df)
     sound_pair_counts = latest_df.sound_pair.value_counts(sort=False)
+    print(sound_pair_counts)
 
     sns.barplot(
         data=latest_df,
@@ -125,10 +126,11 @@ def single_day_pair_perf(df, ax):
         ax=ax,
     )
     # value_counts returns in the reverse order of the sorting done above
-    ax.bar_label(ax.containers[0], sound_pair_counts[::-1], label_type="center")
+    # ax.bar_label(ax.containers[0], sound_pair_counts[::-1], label_type="center")
 
     ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]}")
     sns.despine()
+    # return sound_pair_counts
 
 
 def _sound_pairs_sorter(column):
