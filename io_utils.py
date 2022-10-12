@@ -1,12 +1,17 @@
 from multiprocessing.spawn import prepare
 import numpy as np
+from regex import P
+
+# from blob_transformation import mymblob_to_dict
 import datajoint as dj
 
 dj.blob.use_32bit_dims = True
 import pandas as pd
-import pandas as pd
 from pathlib import Path
 from datetime import date
+
+
+import blob_transformation as bt
 
 ## VARIABLES
 
@@ -15,7 +20,7 @@ MAP_SA_TO_SB = {
     3000: 12000,
 }
 
-PROTOCOL_DATA_PATH = "X:\\jbreda\\animal_data\\protocol_data"
+TRAINING_DATA_PATH = "X:\\jbreda\\animal_data\\training_data"
 
 ANIMAL_IDS = ["R500", "R501", "R502", "R503", "R600"]
 
@@ -23,8 +28,8 @@ ANIMAL_IDS = ["R500", "R501", "R502", "R503", "R600"]
 # TODO: write a add_history_info function to add things like choice, prev_choice, etc
 
 
-def fetch_latest_protocol_data(
-    animal_ids=None, save_dir=None, crashed_trials_report=False, print_session_id=False
+def fetch_latest_training_data(
+    animal_ids=None, save_out=False, crashed_trials_report=False, print_session_id=False
 ):
     """
     Function to query bdata via datajoint to get trial by trial
@@ -35,9 +40,8 @@ def fetch_latest_protocol_data(
     ------
     animal_ids : list, optional
         animal(s) to query database with, (default = ANIMAL_IDS)
-    save_dir : str, optional
-        path to directory where data frame will be saved,
-        (default = PROTOCOL_DATA_PATH)
+    save_out : bool, optional
+        if df should be saved as CSV to TRAINING_DATA_PATH
     crashed_trials_report : bool TODO
     print_session_id : bool TODO
 
@@ -47,7 +51,6 @@ def fetch_latest_protocol_data(
         data frame containing protocol data for every session for
         every animal animal_ids
     """
-    save_dir = PROTOCOL_DATA_PATH if save_dir is None else save_dir
     animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
     assert type(animal_ids) == list, "animal ids must be in a list"
 
@@ -63,14 +66,24 @@ def fetch_latest_protocol_data(
         subject_session_key = {"ratname": animal_id}
 
         # protocol data needs to be fetched on it's own from sessions table
+        # since it's trial length, then you can fetch session level items
         protocol_blobs = (bdata.Sessions & subject_session_key).fetch(
             "protocol_data", as_dict=True
         )
-        sess_ids, dates = (bdata.Sessions & subject_session_key).fetch(
-            "sessid", "sessiondate"
+        sess_ids, dates, trials = (bdata.Sessions & subject_session_key).fetch(
+            "sessid", "sessiondate", "n_done_trials"
         )
 
-        protocol_dicts = convert_to_dict(protocol_blobs)
+        ## want some filter here for the trials but it doesn't work
+
+        protocol_dicts = pd_convert_to_dict(np.array(protocol_blobs))
+        # here is where peh data can be loaded in before the final function of
+        # make trianing_df. This means that the protocol_dicts need to be cleaned
+        # then the peh data loaded, converted, parsed
+        # so a cleaned protocol dict and a cleaned peh_dict merged together will
+        # be passed into the next function once they are validated to be the
+        # same length
+
         protocol_df = make_protocol_df(
             protocol_dicts,
             animal_id,
@@ -85,16 +98,18 @@ def fetch_latest_protocol_data(
             f"fetched {len(dates)} sessions for {animal_id} with latest date {max(dates)}"
         )
 
-    # concatenate across animals & save out
+    # concatenate across animals
     all_animals_protocol_df = pd.concat(animals_protocol_dfs, ignore_index=True)
-    date_today = date.today().strftime("%y%m%d")  # reformat to YYMMDD
-    file_name = f"{date_today}_protocol_data.csv"
-    all_animals_protocol_df.to_csv(Path(save_dir, file_name))
+
+    if save_out:
+        date_today = date.today().strftime("%y%m%d")  # reformat to YYMMDD
+        file_name = f"{date_today}_training_data.csv"
+        all_animals_protocol_df.to_csv(Path(TRAINING_DATA_PATH, file_name))
 
     return all_animals_protocol_df
 
 
-def convert_to_dict(protocol_blobs):
+def pd_convert_to_dict(protocol_blobs):
     """
     Function that takes protocol_data blobs from bdata sessions
     table query and converts them to python dictionaries
@@ -113,12 +128,13 @@ def convert_to_dict(protocol_blobs):
     """
     protocol_dicts = []
     for session in protocol_blobs:
-        dict = mymblob_to_dict(session["protocol_data"])
+        dict = bt.transform_blob(session["protocol_data"])
         protocol_dicts.append(dict)
     return protocol_dicts
 
+    # TODO- update with new functions written by alvaro for recursive readins
 
-# TODO- update with new functions written by alvaro for recursive readins
+
 def mymblob_to_dict(np_array, as_int=True):
     """
     Transform a numpy array to dictionary:
@@ -221,21 +237,21 @@ def make_protocol_df(
 
     # for each session, turn protocol data dict into data frame
     # and then concatenate together into single data frame
-    for isession in range(len(protocol_dicts)):
+    for isession, session_id in enumerate(session_ids):
         if print_session_id:
-            print(f"preparing session id: {session_ids[isession]} for {animal_id}")
+            print(f"preparing session id: {session_id} for {animal_id}")
 
         # skip sessions with 0 or 1 trials bc they cause len problems in
         # later functions & aren't worth analyzing
         if len(protocol_dicts[isession]["sides"]) in [0, 1]:
             continue
 
-        prepare_dict_for_df(protocol_dicts[isession])  # ensures correct lengths
+        pd_prepare_dict_for_df(protocol_dicts[isession])  # ensures correct lengths
         protocol_df = pd.DataFrame.from_dict(protocol_dicts[isession])
-        clean_protocol_df(
+        clean_pd_df(
             protocol_df,
             animal_id,
-            session_ids[isession],
+            session_id,
             dates[isession],
             crashed_trials_report,
         )
@@ -245,7 +261,7 @@ def make_protocol_df(
     return all_sessions_protocol_df
 
 
-def prepare_dict_for_df(protocol_dict):
+def pd_prepare_dict_for_df(protocol_dict):
     """
     Function to clean up a session's protocol dictionary lengths,
     names & types to ensure there are no errors & interpretation
@@ -276,9 +292,9 @@ def prepare_dict_for_df(protocol_dict):
     # where len(each value) was not equal. Using sa as reference length
     # template but this could lead to errors if sa has bug
     if len(protocol_dict["sa"]) != len(protocol_dict["sb"]):
-        truncate_sb_length(protocol_dict)
+        _truncate_sb_length(protocol_dict)
     if len(protocol_dict["sa"]) != len(protocol_dict["result"]):
-        fill_result_post_crash(protocol_dict)
+        _fill_result_post_crash(protocol_dict)
 
     # catch any remaining length errors
     lens = map(len, protocol_dict.values())
@@ -286,7 +302,7 @@ def prepare_dict_for_df(protocol_dict):
     assert n_unique_lens == 1, "length of dict values unequal!"
 
 
-def truncate_sb_length(protocol_dict):
+def _truncate_sb_length(protocol_dict):
     """
     Function to correct for bug in HistorySection, see commit:
     https://github.com/Brody-Lab/Protocols/commit/4a2fadb802d64b7ed66891a263a366a8d2580483
@@ -325,7 +341,7 @@ def truncate_sb_length(protocol_dict):
     protocol_dict["sb"] = sb  # update
 
 
-def fill_result_post_crash(protocol_dict):
+def _fill_result_post_crash(protocol_dict):
     """
     Function to correct for bug in HistorySection, see commit:
     https://github.com/Brody-Lab/Protocols/commit/3bdde4377ffde011cc34d098acfeb77b74c9e606
@@ -356,9 +372,7 @@ def fill_result_post_crash(protocol_dict):
     protocol_dict["result"] = crash_appended_results
 
 
-def clean_protocol_df(
-    protocol_df, animal_id, session_id, date, crashed_trials_report=False
-):
+def clean_pd_df(protocol_df, animal_id, session_id, date, crashed_trials_report=False):
     """
     Function that takes a protocol_df and cleans it to correct for
     data types and format per JRBs preferences
