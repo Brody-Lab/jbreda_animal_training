@@ -84,3 +84,6 @@ def fetch_first_spoke(trial_states):
             spoke_in = wf_spoke_state[1]
 
     return spoke_in
+
+
+# def peh_prep_dict_for_df(peh_dict):
