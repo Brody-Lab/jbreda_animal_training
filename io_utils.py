@@ -75,11 +75,11 @@ def fetch_latest_training_data(
         )
 
         # remove sessions with 0 or 1 trials
-        protocol_blobs, sess_ids, dates, trials = drop_empty_sessions(
-            protocol_blobs, sess_ids, dates, trials
+        protocol_blobs, _, sess_ids, dates, trials = drop_empty_sessions(
+            protocol_blobs, protocol_blobs, sess_ids, dates, trials
         )
 
-        protocol_dicts = pd_convert_to_dict(protocol_blobs)
+        protocol_dicts = convert_to_dict(protocol_blobs)
         pd_prepare_dict_for_df(protocol_dicts)
 
         # here is where peh data can be loaded in before the final function of
@@ -114,44 +114,146 @@ def fetch_latest_training_data(
     return all_animals_protocol_df
 
 
-def drop_empty_sessions(protocol_blobs, sess_ids, dates, trials):
+def drop_empty_sessions(pd_blobs, peh_blobs, sess_ids, dates, trials):
     """
     sessions with 0 or 1 trials break the later code because
     of dimension errors, so drop them asap
     """
+    # TODO replace with more flexible drop_sessions
 
     trial_filter = (trials != 0) & (trials != 1)
-    protocol_blobs = np.array(protocol_blobs)
-    protocol_blobs = protocol_blobs[trial_filter]
+    print(
+        f"dropping {len(pd_blobs) - np.sum(trial_filter)} sessions of {len(pd_blobs)}"
+    )
+    pd_blobs = np.array(pd_blobs)
+    pd_blobs = pd_blobs[trial_filter]
+
+    peh_blobs = np.array(peh_blobs)
+    peh_blobs = peh_blobs[trial_filter]
+
     sess_ids = sess_ids[trial_filter]
     dates = dates[trial_filter]
     trials = trials[trial_filter]
 
-    return protocol_blobs, sess_ids, dates, trials
+    return pd_blobs, peh_blobs, sess_ids, dates, trials
 
 
-def pd_convert_to_dict(protocol_blobs):
+def drop_sessions(
+    protocol_data, parsed_events_hist, trials, sess_ids, dates, sess_to_keep
+):
+    inputs = [protocol_data, parsed_events_hist, trials, sess_ids, dates, sess_to_keep]
+    assert (
+        len({len(i) for i in inputs}) == 1
+    ), "all inputs need to be of the same length!"
+
+    # TODO log drops
+    print(
+        f"dropping {len(protocol_data) - np.sum(sess_to_keep)} sessions of {len(protocol_data)}"
+    )
+    protocol_data = np.array(protocol_data)
+    protocol_data = protocol_data[sess_to_keep]
+
+    parsed_events_hist = np.array(parsed_events_hist, dtype=object)
+    parsed_events_hist = parsed_events_hist[sess_to_keep]
+
+    trials = trials[sess_to_keep]
+    sess_ids = sess_ids[sess_to_keep]
+    dates = dates[sess_to_keep]
+
+    return (
+        protocol_data,
+        parsed_events_hist,
+        trials,
+        sess_ids,
+        dates,
+    )
+
+
+def convert_to_dict(blobs):
     """
-    Function that takes protocol_data blobs from bdata sessions
-    table query and converts them to python dictionaries
+    Function that takes protocol data (pd) or parsed events
+    history (peh) blobs from bdata sessions table query and
+    converts them to python dictionaries using Alvaro's blob
+    transformation code
 
     inputs
     ------
-    protocol_blobs : list of arrays
-        list returned when fetching protocol_data from Sessions table
-        with len = n sessions
+    blobs : list of arrays
+        list returned when fetching pd or peh data from bdata
+        tables with len = n sessions
 
     returns
     -------
-    protocol_dicts : list of dictionaries
-        list of protocol_data dictionaries where len = n sessions and
+    dicts : list of dictionaries
+        list of pd or peh dictionaries where len = n sessions and
         each session has a dictionary
     """
-    protocol_dicts = []
-    for session in protocol_blobs:
-        dict = bt.transform_blob(session["protocol_data"])
-        protocol_dicts.append(dict)
-    return protocol_dicts
+    # type of blob is indicated in nested, messy array structure
+    data_type = list(blobs[0].keys())[0]
+    assert data_type == "peh" or data_type == "protocol_data", "unknown key pair"
+
+    dicts = []
+    for session_blob in blobs:
+        dict = bt.transform_blob(session_blob[data_type])
+        dicts.append(dict)
+    return dicts
+
+
+def reformat_pd_dict(pd_dicts):
+    """
+    Quick function for updating 'sides' key to be
+    properly seen as a list and making adding a more
+    informative name to the 'match' bool. Performs
+    formatting in-place.
+    """
+    # * if pd variables are ever added, this would be a good place
+    # * to pack the sessions pre-dating the add w/ NaNs
+    for pd_dict in pd_dicts:
+        # lllrllr to [l, l, l, r....]
+        pd_dict["sides"] = list(pd_dict["sides"])
+
+        # if DMS, convert match/nonmatch category variable to bool
+        # with more informative name
+        if "dms_type" in pd_dict:
+            pd_dict["is_match"] = pd_dict.pop("dms_type")
+            pd_dict["is_match"] = pd_dict["is_match"].astype(bool)
+
+
+def drop_extra_trial(pd_dicts, pd_has_extra_trial, trials):
+    """
+    Function to drop last trial from protocol data for a session
+    if the number of completed trails differs from the number of
+    started trials (pd tracks started, peh & trials tracks completed)
+
+    inputs
+    -----
+    pd_dicts : list of dicts
+        dictionary of protocol data for each session stored in a list
+
+    pd_has_extra_trial : bool
+        TODO: where is this coming from? is this the right name?
+    trials : list
+        number of completed trials for each session stored in a list
+
+    modifies:
+    --------
+    pd_dicts : list of dicts
+        removes extra trial from each dict key in place
+
+    """
+    assert (
+        len(pd_dicts) == len(pd_has_extra_trial) == len(trials)
+    ), "number of sessions does not match!"
+
+    for isess, (pd_dict, n_trials) in enumerate(zip(pd_dicts, trials)):
+
+        if pd_has_extra_trial[isess]:
+            # only use the values from 0 : n completed trials
+            # i.e. exclude the last value
+            for key, value in pd_dict.items():
+                pd_dict[key] = value[:n_trials]
+        else:
+            pass
 
 
 def make_protocol_df(
@@ -239,7 +341,7 @@ def pd_prepare_dict_for_df(protocol_dicts):
         variable names, corrects for bugs found in HistorySection.m
         that led to differing variables lengths
     """
-    for protocol_dict in protocol_dicts:
+    for isess, protocol_dict in enumerate(protocol_dicts):
         # lllrllr to [l, l, l, r....]
         protocol_dict["sides"] = list(protocol_dict["sides"])
 
