@@ -107,6 +107,27 @@ def plot_pair_performance(df, ax, title=None):
     ax.legend(bbox_to_anchor=(1, 1), loc="upper left", borderaxespad=0, frameon=False)
 
 
+def plot_pair_violations(df, ax, title=None):
+    title = "Pair Viol Plot" if title is None else title
+
+    perf_by_sound = df.pivot_table(
+        index="date", columns="sound_pair", values="violations", aggfunc="mean"
+    )
+
+    colors = {
+        "3.0, 3.0": "skyblue",
+        "12.0, 12.0": "steelblue",
+        "3.0, 12.0": "thistle",
+        "12.0, 3.0": "mediumorchid",
+    }
+
+    perf_by_sound.plot.line(color=colors, ax=ax, rot=45, style="--")
+
+    _ = ax.set(ylim=[0, 1], ylabel="fraction violations", title=title)
+    sns.despine()
+    ax.legend(bbox_to_anchor=(1, 1), loc="upper left", borderaxespad=0, frameon=False)
+
+
 def single_day_pair_perf(df, ax):
 
     latest_df = df[df.date == df.date.max()]
@@ -128,7 +149,32 @@ def single_day_pair_perf(df, ax):
     # value_counts returns in the reverse order of the sorting done above
     # ax.bar_label(ax.containers[0], sound_pair_counts[::-1], label_type="center")
 
-    ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]}")
+    ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]} hits")
+    sns.despine()
+    # return sound_pair_counts
+
+
+def single_day_pair_viols(df, ax):
+
+    latest_df = df[df.date == df.date.max()]
+
+    # this sorting is necessary to keep colors and count labeling correct
+    latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+
+    palette = create_palette_given_sounds(latest_df)
+
+    sns.barplot(
+        data=latest_df,
+        x="sound_pair",
+        y="violations",
+        palette=palette,
+        ax=ax,
+        alpha=0.5,
+    )
+    # value_counts returns in the reverse order of the sorting done above
+    # ax.bar_label(ax.containers[0], sound_pair_counts[::-1], label_type="center")
+
+    ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]} violations")
     sns.despine()
     # return sound_pair_counts
 
