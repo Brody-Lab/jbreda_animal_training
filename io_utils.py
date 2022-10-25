@@ -147,6 +147,7 @@ def drop_sessions(
     ), "all inputs need to be of the same length!"
 
     # TODO log drops
+    # TODO as a mesage input like "low trials", or "len mismatch"
     print(
         f"dropping {len(protocol_data) - np.sum(sess_to_keep)} sessions of {len(protocol_data)}"
     )
@@ -219,6 +220,117 @@ def reformat_pd_dict(pd_dicts):
             pd_dict["is_match"] = pd_dict["is_match"].astype(bool)
 
 
+def find_and_fix_len_errors(pd_dicts, peh_dicts, trials, sess_ids, dates):
+
+    pd_has_extra_trial = []
+    keep_session = []
+
+    for pd_dict, peh_dict, n_done_trials, sess_id in zip(
+        pd_dicts, peh_dicts, trials, sess_ids
+    ):
+        # TODO make these iterate for you!
+        # make sure each pd dict variable is the same length
+        # in response to some initial uncaught bugs in HistorySection.m
+        fix_within_pd_len_errors(pd_dict, sess_id)
+
+        # check if the number of trials in a session is the same between
+        # all items for that session, and determine if it's fixable or
+        # should be dropped.
+
+        has_extra_trial, keep = find_and_assess_ntrial_mismatches(
+            pd_dict, peh_dict, n_done_trials, sess_id
+        )
+        pd_has_extra_trial.append(has_extra_trial)
+        keep_session.append(keep)
+
+    # fix sessions that have one extra trial in pd data
+    drop_extra_trial(pd_dicts, pd_has_extra_trial, trials)
+
+    # drop sessions w/ atypical trial mismatches
+    pd_dicts, peh_dicts, trials, sess_ids, dates = drop_sessions(
+        pd_dicts, peh_dicts, trials, sess_ids, dates, sess_to_keep=keep_session
+    )
+
+    # TODO once iterator is fixed recall find_and_assess_ntrial_mismatches
+    # and make sure np.sum(has_extra_trial) == 0 and np.sum keep_session = has no 0s
+
+    return pd_dicts, peh_dicts, trials, sess_ids, dates
+
+
+def fix_within_pd_len_errors(pd_dict, sess_id):
+    """
+    Function that fixes errors in protocol data dict due to keys
+    having values of differing lengths when they should all be n
+    trials long. Asserts lengths are the same before returning.
+
+    inputs
+    -----
+    pd_dict : dict
+        a single session's protocol data
+    sess_id : int
+        session id corresponding to the protocol data
+
+    modifies
+    --------
+    pd_dict : dict
+        modifies length of "sb" and "result" values in place if
+        necessary & asserts all key lengths are the same
+    """
+    # TODO make this iterate over sessions w/i the functions
+    # ! this only applies to DMS/PWM2 pre HistorySection bug fixes
+    # ! using sa as reference length template- this could lead to
+    # ! errors if sa length is incorrect
+    if len(pd_dict["sa"]) != len(pd_dict["sb"]):
+        _truncate_sb_length(pd_dict)
+    if len(pd_dict["sa"]) != len(pd_dict["result"]):
+        _fill_result_post_crash(pd_dict)
+
+    # verify all keys have the same lengths
+    lens = map(len, pd_dict.values())
+    n_unique_lens = len(set(lens))
+    assert n_unique_lens == 1, f"length of dict values for {sess_id} unequal!"
+
+
+def find_and_assess_ntrial_mismatches(pd_dict, peh_dict, n_done_trials, sess_id):
+    # TODO make this iterate over sessions w/i in the function
+    # rename for ease
+    pd_trials = len(pd_dict["sides"])
+    peh_trials = len(peh_dict)
+
+    # peh and n_done_trials are both updated by dispatcher once
+    # a trial is completed, something is wrong if they aren't the same len
+    assert (
+        peh_trials == n_done_trials
+    ), f"""sess {sess_id} peh trials: {peh_trials} 
+            does not match n trials: {n_done_trials}"""
+
+    # pd is updated before peh & n_done_trials and can sometimes
+    # be 1 trial longer if the session is ended between these steps.
+
+    # Or, if runrats freezes it will try to restart 10 times
+    # before crashing, and pd will be 9 trials longer. This
+    # is marked in pd['results'] and will be filtered out of the
+    # pd_df before merging with peh data.
+
+    # Other length differences are inconsistent & rare so I just
+    # drop those sessions
+
+    n_trials_extra = pd_trials - n_done_trials
+    if n_trials_extra == 0 or n_trials_extra == 9:
+        session_has_extra_trial = False
+        keep = True
+    elif n_trials_extra == 1:
+        session_has_extra_trial = True
+        keep = True
+        # TODO log print(f"{sess_id} 1 off")
+    else:
+        session_has_extra_trial = False
+        keep = False
+        # TODO log print(f"{sess_id} being dropped bc {n_trials_extra}")
+
+    return session_has_extra_trial, keep
+
+
 def drop_extra_trial(pd_dicts, pd_has_extra_trial, trials):
     """
     Function to drop last trial from protocol data for a session
@@ -241,6 +353,7 @@ def drop_extra_trial(pd_dicts, pd_has_extra_trial, trials):
         removes extra trial from each dict key in place
 
     """
+    # print(len(pd_dicts), len(pd_has_extra_trial))
     assert (
         len(pd_dicts) == len(pd_has_extra_trial) == len(trials)
     ), "number of sessions does not match!"
