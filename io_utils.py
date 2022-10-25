@@ -436,48 +436,6 @@ def make_protocol_df(
     return all_sessions_protocol_df
 
 
-def pd_prepare_dict_for_df(protocol_dicts):
-    """
-    Function to clean up protocol data dictionary lengths,
-    names & types to ensure there are no errors & interpretation
-    issues upon converting it into a data frame.
-
-    inputs
-    ------
-    protocol_dicts : list of dicts
-        list of dictionaries for one or more sessions protocol data
-
-    modifies
-    --------
-    protocol_dicts : list of dicts
-        corrects side vector format, updates DMS match/nonmatch
-        variable names, corrects for bugs found in HistorySection.m
-        that led to differing variables lengths
-    """
-    for isess, protocol_dict in enumerate(protocol_dicts):
-        # lllrllr to [l, l, l, r....]
-        protocol_dict["sides"] = list(protocol_dict["sides"])
-
-        # if DMS, convert match/nonmatch category variable to bool
-        # with more informative name
-        if "dms_type" in protocol_dict:
-            protocol_dict["is_match"] = protocol_dict.pop("dms_type")
-            protocol_dict["is_match"] = protocol_dict["is_match"].astype(bool)
-
-        # check to see if protocol_data is pre HistorySection.m bug fixes
-        # where len(each value) was not equal. Using sa as reference length
-        # template but this could lead to errors if sa has bug
-        if len(protocol_dict["sa"]) != len(protocol_dict["sb"]):
-            _truncate_sb_length(protocol_dict)
-        if len(protocol_dict["sa"]) != len(protocol_dict["result"]):
-            _fill_result_post_crash(protocol_dict)
-
-        # catch any remaining length errors
-        lens = map(len, protocol_dict.values())
-        n_unique_lens = len(set(lens))
-        assert n_unique_lens == 1, "length of dict values unequal!"
-
-
 def _truncate_sb_length(protocol_dict):
     """
     Function to correct for bug in HistorySection, see commit:
@@ -552,7 +510,6 @@ def clean_pd_df(protocol_df, animal_id, sess_id, date, crashed_trials_report=Fal
     """
     Function that takes a protocol_df and cleans it to correct for
     data types and format per JRBs preferences
-
     inputs
     ------
     protocol_df : data frame
@@ -563,7 +520,6 @@ def clean_pd_df(protocol_df, animal_id, sess_id, date, crashed_trials_report=Fal
         id from bdata corresponding to session
     date : datetime object or str
         date corresponding to session
-
     modifies
     -------
     protocol_df : data frame
@@ -615,3 +571,114 @@ def clean_pd_df(protocol_df, animal_id, sess_id, date, crashed_trials_report=Fal
     protocol_df[int_columns] = protocol_df[int_columns].astype("Int64")
     category_columns = ["result", "stage", "sess_id", "sound_pair"]
     protocol_df[category_columns] = protocol_df[category_columns].astype("category")
+
+
+def generate_trials_df(animal_id, pd_dicts, peh_dicts_for_df, trials, sess_ids, dates):
+    # TODO doc string
+
+    session_dfs = []
+
+    # iterate over sessions & concat peh & pd trial by trial data into one df
+    for pd_dict, peh_dict_for_df, n_done_trials, sess_id, date in zip(
+        pd_dicts, peh_dicts_for_df, trials, sess_ids, dates
+    ):
+        pd_df = create_pd_df(pd_dict, animal_id, n_done_trials, sess_id, date)
+
+        trials_df = concat_pd_and_peh_data(pd_df, peh_dict_for_df)
+
+        session_dfs.append(trials_df)
+
+    all_sessions_df = pd.concat(session_dfs)
+
+    # add column for inferring go_time by adding fixation time to cpoke in
+    # not using the 'go' wave here from peh because it will not be sent
+    # on violation trials
+    # TODO this could be a spot where you calculate additional varaibles & write
+    # TODO a distinct function for it (e.g. trial length)
+    all_sessions_df["go_time"] = all_sessions_df.apply(
+        lambda row: row.cpoke_in + row.fixation, axis=1
+    )
+
+    return all_sessions_df
+
+
+def create_pd_df(pd_dict, animal_id, n_done_trials, sess_id, date):
+    # TODO doc strings
+    pd_df = pd.DataFrame.from_dict(pd_dict)
+
+    append_and_clean_pd_df(pd_df, animal_id, n_done_trials, sess_id, date)
+
+    return pd_df
+
+
+def concat_pd_and_peh_data(pd_df, peh_dict):
+    # TODO doc strings
+
+    peh_df = pd.DataFrame.from_dict(peh_dict)
+
+    trials_df = pd.concat([pd_df, peh_df], axis=1)
+
+    return trials_df
+
+
+def append_and_clean_pd_df(pd_df, animal_id, n_done_trials, sess_id, date):
+    """
+    Function that takes a protocol_df and cleans it to correct for
+    data types and format per JRBs preferences
+
+    inputs
+    TODO add updates
+    ------
+    protocol_df : data frame
+        protocol_data dictionary thats been converted to df for a single session
+    animal_id : str
+        animal id for which the session corresponds to
+    sess_id : str
+        id from bdata corresponding to session
+    date : datetime object or str
+        date corresponding to session
+
+    modifies
+    -------
+    protocol_df : data frame
+        (1) crashed trials removed
+        (2) animal, date, session id columns added
+        (3) sa/sb converted from Hz to kHz
+        (4) certain columns converted to ints & categories
+    """
+
+    # create trials column incase df index gets reset
+    pd_df.insert(0, "trial", np.arange(1, n_done_trials + 1, dtype=int))
+
+    # drop any trials where dispatcher reported a crash
+    # this is where the remaining len errors between pd and peh
+    # should be fixed
+    pd_df.drop(pd_df[pd_df["result"] == 5].index, inplace=True)
+
+    # add animal id, data and sessid value for each trial
+    pd_df.insert(1, "animal_id", [animal_id] * len(pd_df))
+    pd_df.insert(2, "date", [date] * len(pd_df))
+    pd_df.insert(3, "sess_id", [sess_id] * len(pd_df))
+
+    # convert units to kHz
+    pd_df[["sa", "sb"]] = pd_df[["sa", "sb"]].apply(lambda row: row / 1000)
+    # create a unique pair column & violation column used for sorting in plots
+    pd_df["sound_pair"] = pd_df.apply(
+        lambda row: str(row.sa) + ", " + str(row.sb), axis=1
+    )
+    pd_df["violations"] = pd_df.apply(lambda row: 1 if row.result == 3 else 0, axis=1)
+    pd_df.insert(5, "violations", pd_df.pop("violations"))
+
+    # convert data types (matlab makes everything a float)
+    int_columns = [
+        "hits",
+        "violations",
+        "temperror",
+        "result",
+        "helper",
+        "stage",
+        "sess_id",
+    ]
+    pd_df[int_columns] = pd_df[int_columns].astype("Int64")
+    category_columns = ["result", "stage", "sess_id", "sound_pair"]
+    pd_df[category_columns] = pd_df[category_columns].astype("category")
