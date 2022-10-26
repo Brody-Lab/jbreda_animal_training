@@ -114,6 +114,46 @@ def fetch_latest_training_data(
     return all_animals_protocol_df
 
 
+def pd_prepare_dict_for_df(protocol_dicts):
+    """
+    Function to clean up protocol data dictionary lengths,
+    names & types to ensure there are no errors & interpretation
+    issues upon converting it into a data frame.
+    inputs
+    ------
+    protocol_dicts : list of dicts
+        list of dictionaries for one or more sessions protocol data
+    modifies
+    --------
+    protocol_dicts : list of dicts
+        corrects side vector format, updates DMS match/nonmatch
+        variable names, corrects for bugs found in HistorySection.m
+        that led to differing variables lengths
+    """
+    for isess, protocol_dict in enumerate(protocol_dicts):
+        # lllrllr to [l, l, l, r....]
+        protocol_dict["sides"] = list(protocol_dict["sides"])
+
+        # if DMS, convert match/nonmatch category variable to bool
+        # with more informative name
+        if "dms_type" in protocol_dict:
+            protocol_dict["is_match"] = protocol_dict.pop("dms_type")
+            protocol_dict["is_match"] = protocol_dict["is_match"].astype(bool)
+
+        # check to see if protocol_data is pre HistorySection.m bug fixes
+        # where len(each value) was not equal. Using sa as reference length
+        # template but this could lead to errors if sa has bug
+        if len(protocol_dict["sa"]) != len(protocol_dict["sb"]):
+            _truncate_sb_length(protocol_dict)
+        if len(protocol_dict["sa"]) != len(protocol_dict["result"]):
+            _fill_result_post_crash(protocol_dict)
+
+        # catch any remaining length errors
+        lens = map(len, protocol_dict.values())
+        n_unique_lens = len(set(lens))
+        assert n_unique_lens == 1, "length of dict values unequal!"
+
+
 def drop_empty_sessions(pd_blobs, peh_blobs, sess_ids, dates, trials):
     """
     sessions with 0 or 1 trials break the later code because
@@ -432,7 +472,7 @@ def make_protocol_df(
         )
         sess_protocol_dfs.append(protocol_df)
 
-    all_sessions_protocol_df = pd.concat(sess_protocol_dfs)
+    all_sessions_protocol_df = pd.concat(sess_protocol_dfs, ignore_index=True)
     return all_sessions_protocol_df
 
 
@@ -588,12 +628,12 @@ def generate_trials_df(animal_id, pd_dicts, peh_dicts_for_df, trials, sess_ids, 
 
         session_dfs.append(trials_df)
 
-    all_sessions_df = pd.concat(session_dfs)
+    all_sessions_df = pd.concat(session_dfs, ignore_index=True)
 
     # add column for inferring go_time by adding fixation time to cpoke in
     # not using the 'go' wave here from peh because it will not be sent
     # on violation trials
-    # TODO this could be a spot where you calculate additional varaibles & write
+    # TODO this could be a spot where you calculate additional variables & write
     # TODO a distinct function for it (e.g. trial length)
     all_sessions_df["go_time"] = all_sessions_df.apply(
         lambda row: row.cpoke_in + row.fixation, axis=1
