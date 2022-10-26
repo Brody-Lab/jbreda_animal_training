@@ -206,3 +206,21 @@ def create_palette_given_sounds(df):
     for sp in sound_pairs:
         palette.append(sound_pair_colormap[sp])
     return palette
+
+
+def plot_viol_hist(df, ax, title=None, **kwargs):
+    title = "Viol Plot" if title is None else title
+
+    # make df
+    pd.options.mode.chained_assignment = None
+    ep_df = df.query("early_spoke == True")
+    ep_df["viol_time"] = ep_df.apply(
+        lambda row: row["spoke_in"] - row["go_time"], axis=1
+    )
+    ep_df = ep_df[ep_df["viol_time"] > -1.5]  # remove outliers
+
+    sns.histplot(data=ep_df, x="viol_time", binwidth=0.025, color="lightcoral", ax=ax)
+    ax.axvline(0, color="black", linewidth=3)
+
+    _ = ax.set(xlabel="Time Pre Go Cue [s]", title=title)
+    sns.despine()
