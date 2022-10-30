@@ -135,7 +135,7 @@ def single_day_pair_perf(df, ax):
     # this sorting is necessary to keep colors and count labeling correct
     latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
 
-    palette = create_palette_given_sounds(latest_df)
+    palette = create_palette_given_sounds(latest_df.sound_pair)
     sound_pair_counts = latest_df.sound_pair.value_counts(sort=False)
     print(sound_pair_counts)
 
@@ -161,7 +161,7 @@ def single_day_pair_viols(df, ax):
     # this sorting is necessary to keep colors and count labeling correct
     latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
 
-    palette = create_palette_given_sounds(latest_df)
+    palette = create_palette_given_sounds(latest_df.sound_pair)
 
     sns.barplot(
         data=latest_df,
@@ -188,13 +188,16 @@ def _sound_pairs_sorter(column):
     return column.map(correspondence)
 
 
-def create_palette_given_sounds(df):
+def create_palette_given_sounds(sound_pairs):
     """
     Function to allow for assignment of specific colors to a sound pair
     that is consistent across sessions where number of unique pairs varies
     """
     palette = []
-    sound_pairs = df.sound_pair.unique()
+    # coming from a df, need to only grab unique values
+    # ! this will cause a bug if new pairs are introduced beyond 3-12
+    if len(sound_pairs) > 4:
+        sound_pairs = np.unique(sound_pairs)
 
     sound_pair_colormap = {
         "3.0, 3.0": "skyblue",
@@ -223,4 +226,53 @@ def plot_viol_hist(df, ax, title=None, **kwargs):
     ax.axvline(0, color="black", linewidth=3)
 
     _ = ax.set(xlabel="Time Pre Go Cue [s]", title=title)
+    sns.despine()
+
+
+def stim_pair_plot(
+    ax, sound_pairs, title, match_line, vline, hline, xlim=[0, 15], ylim=[0, 15]
+):
+
+    stim_range = np.unique(sound_pairs)
+
+    #! bug here will not run!
+    colors = create_palette_given_sounds(sound_pairs)
+
+    for sp, c in zip(sound_pairs, colors):
+        ax.scatter(sp[0], sp[1], marker=",", s=300, c=c, alpha=0.75)
+
+    if match_line:
+        plt.axline((0, 1), slope=1, color="lightgray", linestyle="--")
+        plt.axline((1, 0), slope=1, color="lightgray", linestyle="--")
+
+    if vline == "upper":
+        plt.axvline(x=8, ymin=0.55, ymax=1, color="dimgray", linestyle="--")
+
+    elif vline == "lower":
+        plt.axvline(x=8, ymax=0.5, color="dimgray", linestyle="--")
+
+    elif vline == "full":
+        plt.axvline(x=8, ymax=1, color="dimgray", linestyle="--")
+
+    if hline == "left":
+        plt.axhline(y=8, xmax=0.5, color="dimgray", linestyle="--")
+
+    elif hline == "right":
+        plt.axhline(y=8, xmin=0.55, xmax=1, color="dimgray", linestyle="--")
+
+    elif hline == "full":
+        plt.axhline(y=8, xmax=1, color="dimgray", linestyle="--")
+
+    # aesthetics
+    ax.set_title(title)
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    ax.set_xticks(stim_range)
+    ax.set_yticks(stim_range)
+    sns.despine()
+
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    ax.set_xticks(stim_range)
+    ax.set_yticks(stim_range)
     sns.despine()
