@@ -135,7 +135,7 @@ def single_day_pair_perf(df, ax):
     # this sorting is necessary to keep colors and count labeling correct
     latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
 
-    palette = create_palette_given_sounds(latest_df.sound_pair)
+    palette = create_palette_given_sounds(latest_df)
     sound_pair_counts = latest_df.sound_pair.value_counts(sort=False)
     print(sound_pair_counts)
 
@@ -161,7 +161,7 @@ def single_day_pair_viols(df, ax):
     # this sorting is necessary to keep colors and count labeling correct
     latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
 
-    palette = create_palette_given_sounds(latest_df.sound_pair)
+    palette = create_palette_given_sounds(latest_df)
 
     sns.barplot(
         data=latest_df,
@@ -188,16 +188,13 @@ def _sound_pairs_sorter(column):
     return column.map(correspondence)
 
 
-def create_palette_given_sounds(sound_pairs):
+def create_palette_given_sounds(df):
     """
     Function to allow for assignment of specific colors to a sound pair
     that is consistent across sessions where number of unique pairs varies
     """
     palette = []
-    # coming from a df, need to only grab unique values
-    # ! this will cause a bug if new pairs are introduced beyond 3-12
-    if len(sound_pairs) > 4:
-        sound_pairs = np.unique(sound_pairs)
+    sound_pairs = df.sound_pair.unique()
 
     sound_pair_colormap = {
         "3.0, 3.0": "skyblue",
@@ -232,10 +229,9 @@ def plot_viol_hist(df, ax, title=None, **kwargs):
 def stim_pair_plot(
     ax, sound_pairs, title, match_line, vline, hline, xlim=[0, 15], ylim=[0, 15]
 ):
-
+    #! NOT WORKING
     stim_range = np.unique(sound_pairs)
 
-    #! bug here will not run!
     colors = create_palette_given_sounds(sound_pairs)
 
     for sp, c in zip(sound_pairs, colors):
