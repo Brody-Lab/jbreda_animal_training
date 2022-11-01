@@ -23,7 +23,14 @@ for ianimal = 1 : length(animals)
     
     % sanity check that mass & water entries are from the same day
      if ~ismember(w_date(end), m_date(end))
-        error('mass & water date do not match!')
+%          disp(animals{ianimal})
+%          disp('water date:')
+%          disp(w_date(end))
+%          disp('mass date:')
+%          disp(m_date(end))
+
+%          sprintf('water date: %s, mass_date :%s', water_date, mass_date);
+%          error('mass & water date do not match!')
      end
     
      % calclulate totals
