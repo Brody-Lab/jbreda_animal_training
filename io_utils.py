@@ -56,10 +56,8 @@ def fetch_latest_training_data(
 
     animals_protocol_dfs = []
 
-    # currently using `bdatatest` table but this may change &
-    # will need to f/u with alvaro luna on which table has
-    # protocol data
-    bdata = dj.create_virtual_module("new_acquisition", "bdatatest")
+    # this is the long term bdata query on bdata00 (no longer using datajoint01)
+    bdata = dj.create_virtual_module("bdata", "bdata")
 
     # fetch data, clean it & convert to df for each animal
     for animal_id in animal_ids:
@@ -114,6 +112,60 @@ def fetch_latest_training_data(
     return all_animals_protocol_df
 
 
+def drop_empty_sessions(pd_blobs, peh_blobs, sess_ids, dates, trials):
+    """
+    sessions with 0 or 1 trials break the later code because
+    of dimension errors, so drop them asap
+    """
+    # TODO replace with more flexible drop_sessions
+
+    trial_filter = (trials != 0) & (trials != 1)
+    print(
+        f"dropping {len(pd_blobs) - np.sum(trial_filter)} sessions of {len(pd_blobs)}"
+    )
+    pd_blobs = np.array(pd_blobs)
+    pd_blobs = pd_blobs[trial_filter]
+
+    peh_blobs = np.array(peh_blobs)
+    peh_blobs = peh_blobs[trial_filter]
+
+    sess_ids = sess_ids[trial_filter]
+    dates = dates[trial_filter]
+    trials = trials[trial_filter]
+
+    return pd_blobs, peh_blobs, sess_ids, dates, trials
+
+
+def convert_to_dict(blobs):
+    """
+    Function that takes protocol data (pd) or parsed events
+    history (peh) blobs from bdata sessions table query and
+    converts them to python dictionaries using Alvaro's blob
+    transformation code
+
+    inputs
+    ------
+    blobs : list of arrays
+        list returned when fetching pd or peh data from bdata
+        tables with len = n sessions
+
+    returns
+    -------
+    dicts : list of dictionaries
+        list of pd or peh dictionaries where len = n sessions and
+        each session has a dictionary
+    """
+    # type of blob is indicated in nested, messy array structure
+    data_type = list(blobs[0].keys())[0]
+    assert data_type == "peh" or data_type == "protocol_data", "unknown key pair"
+
+    dicts = []
+    for session_blob in blobs:
+        dict = bt.transform_blob(session_blob[data_type])
+        dicts.append(dict)
+    return dicts
+
+
 def pd_prepare_dict_for_df(protocol_dicts):
     """
     Function to clean up protocol data dictionary lengths,
@@ -154,149 +206,6 @@ def pd_prepare_dict_for_df(protocol_dicts):
         assert n_unique_lens == 1, "length of dict values unequal!"
 
 
-def drop_empty_sessions(pd_blobs, peh_blobs, sess_ids, dates, trials):
-    """
-    sessions with 0 or 1 trials break the later code because
-    of dimension errors, so drop them asap
-    """
-    # TODO replace with more flexible drop_sessions
-
-    trial_filter = (trials != 0) & (trials != 1)
-    print(
-        f"dropping {len(pd_blobs) - np.sum(trial_filter)} sessions of {len(pd_blobs)}"
-    )
-    pd_blobs = np.array(pd_blobs)
-    pd_blobs = pd_blobs[trial_filter]
-
-    peh_blobs = np.array(peh_blobs)
-    peh_blobs = peh_blobs[trial_filter]
-
-    sess_ids = sess_ids[trial_filter]
-    dates = dates[trial_filter]
-    trials = trials[trial_filter]
-
-    return pd_blobs, peh_blobs, sess_ids, dates, trials
-
-
-def drop_sessions(
-    protocol_data, parsed_events_hist, trials, sess_ids, dates, sess_to_keep
-):
-    inputs = [protocol_data, parsed_events_hist, trials, sess_ids, dates, sess_to_keep]
-    assert (
-        len({len(i) for i in inputs}) == 1
-    ), "all inputs need to be of the same length!"
-
-    # TODO log drops
-    # TODO as a mesage input like "low trials", or "len mismatch"
-    print(
-        f"dropping {len(protocol_data) - np.sum(sess_to_keep)} sessions of {len(protocol_data)}"
-    )
-    protocol_data = np.array(protocol_data)
-    protocol_data = protocol_data[sess_to_keep]
-
-    parsed_events_hist = np.array(parsed_events_hist, dtype=object)
-    parsed_events_hist = parsed_events_hist[sess_to_keep]
-
-    trials = trials[sess_to_keep]
-    sess_ids = sess_ids[sess_to_keep]
-    dates = dates[sess_to_keep]
-
-    return (
-        protocol_data,
-        parsed_events_hist,
-        trials,
-        sess_ids,
-        dates,
-    )
-
-
-def convert_to_dict(blobs):
-    """
-    Function that takes protocol data (pd) or parsed events
-    history (peh) blobs from bdata sessions table query and
-    converts them to python dictionaries using Alvaro's blob
-    transformation code
-
-    inputs
-    ------
-    blobs : list of arrays
-        list returned when fetching pd or peh data from bdata
-        tables with len = n sessions
-
-    returns
-    -------
-    dicts : list of dictionaries
-        list of pd or peh dictionaries where len = n sessions and
-        each session has a dictionary
-    """
-    # type of blob is indicated in nested, messy array structure
-    data_type = list(blobs[0].keys())[0]
-    assert data_type == "peh" or data_type == "protocol_data", "unknown key pair"
-
-    dicts = []
-    for session_blob in blobs:
-        dict = bt.transform_blob(session_blob[data_type])
-        dicts.append(dict)
-    return dicts
-
-
-def reformat_pd_dict(pd_dicts):
-    """
-    Quick function for updating 'sides' key to be
-    properly seen as a list and making adding a more
-    informative name to the 'match' bool. Performs
-    formatting in-place.
-    """
-    # * if pd variables are ever added, this would be a good place
-    # * to pack the sessions pre-dating the add w/ NaNs
-    for pd_dict in pd_dicts:
-        # lllrllr to [l, l, l, r....]
-        pd_dict["sides"] = list(pd_dict["sides"])
-
-        # if DMS, convert match/nonmatch category variable to bool
-        # with more informative name
-        if "dms_type" in pd_dict:
-            pd_dict["is_match"] = pd_dict.pop("dms_type")
-            pd_dict["is_match"] = pd_dict["is_match"].astype(bool)
-
-
-def find_and_fix_len_errors(pd_dicts, peh_dicts, trials, sess_ids, dates):
-
-    pd_has_extra_trial = []
-    keep_session = []
-
-    for pd_dict, peh_dict, n_done_trials, sess_id in zip(
-        pd_dicts, peh_dicts, trials, sess_ids
-    ):
-        # TODO make these iterate for you!
-        # make sure each pd dict variable is the same length
-        # in response to some initial uncaught bugs in HistorySection.m
-        fix_within_pd_len_errors(pd_dict, sess_id)
-
-        # check if the number of trials in a session is the same between
-        # all items for that session, and determine if it's fixable or
-        # should be dropped.
-
-        has_extra_trial, keep = find_and_assess_ntrial_mismatches(
-            pd_dict, peh_dict, n_done_trials, sess_id
-        )
-        pd_has_extra_trial.append(has_extra_trial)
-        keep_session.append(keep)
-
-    # fix sessions that have one extra trial in pd data
-    drop_extra_trial(pd_dicts, pd_has_extra_trial, trials)
-
-    # drop sessions w/ atypical trial mismatches
-    pd_dicts, peh_dicts, trials, sess_ids, dates = drop_sessions(
-        pd_dicts, peh_dicts, trials, sess_ids, dates, sess_to_keep=keep_session
-    )
-
-    # TODO once iterator is fixed recall find_and_assess_ntrial_mismatches
-    # and make sure np.sum(has_extra_trial) == 0 and np.sum keep_session = has no 0s
-
-    return pd_dicts, peh_dicts, trials, sess_ids, dates
-
-
 def fix_within_pd_len_errors(pd_dict, sess_id):
     """
     Function that fixes errors in protocol data dict due to keys
@@ -329,84 +238,6 @@ def fix_within_pd_len_errors(pd_dict, sess_id):
     lens = map(len, pd_dict.values())
     n_unique_lens = len(set(lens))
     assert n_unique_lens == 1, f"length of dict values for {sess_id} unequal!"
-
-
-def find_and_assess_ntrial_mismatches(pd_dict, peh_dict, n_done_trials, sess_id):
-    # TODO make this iterate over sessions w/i in the function
-    # rename for ease
-    pd_trials = len(pd_dict["sides"])
-    peh_trials = len(peh_dict)
-
-    # peh and n_done_trials are both updated by dispatcher once
-    # a trial is completed, something is wrong if they aren't the same len
-    assert (
-        peh_trials == n_done_trials
-    ), f"""sess {sess_id} peh trials: {peh_trials} 
-            does not match n trials: {n_done_trials}"""
-
-    # pd is updated before peh & n_done_trials and can sometimes
-    # be 1 trial longer if the session is ended between these steps.
-
-    # Or, if runrats freezes it will try to restart 10 times
-    # before crashing, and pd will be 9 trials longer. This
-    # is marked in pd['results'] and will be filtered out of the
-    # pd_df before merging with peh data.
-
-    # Other length differences are inconsistent & rare so I just
-    # drop those sessions
-
-    n_trials_extra = pd_trials - n_done_trials
-    if n_trials_extra == 0 or n_trials_extra == 9:
-        session_has_extra_trial = False
-        keep = True
-    elif n_trials_extra == 1:
-        session_has_extra_trial = True
-        keep = True
-        # TODO log print(f"{sess_id} 1 off")
-    else:
-        session_has_extra_trial = False
-        keep = False
-        # TODO log print(f"{sess_id} being dropped bc {n_trials_extra}")
-
-    return session_has_extra_trial, keep
-
-
-def drop_extra_trial(pd_dicts, pd_has_extra_trial, trials):
-    """
-    Function to drop last trial from protocol data for a session
-    if the number of completed trails differs from the number of
-    started trials (pd tracks started, peh & trials tracks completed)
-
-    inputs
-    -----
-    pd_dicts : list of dicts
-        dictionary of protocol data for each session stored in a list
-
-    pd_has_extra_trial : bool
-        TODO: where is this coming from? is this the right name?
-    trials : list
-        number of completed trials for each session stored in a list
-
-    modifies:
-    --------
-    pd_dicts : list of dicts
-        removes extra trial from each dict key in place
-
-    """
-    # print(len(pd_dicts), len(pd_has_extra_trial))
-    assert (
-        len(pd_dicts) == len(pd_has_extra_trial) == len(trials)
-    ), "number of sessions does not match!"
-
-    for isess, (pd_dict, n_trials) in enumerate(zip(pd_dicts, trials)):
-
-        if pd_has_extra_trial[isess]:
-            # only use the values from 0 : n completed trials
-            # i.e. exclude the last value
-            for key, value in pd_dict.items():
-                pd_dict[key] = value[:n_trials]
-        else:
-            pass
 
 
 def make_protocol_df(
@@ -611,114 +442,3 @@ def clean_pd_df(protocol_df, animal_id, sess_id, date, crashed_trials_report=Fal
     protocol_df[int_columns] = protocol_df[int_columns].astype("Int64")
     category_columns = ["result", "stage", "sess_id", "sound_pair"]
     protocol_df[category_columns] = protocol_df[category_columns].astype("category")
-
-
-def generate_trials_df(animal_id, pd_dicts, peh_dicts_for_df, trials, sess_ids, dates):
-    # TODO doc string
-
-    session_dfs = []
-
-    # iterate over sessions & concat peh & pd trial by trial data into one df
-    for pd_dict, peh_dict_for_df, n_done_trials, sess_id, date in zip(
-        pd_dicts, peh_dicts_for_df, trials, sess_ids, dates
-    ):
-        pd_df = create_pd_df(pd_dict, animal_id, n_done_trials, sess_id, date)
-
-        trials_df = concat_pd_and_peh_data(pd_df, peh_dict_for_df)
-
-        session_dfs.append(trials_df)
-
-    all_sessions_df = pd.concat(session_dfs, ignore_index=True)
-
-    # add column for inferring go_time by adding fixation time to cpoke in
-    # not using the 'go' wave here from peh because it will not be sent
-    # on violation trials
-    # TODO this could be a spot where you calculate additional variables & write
-    # TODO a distinct function for it (e.g. trial length)
-    all_sessions_df["go_time"] = all_sessions_df.apply(
-        lambda row: row.cpoke_in + row.fixation, axis=1
-    )
-
-    return all_sessions_df
-
-
-def create_pd_df(pd_dict, animal_id, n_done_trials, sess_id, date):
-    # TODO doc strings
-    pd_df = pd.DataFrame.from_dict(pd_dict)
-
-    append_and_clean_pd_df(pd_df, animal_id, n_done_trials, sess_id, date)
-
-    return pd_df
-
-
-def concat_pd_and_peh_data(pd_df, peh_dict):
-    # TODO doc strings
-
-    peh_df = pd.DataFrame.from_dict(peh_dict)
-
-    trials_df = pd.concat([pd_df, peh_df], axis=1)
-
-    return trials_df
-
-
-def append_and_clean_pd_df(pd_df, animal_id, n_done_trials, sess_id, date):
-    """
-    Function that takes a protocol_df and cleans it to correct for
-    data types and format per JRBs preferences
-
-    inputs
-    TODO add updates
-    ------
-    protocol_df : data frame
-        protocol_data dictionary thats been converted to df for a single session
-    animal_id : str
-        animal id for which the session corresponds to
-    sess_id : str
-        id from bdata corresponding to session
-    date : datetime object or str
-        date corresponding to session
-
-    modifies
-    -------
-    protocol_df : data frame
-        (1) crashed trials removed
-        (2) animal, date, session id columns added
-        (3) sa/sb converted from Hz to kHz
-        (4) certain columns converted to ints & categories
-    """
-
-    # create trials column incase df index gets reset
-    pd_df.insert(0, "trial", np.arange(1, n_done_trials + 1, dtype=int))
-
-    # drop any trials where dispatcher reported a crash
-    # this is where the remaining len errors between pd and peh
-    # should be fixed
-    pd_df.drop(pd_df[pd_df["result"] == 5].index, inplace=True)
-
-    # add animal id, data and sessid value for each trial
-    pd_df.insert(1, "animal_id", [animal_id] * len(pd_df))
-    pd_df.insert(2, "date", [date] * len(pd_df))
-    pd_df.insert(3, "sess_id", [sess_id] * len(pd_df))
-
-    # convert units to kHz
-    pd_df[["sa", "sb"]] = pd_df[["sa", "sb"]].apply(lambda row: row / 1000)
-    # create a unique pair column & violation column used for sorting in plots
-    pd_df["sound_pair"] = pd_df.apply(
-        lambda row: str(row.sa) + ", " + str(row.sb), axis=1
-    )
-    pd_df["violations"] = pd_df.apply(lambda row: 1 if row.result == 3 else 0, axis=1)
-    pd_df.insert(5, "violations", pd_df.pop("violations"))
-
-    # convert data types (matlab makes everything a float)
-    int_columns = [
-        "hits",
-        "violations",
-        "temperror",
-        "result",
-        "helper",
-        "stage",
-        "sess_id",
-    ]
-    pd_df[int_columns] = pd_df[int_columns].astype("Int64")
-    category_columns = ["result", "stage", "sess_id", "sound_pair"]
-    pd_df[category_columns] = pd_df[category_columns].astype("category")
