@@ -53,7 +53,7 @@ function message = update_water_volume(animal_id)
     input('\nPress enter to confirm (or ctrl-c to cancel)');
     save(updated_file_path, '-struct', 'data');
       
-    message = fprintf('\nwater: L %.1f -> %.1f, R %.1f -> %.1f ',...
+    message = sprintf('water: L %.1f -> %.1f, R %.1f -> %.1f',...
         left_water, updated_left_volume, right_water, updated_right_volume);     
 end
 
