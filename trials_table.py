@@ -31,7 +31,7 @@ def fetch_trials_table(animal_ids=None):
     assert type(animal_ids) == list, "animal ids must be in a list"
 
     animals_dfs = []
-    bdata = dj.create_virtual_module("new_acquisition", "bdatatest")
+    bdata = dj.create_virtual_module("bdata", "bdata")
 
     for animal_id in animal_ids:
         subject_session_key = {"ratname": animal_id}
@@ -66,7 +66,7 @@ def fetch_trials_table(animal_ids=None):
             == len(dates)
         ), "number of sessions does not match, assumptions of code below are broken!"
 
-        peh_dicts, peh_dicts, trials, sess_ids, dates = find_and_fix_len_errors(
+        pd_dicts, peh_dicts, trials, sess_ids, dates = find_and_fix_len_errors(
             pd_dicts, peh_dicts, trials, sess_ids, dates
         )
 
@@ -243,6 +243,76 @@ def fix_within_pd_len_errors(pd_dict, sess_id):
     assert n_unique_lens == 1, f"length of dict values for {sess_id} unequal!"
 
 
+def _truncate_sb_length(protocol_dict):
+    """
+    Function to correct for bug in HistorySection, see commit:
+    https://github.com/Brody-Lab/Protocols/commit/4a2fadb802d64b7ed66891a263a366a8d2580483
+    sb vector was 1 greater than n_started_trials due to an
+    appending error
+
+    inputs
+    ------
+    protocol_dict : dict
+        dictionary for a single session's protocol_data
+
+    modifies
+    -------
+    protocol_dict : dict
+        updated protocol_dict with sb column length & contents corrected
+        if DMS. length only corrected if PWM2 protocol is being used
+    """
+
+    # rename for ease
+    sa = protocol_dict["sa"]
+    sb = protocol_dict["sb"]
+    match = protocol_dict["is_match"]
+
+    # if DMS task, can infer values
+    if "is_match" in protocol_dict:
+        for trial in range(len(sa)):
+            if match[trial]:
+                sb[trial] = sa[trial]  # update sb
+            else:
+                assert sa[trial] in MAP_SA_TO_SB, "sa not known"
+                sb[trial] = MAP_SA_TO_SB[sa[trial]]
+    else:
+        print("sb values incorrect, only fixing length")
+
+    sb = sb[0:-1]  # remove extra entry
+    protocol_dict["sb"] = sb  # update
+
+
+def _fill_result_post_crash(protocol_dict):
+    """
+    Function to correct for bug in HistorySection, see commit:
+    https://github.com/Brody-Lab/Protocols/commit/3bdde4377ffde011cc34d098acfeb77b74c9e606
+    result vector was shorter than n_started_trials because program
+    crashed & results_history vector was not being properly filled
+    during crash clean up
+
+    inputs
+    ------
+    protocol_dict : dict
+        dictionary for a single session's protocol_data
+
+    modifies
+    -------
+    protocol_dict : dict
+        updated protocol_dict with results column length corrected to
+        reflect crash trials
+    """
+
+    # rename for ease
+    results = protocol_dict["result"]
+    sa = protocol_dict["sa"]
+
+    # pack with crash result value (5)
+    crash_appended_results = np.ones((len(sa))) * 5
+    crash_appended_results[0 : len(results)] = results
+
+    protocol_dict["result"] = crash_appended_results
+
+
 def find_and_assess_ntrial_mismatches(pd_dict, peh_dict, n_done_trials, sess_id):
     # TODO make this iterate over sessions w/i in the function
     # rename for ease
@@ -395,13 +465,13 @@ def append_and_clean_pd_df(pd_df, animal_id, n_done_trials, sess_id, date):
         (4) certain columns converted to ints & categories
     """
 
-    # create trials column incase df index gets reset
-    pd_df.insert(0, "trial", np.arange(1, n_done_trials + 1, dtype=int))
-
     # drop any trials where dispatcher reported a crash
     # this is where the remaining len errors between pd and peh
     # should be fixed
     pd_df.drop(pd_df[pd_df["result"] == 5].index, inplace=True)
+
+    # create trials column incase df index gets reset
+    pd_df.insert(0, "trial", np.arange(1, n_done_trials + 1, dtype=int))
 
     # add animal id, data and sessid value for each trial
     pd_df.insert(1, "animal_id", [animal_id] * len(pd_df))
@@ -457,7 +527,8 @@ def get_peh_vars_for_df(peh_dicts, trials, sess_ids):
                 peh_trials_dict["t_start"][it] = trial_states["state_0"][0][1]
                 peh_trials_dict["t_end"][it] = trial_states["state_0"][1][0]
             except:
-                print("tstart off")  # this is due to catching in a crash
+                # sometimes in a crash or bpod error, the state 0 will be empty
+                # so will just skip those trials
                 peh_trials_dict["t_start"][it] = np.nan
                 peh_trials_dict["t_end"][it] = np.nan
 
@@ -547,6 +618,10 @@ def fetch_first_spoke(trial_states):
 
     # rename for ease
     wf_spoke_state = trial_states["wait_for_spoke"]
+
+    # sometimes, not all states are present, so the code
+    # below creates empty states to make sure nothing breaks
+
     # early spoke state only assembled if viol penalty is off
     if "early_spoke_state" in trial_states:
         early_spoke_state = trial_states["early_spoke_state"]
@@ -565,13 +640,13 @@ def fetch_first_spoke(trial_states):
     # is documented under 'early_spoke_state') or
     # because they actually did the full trial
     if wf_spoke_state.size > 0:
+
         # if wfspoke & violation states both exist
         # the animal never spoked & wfspok Tuped to
         # violation state
         if viol_state.size > 0:
             spoke_in = np.nan
             early_spoke = False
-            # print("no spoke")
 
         # if early spoke state exists, it is the
         # time of the first spoke
@@ -591,15 +666,12 @@ def fetch_first_spoke(trial_states):
             # happens when Tup forgivness is on and
             # trial restarts if no answer was given
             spoke_in = wf_spoke_state[-1][1]
-            # print("multi spoke")
             early_spoke = False
-            # print("valid multi trial")
 
         elif wf_spoke_state.size == 2:
             # single entry into wf_spoke
             spoke_in = wf_spoke_state[1]
             early_spoke = False
-            # print("valid trial")
 
     # animal violated due to an early spoke
     elif viol_state.size > 0:
