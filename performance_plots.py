@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+import datetime as dt
 
 # from pathlib import Path
 # from datetime import date, timedelta
@@ -133,7 +134,7 @@ def single_day_pair_perf(df, ax):
     latest_df = df[df.date == df.date.max()]
 
     # this sorting is necessary to keep colors and count labeling correct
-    latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+    latest_df = latest_df.sort_values(by="sound_pair", key=sound_pairs_sorter)
 
     palette = create_palette_given_sounds(latest_df)
     sound_pair_counts = latest_df.sound_pair.value_counts(sort=False)
@@ -177,6 +178,37 @@ def single_day_pair_viols(df, ax):
     ax.set(title=f"{df['animal_id'].iloc[-1]} {df['date'].iloc[-1]} violations")
     sns.despine()
     # return sound_pair_counts
+
+
+def single_date_perf_barplot(df, date, plot_type, ax):
+    # TODO add in count labels to the plot for reference
+
+    date_df = df[(df.date == date)]
+
+    # this sorting is necessary to keep colors and count labeling correct
+    date_df = date_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+    palette = create_palette_given_sounds(date_df)
+
+    if plot_type == "hits":
+        perf_metric = "hits"
+    elif plot_type == "viols":
+        perf_metric = "violations"
+    else:
+        assert plot_type == "hits" or plot_type == "viols", "unknown perf metric"
+
+    sns.barplot(
+        data=date_df,
+        x="sound_pair",
+        y=perf_metric,
+        palette=palette,
+        ax=ax,
+        alpha=0.5,
+    )
+
+    ax.set(
+        title=f"{date_df['animal_id'].iloc[-1]} {date_df['date'].iloc[-1]} {perf_metric}"
+    )
+    sns.despine()
 
 
 def _sound_pairs_sorter(column):
@@ -271,4 +303,140 @@ def stim_pair_plot(
     ax.set_ylim(ylim)
     ax.set_xticks(stim_range)
     ax.set_yticks(stim_range)
+    sns.despine()
+
+
+def filter_for_date_window(df, latest_date=None, n_days_back=None):
+    """
+    Function to filter a data frame for a given date window and
+    return a date frame in that window. If no parameters are
+    specified, will return the input data frame
+
+    inputs
+    ------
+    df : data frame
+        data frame to be filtered with a `date` column of
+        of type pd_datetime
+    latest_date : str or pd_datetime (optional, default = None)
+        latest date to include in the window, defaults to
+        the latest date in the data frame
+    n_days_back : int (optional, default = None)
+        number of days back from `latest_date` to include,
+        defaults to all days
+
+    returns
+    -------
+    df : data frame
+        date frame that only includes dates starting at the
+        `latest_date` until `n_days_back`
+
+    example usage
+    ------------
+    `filter_for_date_window(df, latest_date='2022-11-3', n_days_back=8)`
+    `filter_for_date_window(df, latest_date=None, n_days_back=7)
+
+    """
+
+    # grab everything prior to specified date.
+    # if not specified, use the latest date
+    if latest_date:
+        latest_date = pd.to_datetime(latest_date)
+    else:
+        latest_date = df.date.max()
+    df = df[(df.date <= latest_date)]
+
+    # starting from latest_date, grab n_days_back
+    if n_days_back:
+        earliest_date = latest_date - pd.Timedelta(days=n_days_back)
+        df = df[(df.date > earliest_date)]
+
+    df["date"] = pd.to_datetime(df["date"]).dt.date
+
+    return df
+
+
+def calculate_bias_history(df, latest_date=None, n_days_back=None):
+    # select date range
+    df = filter_for_date_window(df, latest_date=latest_date, n_days_back=n_days_back)
+
+    # calculate bias
+    bias_df = pd.DataFrame(columns=["date", "bias"])
+
+    for date, date_df in df.groupby("date"):
+
+        side_perf = date_df.groupby("sides").mean().hits.reset_index()
+
+        # always make sure left row is first
+        side_perf = side_perf.sort_values(by="sides")
+
+        # left hits - right hits, 2 decimal points
+        bias = round(side_perf.hits.iloc[0] - side_perf.hits.iloc[1], 2)
+
+        bias_df = pd.concat(
+            [bias_df, pd.DataFrame({"date": [date], "bias": [bias]})], ignore_index=True
+        )
+
+    return bias_df
+
+
+def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
+
+    bias_df = calculate_bias_history(
+        df, n_days_back=n_days_back, latest_date=latest_date
+    )
+
+    # seaborn doesn't do well with datetime objects
+    bias_df["date"] = bias_df["date"].astype(str)
+
+    sns.lineplot(
+        data=bias_df,
+        x="date",
+        y="bias",
+        ci=None,
+        marker="o",
+        markersize=8,
+        ax=ax,
+        **kwargs,
+    )
+    ax.axhline(0, color="k", linestyle="--", zorder=1)
+
+    _ = plt.xticks(rotation=45)
+    _ = ax.set(ylabel="<-- right bias | left bias -->", title="Side Bias", ylim=[-1, 1])
+    sns.despine()
+
+    return bias_df
+
+
+def plot_stim_in_use(df, ax):
+
+    stim_pairs_str = df.sound_pair.unique()
+    stim_pairs = []
+
+    # iterate over list of strings and reformat into floats
+    # for plotting
+    for sp in stim_pairs_str:
+        sa, sb = sp.split(", ")  # ['sa, sb'] -> 'sa', 'sb'
+        stim_pairs.append((float(sa), float(sb)))
+
+    # assigns specific colors to sound pairs to keep theme
+    color_palette = create_palette_given_sounds(df)
+
+    for s, c in zip(stim_pairs, color_palette):
+        ax.scatter(s[0], s[1], marker=",", s=300, c=c, alpha=0.75)
+
+    # Match/non-match boundary line
+    plt.axline((0, 1), slope=1, color="lightgray", linestyle="--")
+    plt.axline((1, 0), slope=1, color="lightgray", linestyle="--")
+
+    # plot range & aesthetics
+    sp_min, sp_max = np.min(stim_pairs), np.max(stim_pairs)
+    stim_range = [sp_min, sp_max]
+    x_lim = [sp_min - 3, sp_max + 3]
+    y_lim = [sp_min - 3, sp_max + 3]
+
+    ax.set_xlim(x_lim)
+    ax.set_ylim(y_lim)
+    ax.set_xticks(stim_range)
+    ax.set_yticks(stim_range)
+    ax.set(title="Stimulus Pairs", xlabel="Sa [kHz]", ylabel="Sb [kHz]")
     sns.despine()
