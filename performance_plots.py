@@ -160,7 +160,7 @@ def single_day_pair_viols(df, ax):
     latest_df = df[df.date == df.date.max()]
 
     # this sorting is necessary to keep colors and count labeling correct
-    latest_df = latest_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+    latest_df = latest_df.sort_values(by="sound_pair", key=sound_pairs_sorter)
 
     palette = create_palette_given_sounds(latest_df)
 
@@ -186,7 +186,7 @@ def single_date_perf_barplot(df, date, plot_type, ax):
     date_df = df[(df.date == date)]
 
     # this sorting is necessary to keep colors and count labeling correct
-    date_df = date_df.sort_values(by="sound_pair", key=_sound_pairs_sorter)
+    date_df = date_df.sort_values(by="sound_pair", key=sound_pairs_sorter)
     palette = create_palette_given_sounds(date_df)
 
     if plot_type == "hits":
@@ -211,7 +211,7 @@ def single_date_perf_barplot(df, date, plot_type, ax):
     sns.despine()
 
 
-def _sound_pairs_sorter(column):
+def sound_pairs_sorter(column):
 
     "Function to order df columns by match and then nonmatch sound pairs"
 
