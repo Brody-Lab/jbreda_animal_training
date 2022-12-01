@@ -409,6 +409,8 @@ def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
 
 def plot_stim_in_use(df, ax):
 
+    df = df[df.date == df.date.max()]
+
     stim_pairs_str = df.sound_pair.unique()
     stim_pairs = []
 
