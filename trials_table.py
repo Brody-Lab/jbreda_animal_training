@@ -1,16 +1,13 @@
 import numpy as np
 from regex import P
+
 import datajoint as dj
 import blob_transformation as bt
-from io_utils import *
-import logging
 
 dj.blob.use_32bit_dims = True
 import pandas as pd
 import blob_transformation as bt
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
 
 ## VARIABLES
 
@@ -434,6 +431,11 @@ def concat_pd_and_peh_data(pd_df, peh_dict):
 
     peh_df = pd.DataFrame.from_dict(peh_dict)
 
+    # formatting
+    int_columns = ["n_lpoke", "n_cpoke", "n_rpoke"]
+    peh_df[int_columns] = peh_df[int_columns].astype("Int64")
+    peh_df["t_dur"] = peh_df["t_end"] - peh_df["t_start"]
+
     trials_df = pd.concat([pd_df, peh_df], axis=1)
 
     return trials_df
@@ -514,13 +516,30 @@ def get_peh_vars_for_df(peh_dicts, trials, sess_ids):
     ):
 
         # initialize vars of interest (will be columns of df)
-        keys = ["early_spoke", "t_start", "t_end", "cpoke_in", "cpoke_out", "spoke_in"]
+        keys = [
+            "early_spoke",
+            "n_lpoke",
+            "n_cpoke",
+            "n_rpoke",
+            "t_start",
+            "t_end",
+            "cpoke_in",
+            "cpoke_out",
+            "spoke_in",
+        ]
         peh_trials_dict = {key: (np.nan * np.ones((n_done_trials))) for key in keys}
 
         for it in range(n_done_trials):
             # renaming to keep the lines of code shorter
             trial_states = peh_dict[it]["states"]
             trial_pokes = peh_dict[it]["pokes"]
+
+            # number of exits/entries into each port
+            (
+                peh_trials_dict["n_lpoke"][it],
+                peh_trials_dict["n_cpoke"][it],
+                peh_trials_dict["n_rpoke"][it],
+            ) = fetch_npokes(trial_pokes)
 
             # trial start and end time indicated by state 0 for all protocols
             try:
@@ -544,10 +563,39 @@ def get_peh_vars_for_df(peh_dicts, trials, sess_ids):
                 peh_trials_dict["early_spoke"][it],
             ) = fetch_first_spoke(trial_states)
 
+        # ensure correct types
         peh_trials_dict["early_spoke"] = peh_trials_dict["early_spoke"].astype(bool)
         peh_trials_dicts.append(peh_trials_dict)
 
     return peh_trials_dicts
+
+
+def fetch_npokes(trial_pokes):
+    """
+    Function to determine the number of entries and exits
+    into each (L, C, R) port during a trial
+
+    params
+    ------
+    trial_pokes : dict
+        peh_dict['pokes'] for a single trial that contains
+        sub-dicts for each port with entry/exit times
+
+    returns
+    ------
+    n_lpoke : int
+        number of left pokes in a trial
+    n_cpoke : int
+        number of center pokes in a trial
+    n_rpoke : int
+        number of right pokes in a trial
+    """
+
+    n_lpoke = len(trial_pokes["L"])
+    n_cpoke = len(trial_pokes["C"])
+    n_rpoke = len(trial_pokes["R"])
+
+    return n_lpoke, n_cpoke, n_rpoke
 
 
 def fetch_trial_start_cpoke(trial_states):

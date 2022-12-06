@@ -385,7 +385,9 @@ def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
         df, n_days_back=n_days_back, latest_date=latest_date
     )
 
-    # seaborn doesn't do well with datetime objects
+    # seaborn doesn't do well with this new dfs
+    # date time object for some reason and always
+    # appends time 0:00 and 12:00 to the date
     bias_df["date"] = bias_df["date"].astype(str)
 
     sns.lineplot(
