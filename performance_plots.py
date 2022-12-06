@@ -379,16 +379,14 @@ def calculate_bias_history(df, latest_date=None, n_days_back=None):
     return bias_df
 
 
-def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
+def plot_bias_history(df, ax, latest_date=None, n_days_back=None, **kwargs):
 
     bias_df = calculate_bias_history(
         df, n_days_back=n_days_back, latest_date=latest_date
     )
 
-    # seaborn doesn't do well with this new dfs
-    # date time object for some reason and always
-    # appends time 0:00 and 12:00 to the date
-    bias_df["date"] = bias_df["date"].astype(str)
+    # if having issues with time plots, try this
+    # bias_df["date"] = bias_df["date"].astype(str)
 
     sns.lineplot(
         data=bias_df,
@@ -396,7 +394,7 @@ def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
         y="bias",
         ci=None,
         marker="o",
-        markersize=8,
+        markersize=7,
         ax=ax,
         **kwargs,
     )
@@ -405,7 +403,6 @@ def plot_bias_history(df, ax, latest_date=None, n_days_back=7, **kwargs):
     _ = plt.xticks(rotation=45)
     _ = ax.set(ylabel="<-- right bias | left bias -->", title="Side Bias", ylim=[-1, 1])
     sns.despine()
-
     return bias_df
 
 
