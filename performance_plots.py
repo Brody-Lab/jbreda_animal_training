@@ -54,7 +54,7 @@ def plot_trials(df, ax, title=None, **kwargs):
 
 def plot_hits(df, ax, title=None, **kwargs):
     title = "Hit Plot" if title is None else title
-    sns.lineplot(data=df, x="date", y="hits", errorbar=None, ax=ax, **kwargs)
+    sns.lineplot(data=df, x="date", y="hits", ci=None, ax=ax, **kwargs)
 
     _ = plt.xticks(rotation=45)
     _ = ax.set(ylabel="fraction correct", title=title, ylim=[0, 1])
@@ -63,7 +63,7 @@ def plot_hits(df, ax, title=None, **kwargs):
 
 def plot_viols(df, ax, title=None, **kwargs):
     title = "Violation Plot" if title is None else title
-    sns.lineplot(data=df, x="date", y="violations", errorbar=None, ax=ax, **kwargs)
+    sns.lineplot(data=df, x="date", y="violations", ci=None, ax=ax, **kwargs)
     _ = plt.xticks(rotation=45)
     _ = ax.set(ylabel="fraction violation", title=title, ylim=[0, 1])
     sns.despine()
@@ -72,10 +72,8 @@ def plot_viols(df, ax, title=None, **kwargs):
 def plot_hits_and_viols(df, ax, title=None):
     title = "Hit & Viol Plot" if title is None else title
 
-    sns.lineplot(data=df, x="date", y="hits", color="seagreen", errorbar=None, ax=ax)
-    sns.lineplot(
-        data=df, x="date", y="violations", color="firebrick", errorbar=None, ax=ax
-    )
+    sns.lineplot(data=df, x="date", y="hits", color="seagreen", ci=None, ax=ax)
+    sns.lineplot(data=df, x="date", y="violations", color="firebrick", ci=None, ax=ax)
 
     _ = plt.xticks(rotation=45)
     _ = ax.set(ylabel="fraction correct | viol", title=title, ylim=[0, 1])
@@ -394,7 +392,7 @@ def plot_bias_history(df, ax, latest_date=None, n_days_back=None, **kwargs):
         data=bias_df,
         x="date",
         y="bias",
-        errorbar=None,
+        ci=None,
         marker="o",
         markersize=7,
         ax=ax,
