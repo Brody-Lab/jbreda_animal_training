@@ -36,7 +36,7 @@ function message = update_water_volume(animal_id)
     
     reply = input('Do you want to change the water volumes? y/n : ', "s");
     
-    if reply == "n"
+    if reply ~= "y"
         return
     end
         

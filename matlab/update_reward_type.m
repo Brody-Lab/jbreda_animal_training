@@ -30,11 +30,11 @@ function message = update_reward_type(animal_id)
     reward_type = data.saved.ShapingSection_reward_type;
     
     fprintf('\nAnimal: %s, %s\n', animal_id, rec_date);
-    fprintf('\n current reward type is: ''%s''\n', reward_type);
+    fprintf('\ncurrent reward type is: ''%s''\n', reward_type);
     
     reply = input('\nDo you want to change the reward type? y/n : ', "s");
     
-    if reply == "n"
+    if reply ~= "y"
         return
     end
         
@@ -48,22 +48,39 @@ function message = update_reward_type(animal_id)
     
     data.saved.ShapingSection_reward_type = updated_reward_type;
     
-    %TODO- need to find a way to only locally run the upate_water_vol
-%     % so that things aren't resaved etc
-%     reply2 = input('\nDo you want to update the water volumes too? y/n : ', "s");
-%     
-%     if reply2 == "y"
-%         
-%     end
+    %% optional additional water update
+    reply = input('\nDo you want to change the water volumes as well? y/n : ', "s");
+    
+    if reply == "y"
+        
+        left_water = data.saved.WaterValvesSection_Left_volume;
+        right_water = data.saved.WaterValvesSection_Right_volume;
+
+        % print current volumes
+        fprintf('\nleft volume in uL = %.2f\n', left_water);
+        fprintf('right volume in uL = %.2f\n\n', right_water);
+        
+        % update volumes based on input
+        updated_left_volume = input('\nleft volume in uL: ');
+        data.saved.WaterValvesSection_Left_volume = updated_left_volume;
+        updated_right_volume = input('right volume in uL: ');
+        data.saved.WaterValvesSection_Right_volume = updated_right_volume;
+        
+        message = sprintf('water: L %.1f -> %.1f, R %.1f -> %.1f \nreward type: %s -> %s',...
+            left_water, updated_left_volume, right_water, updated_right_volume,...
+            reward_type, updated_reward_type);         
+    else 
+        message = sprintf('reward type: %s -> %s',...
+        reward_type, updated_reward_type);     
+    end
    
     % generate new file name
     updated_file_path = generate_modified_filepath(file_path);
     fprintf('\nOld file: %s\n', file_path(end - 35 : end - 4));
     fprintf('New file: %s\n', updated_file_path(end - 35 : end - 4));
     input('\nPress enter to confirm (or ctrl-c to cancel)');
-    save(updated_file_path, '-struct', 'data');
+%     save(updated_file_path, '-struct', 'data');
       
-    message = sprintf('reward type: %s -> %s',...
-        reward_type, updated_reward_type);     
+    
 end
 
