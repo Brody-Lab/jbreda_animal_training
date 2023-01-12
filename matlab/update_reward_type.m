@@ -79,7 +79,7 @@ function message = update_reward_type(animal_id)
     fprintf('\nOld file: %s\n', file_path(end - 35 : end - 4));
     fprintf('New file: %s\n', updated_file_path(end - 35 : end - 4));
     input('\nPress enter to confirm (or ctrl-c to cancel)');
-%     save(updated_file_path, '-struct', 'data');
+    save(updated_file_path, '-struct', 'data');
       
     
 end
