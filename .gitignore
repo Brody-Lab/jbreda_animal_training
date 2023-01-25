@@ -134,3 +134,4 @@ dmypy.json
 
 # matlab
 .asv
+matlab/update_reward_type.asv
