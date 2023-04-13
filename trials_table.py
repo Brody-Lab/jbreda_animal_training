@@ -338,14 +338,16 @@ def find_and_assess_ntrial_mismatches(pd_dict, peh_dict, n_done_trials, sess_id)
     if n_trials_extra == 0 or n_trials_extra == 9:
         session_has_extra_trial = False
         keep = True
+        if n_trials_extra == 9:
+            print(f"{sess_id} had crash off")
     elif n_trials_extra == 1:
         session_has_extra_trial = True
         keep = True
-        # TODO log print(f"{sess_id} 1 off")
+        print(f"{sess_id} 1 off")
     else:
         session_has_extra_trial = False
         keep = False
-        # TODO log print(f"{sess_id} being dropped bc {n_trials_extra}")
+        print(f"{sess_id} being dropped bc {n_trials_extra}")
 
     return session_has_extra_trial, keep
 
