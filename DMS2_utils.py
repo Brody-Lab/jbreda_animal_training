@@ -5,7 +5,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import blob_transformation as bt
+from pathlib import Path
 
+SAVE_PATH = Path("X:\\jbreda\\animal_data\\training_data\\figures\\cohort_2_progress")
 
 dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 
@@ -165,9 +167,78 @@ def fetch_daily_mass(animal_id, date):
 ##################################################
 ###                  PLOTS                     ###
 ##################################################
+def make_daily_spoke_stage_plot(df, overwrite=False):
+    """
+    TODO
+    final plot format TBD
+    """
+    for (date, animal_id), sub_df in df.groupby(["date", "animal_id"]):
+        fig_name = f"{animal_id}_{date}_daily_spoke_stage.png"
+
+        if not Path.exists(SAVE_PATH / fig_name) or overwrite:
+            print(f"plotting for {animal_id}")
+
+            layout = """
+                AAAB
+                CCCD
+                EEE.
+                FFF.
+                GGG.
+            """
+            fig = plt.figure(constrained_layout=True, figsize=(15, 15))
+
+            plt.suptitle(f"\n{animal_id} on {sub_df.date[0]}\n", fontweight="semibold")
+            ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+
+            plot_daily_results(sub_df, ax=ax_dict["A"], title="trial result")
+            plot_daily_water(sub_df, ax_dict["B"], title="water")
+            plot_daily_npokes(sub_df, ax_dict["C"], plot_stage_info=False)
+            plot_pokes_hist(sub_df, ax_dict["D"], title="pokes summary")
+            plot_daily_first_spoke(
+                sub_df, ax_dict["E"], title="first poke time", plot_stage_info=True
+            )
+            plot_daily_trial_dur(sub_df, ax_dict["F"], title="trial dur")
+            plot_daily_perfs(sub_df, ax_dict["G"], title="performance")
+
+            # save out
+            plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
+            plt.close("all")
 
 
-def plot_trial_and_iti_dur(df, ax, title=""):
+def plot_daily_results(df, ax, title=""):
+    """
+    plot trial result across a single day
+
+    params
+    ------
+    df : DataFrame
+        full protocol df thats n_done_trials for a day in length
+         with "trial" and "result",  columns
+    ax : matplotlib.axes
+        axis to plot to
+    title : str, (default = "")
+        title of plot
+    """
+    sns.scatterplot(
+        data=df,
+        x="trial",
+        y="result",
+        ax=ax,
+        hue=df["result"].astype("category"),
+        hue_order=get_result_order(df.result),
+        palette=get_result_colors(df.result),
+    )
+
+    _ = ax.set(ylim=(0, 7), ylabel="Results", xlabel="Trials", title=title)
+    ax.legend(
+        labels=get_result_labels(df.result),
+        loc="best",
+        frameon=False,
+        borderaxespad=0,
+    )
+
+
+def plot_daily_trial_dur(df, ax, title=""):
     """
     plot trial duration and iti across a single day
 
@@ -175,15 +246,11 @@ def plot_trial_and_iti_dur(df, ax, title=""):
     ------
     df : DataFrame
         full protocol df thats n_done_trials for a day in length
-         with "trials", "trial_dur", "inter_trial_dur" columns
+         with "trial", "trial_dur", "inter_trial_dur" columns
     ax : matplotlib.axes
         axis to plot to
     title : str, (default = "")
         title of plot
-
-    returns
-    ------
-    none
     """
 
     durs_df = pd.melt(
@@ -199,10 +266,10 @@ def plot_trial_and_iti_dur(df, ax, title=""):
     )
     ax.axhline(df.trial_dur.mean(), color="cornflowerblue", linestyle="--", zorder=1)
     _ = ax.set(ylabel="Duration [s]", xlabel="Trials", title=title)
-    plt.legend(bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0)
+    ax.legend(loc="best", borderaxespad=0, frameon=False)
 
 
-def plot_npokes_across_trials(df, ax, title="", plot_stage_info=True):
+def plot_daily_npokes(df, ax, title="", plot_stage_info=True):
     """
     plot npokes (l,c,r) across a single day
 
@@ -218,10 +285,6 @@ def plot_npokes_across_trials(df, ax, title="", plot_stage_info=True):
     plot_stage_info : bool (default = True)
         whether or not add active stage number information,
         requires "stage" column
-
-    returns
-    ------
-    none
     """
 
     # make sub df
@@ -240,30 +303,126 @@ def plot_npokes_across_trials(df, ax, title="", plot_stage_info=True):
     )
 
     if plot_stage_info:
-        gray_palette = sns.color_palette("gray")
-        for s in df.stage.unique():
-            # calculate trial start and stop numbers for a given stage
-            bounds = df[["trial", "stage"]].groupby("stage").agg(["min", "max"]).loc[s]
-            ax.axvspan(
-                xmin=bounds.min(),
-                xmax=bounds.max() + 1,
-                ymin=0.8,  # relative to plot (0,1)
-                alpha=0.3,
-                color=gray_palette[int(s - 1)],
-            )
-            ax.text(
-                x=bounds.mean(), y=(pokes_df.value.max() * 0.9), s=f"stage {int(s)}"
-            )
+        plot_daily_stage_info(df, pokes_df, ax)
 
     _ = ax.set(ylabel="N pokes", xlabel="Trials", title=title)
-    plt.legend(bbox_to_anchor=(1.02, 1), loc="upper left", borderaxespad=0)
+    ax.legend(loc="best", frameon=False, borderaxespad=0)
 
+
+def plot_daily_first_spoke(df, ax, title="", plot_stage_info=False):
+    """
+    plot time to first spoke (l and/or r) across a single day
+
+    params
+    ------
+    df : DataFrame
+        full protocol df thats n_done_trials for a day in length
+         with "trial", "first_spoke", "first_lpoke", "first_rpoke"
+         columns
+    ax : matplotlib.axes
+        axis to plot to
+    title : str, (default = "")
+        title of plot
+    plot_stage_info : bool (default = False)
+        whether or not add active stage number information,
+        requires "stage" column
+    """
+    first_poke_df = pd.melt(
+        df, id_vars=["trial", "first_spoke"], value_vars=["first_lpoke", "first_rpoke"]
+    )
+    df["was_no_answer"] = df["result"].apply(lambda row: True if row == 6.0 else np.nan)
+
+    sns.scatterplot(
+        data=first_poke_df,
+        x="trial",
+        y="value",
+        ax=ax,
+        hue="first_spoke",
+        palette=get_poke_colors(first_poke_df.first_spoke),
+    )
+    sns.scatterplot(
+        data=df, x="trial", y="was_no_answer", ax=ax, marker="s", color="black"
+    )
+
+    if plot_stage_info:
+        plot_daily_stage_info(df, first_poke_df, ax)
+
+    _ = ax.set(ylabel="Time to spoke [s]", xlabel="Trials", title=title)
+    ax.legend(
+        labels=get_poke_labels(first_poke_df.first_spoke),
+        loc="best",
+        frameon=False,
+        borderaxespad=0,
+    )
+
+
+def plot_daily_stage_info(df, plot_df, ax):
+    """
+    plotting a bar indicating stage at top of plot
+
+    params
+    ------
+    df : DataFrame
+        full protocol df thats n_done_trials for a day in length
+        with "stage", columns
+    plot_df : DataFrame
+        df that is actually being used for the plot (might be df,
+        might also be a melted or grouped version of df)
+    ax : matplotlib.axes
+        axis to plot to
+    """
+    gray_palette = sns.color_palette("gray")
+    for s in df.stage.unique():
+        # calculate trial start and stop numbers for a given stage
+        bounds = df[["trial", "stage"]].groupby("stage").agg(["min", "max"]).loc[s]
+        ax.axvspan(
+            xmin=bounds.min(),
+            xmax=bounds.max() + 1,
+            ymin=0.8,  # relative to plot (0,1)
+            alpha=0.3,
+            color=gray_palette[int(s - 1)],
+        )
+        # add text label
+        ax.text(x=bounds.mean(), y=(plot_df.value.max() * 0.9), s=f"stage {int(s)}")
+
+
+def plot_daily_perfs(df, ax, title=""):
+    """
+    TODO
+    """
+    perf_rates_df = pd.melt(
+        df, id_vars=["trial"], value_vars=["violation_rate", "error_rate", "hit_rate"]
+    )
+    sns.lineplot(data=perf_rates_df, x="trial", y="value", hue="variable")
+    _ = ax.set(ylabel="Rate", xlabel="Trials", title=title)
+    ax.legend(loc="best", frameon=False, borderaxespad=0)
+
+
+def plot_pokes_hist(df, ax, title=""):
+    """
+    TODO
+    """
+    pokes_df = pd.melt(
+        df, id_vars=["trial"], value_vars=["n_lpokes", "n_cpokes", "n_rpokes"]
+    )
+
+    sns.histplot(
+        data=pokes_df,
+        x="value",
+        palette=["darkseagreen", "khaki", "indianred"],
+        hue="variable",
+        element="step",
+        ax=ax,
+        legend=False,
+    )
+
+    ax.set(title=title)
     ##############################
     ####      WATER/MASS      ####
     ##############################
 
 
-def plot_daily_water(df, ax):
+def plot_daily_water(df, ax, title=""):
     """
     Quick function for plotting water consumed in rig or pub for a day
     and marking the target with a horizontal line
@@ -271,7 +430,7 @@ def plot_daily_water(df, ax):
     # TODO add option for plotting a specific date
 
     animal_id = df["animal_id"][0]
-    date = df["date"][0].date()
+    date = df["date"][0]
 
     Water_keys = {"rat": animal_id, "date": date}  # specific to Water table
     pub_volume = float((ratinfo.Water & Water_keys).fetch("volume").max())
@@ -288,22 +447,70 @@ def plot_daily_water(df, ax):
 
     # legend
     order = [1, 0]
-    handles, labels = plt.gca().get_legend_handles_labels()
-    plt.legend([handles[i] for i in order], [labels[i] for i in order], loc=(0.9, 0.75))
+    handles, _ = ax.get_legend_handles_labels()
+    labels = ["rig", "pub"]
+    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc=(0.9, 0.75))
 
     # aesthetics
-    _ = plt.xticks(rotation=45)
-    _ = ax.set(xlabel="", ylabel="volume (mL)", title=f"{animal_id} water info")
+    ax.set_xticks([])
+    # _ = ax.set_xticklabels(ax.get_xticks(), rotation=45)
+    _ = ax.set(xlabel="", ylabel="volume (mL)", title=title)
     sns.despine()
 
 
 ##################################################
 ###               PLOTS AESTHETICS             ###
 ##################################################
+POKE_MAP = {
+    "l": {"label": "left", "color": "darkseagreen"},
+    "c": {"label": "center", "color": "khaki"},
+    "r": {"label": "right", "color": "indianred"},
+    "n": {"label": "", "color": "white"},
+}
+
+RESULT_MAP = {
+    1: {"label": "hit", "color": "yellowgreen"},
+    2: {"label": "error", "color": "maroon"},
+    3: {"label": "viol", "color": "organgered"},
+    4: {"label": "terr", "color": "lightcoral"},
+    5: {"label": "crash", "color": "cyan"},
+    6: {"label": "noans", "color": "black"},
+}
+
+
+def get_poke_colors(poke_column):
+    pokes = poke_column.unique()  # any colum with 'l', 'r', or 'c'
+    colors = [POKE_MAP[poke]["color"] for poke in pokes]
+    return colors
+
+
+def get_poke_labels(poke_column):
+    pokes = poke_column.unique()  # any colum with 'l', 'r', or 'c'
+    colors = [POKE_MAP[poke]["label"] for poke in pokes]
+    return colors
+
+
+def get_result_labels(result_column):
+    results = result_column.unique()
+    labels = [RESULT_MAP[res]["label"] for res in results]
+    return labels
+
+
+def get_result_colors(result_column):
+    # sorted to match hue_order
+    results = result_column.sort_values().unique()
+    colors = [RESULT_MAP[res]["color"] for res in results]
+    return colors
+
+
+def get_result_order(result_column):
+    return result_column.sort_values().unique()
 
 
 def get_poke_pallete(poke_column):
     pokes = poke_column.unique()
+
+    poke_map = {}
     if "l" in pokes and "r" in pokes and "c" in pokes:
         palette = ["darkseagreen", "khaki", "indianred"]
     elif "l" in pokes and "r" in pokes:
@@ -316,3 +523,26 @@ def get_poke_pallete(poke_column):
         palette = ["khaki"]
 
     return palette
+
+
+# Helper function used for visualization in the following examples
+def identify_axes(ax_dict, fontsize=48):
+    """
+    Helper to identify the Axes in the examples below.
+
+    Draws the label in a large font in the center of the Axes.
+
+    Parameters
+    ----------
+    ax_dict : Dict[str, Axes]
+        Mapping between the title / label and the Axes.
+
+    fontsize : int, optional
+        How big the label should be
+    """
+    kw = dict(ha="center", va="center", fontsize=fontsize, color="darkgrey")
+    for k, ax in ax_dict.items():
+        ax.text(0.5, 0.5, k, transform=ax.transAxes, **kw)
+
+
+# TODO write in a get_pokes_order to keep l first awalsy

@@ -12,7 +12,68 @@ dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 bdata = dj.create_virtual_module("bdata", "bdata")
 
 
-def drop_empty_sessions(pd_blobs, sess_ids, dates, trials, drop_trial_report=False):
+def fetch_latest_training_data(animal_ids=None, verbose=False):
+    """
+    TODO
+    """
+    # TODO add in date range to fetch
+    # TODO maybe add save out here if read in is slow
+    animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
+    assert type(animal_ids) == list, "animal ids must be in a list"
+
+    # each animal will have a df across all sessions fetched, will
+    # concat across animals and return
+    animals_trials_df = []
+
+    for animal_id in animal_ids:
+        subject_session_key = {"ratname": animal_id}
+
+        protocol_blobs = (bdata.Sessions & subject_session_key).fetch(
+            "protocol_data", as_dict=True
+        )
+
+        # n session long items are fetched together
+        sess_ids, dates, trials = (bdata.Sessions & subject_session_key).fetch(
+            "sessid", "sessiondate", "n_done_trials"
+        )
+
+        animals_trials_df.append(
+            create_animals_trials_df(
+                animal_id, protocol_blobs, sess_ids, dates, trials, verbose=verbose
+            )
+        )
+
+    trials_df = pd.concat(animals_trials_df)
+
+    return trials_df
+
+
+def create_animals_trials_df(
+    animal_id, protocol_blobs, sess_ids, dates, trials, verbose=True
+):
+    """
+    TODO
+    """
+    protocol_blobs, sess_ids, dates, trials = drop_empty_sessions(
+        protocol_blobs, sess_ids, dates, trials, verbose=verbose
+    )
+
+    protocol_dicts = convert_to_dicts(protocol_blobs)
+
+    protocol_dfs = convert_to_dfs(protocol_dicts, sess_ids)
+
+    append_and_clean_protocol_dfs(protocol_dfs, animal_id, sess_ids, dates, trials)
+
+    animals_trials_df = pd.concat(protocol_dfs, ignore_index=True)
+
+    print(
+        f"fetched {len(dates)} sessions for {animal_id} between {min(dates)} and {max(dates)}"
+    )
+
+    return animals_trials_df
+
+
+def drop_empty_sessions(pd_blobs, sess_ids, dates, trials, verbose=False):
     """
     sessions with 0 or 1 trials break the later code because
     of dimension errors, so they need to be dropped
@@ -20,7 +81,7 @@ def drop_empty_sessions(pd_blobs, sess_ids, dates, trials, drop_trial_report=Fal
 
     trial_filter = (trials != 0) & (trials != 1)
 
-    if drop_trial_report:
+    if verbose:
         print(
             f"dropping {len(pd_blobs) - np.sum(trial_filter)} sessions of {len(pd_blobs)} due to <2 trials"
         )
@@ -67,7 +128,9 @@ def convert_to_dicts(blobs):
 
 
 def convert_to_dfs(dicts, sess_ids):
-    # TODO DOC STRINGS?
+    """
+    TODO
+    """
     dfs = []
 
     for session_dict in dicts:
@@ -80,7 +143,7 @@ def convert_to_dfs(dicts, sess_ids):
     return dfs
 
 
-def clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
+def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
     """
     Function that takes a protocol_df for a session and cleans
     it to correct for data types and format per JRBs preferences
@@ -121,14 +184,7 @@ def clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         )
 
         # convert data types (matlab makes everything a float)
-        int_columns = [
-            "hits",
-            "violations",
-            "temperror",
-            "n_lpokes",
-            "n_cpokes",
-            "n_rpokes",
-        ]
+        int_columns = ["result", "hits", "violations", "temperror"]
         df[int_columns] = df[int_columns].astype("Int64")
 
         bool_columns = [
@@ -144,7 +200,6 @@ def clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
 
         category_columns = [
             "sess_id",
-            "result",
             "sound_pair",
             "first_spoke",
             "sides",
