@@ -181,24 +181,25 @@ def make_daily_spoke_stage_plot(df, overwrite=False):
             layout = """
                 AAAB
                 CCCD
-                EEE.
-                FFF.
+                EEEF
                 GGG.
+                HHH.
             """
             fig = plt.figure(constrained_layout=True, figsize=(15, 15))
 
-            plt.suptitle(f"\n{animal_id} on {sub_df.date[0]}\n", fontweight="semibold")
+            plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
             ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
 
             plot_daily_results(sub_df, ax=ax_dict["A"], title="trial result")
-            plot_daily_water(sub_df, ax_dict["B"], title="water")
+            plot_daily_result_summary(sub_df, ax=ax_dict["B"], title="frac result")
             plot_daily_npokes(sub_df, ax_dict["C"], plot_stage_info=False)
             plot_pokes_hist(sub_df, ax_dict["D"], title="pokes summary")
             plot_daily_first_spoke(
                 sub_df, ax_dict["E"], title="first poke time", plot_stage_info=True
             )
-            plot_daily_trial_dur(sub_df, ax_dict["F"], title="trial dur")
-            plot_daily_perfs(sub_df, ax_dict["G"], title="performance")
+            plot_daily_water(sub_df, ax_dict["F"], title="water")
+            plot_daily_trial_dur(sub_df, ax_dict["G"], title="trial dur")
+            plot_daily_perfs(sub_df, ax_dict["H"], title="performance")
 
             # save out
             plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
@@ -416,6 +417,18 @@ def plot_pokes_hist(df, ax, title=""):
         legend=False,
     )
 
+
+def plot_daily_result_summary(df, ax, title=""):
+    """
+    TODO
+    """
+    res_summary = df.result.value_counts(normalize=True).sort_values()
+    res_summary.plot(kind="bar", color=get_result_colors(df.result), ax=ax)
+
+    _ = ax.bar_label(ax.containers[0], fontsize=12, fmt="%.2f")
+
+    ax.set(ylim=(0, 1), ylabel="Proportion", title=title)
+
     ax.set(title=title)
     ##############################
     ####      WATER/MASS      ####
@@ -429,9 +442,10 @@ def plot_daily_water(df, ax, title=""):
     """
     # TODO add option for plotting a specific date
 
-    animal_id = df["animal_id"][0]
-    date = df["date"][0]
+    animal_id = df.animal_id.iloc[0]
+    date = df.date.iloc[0]
 
+    # get the data
     Water_keys = {"rat": animal_id, "date": date}  # specific to Water table
     pub_volume = float((ratinfo.Water & Water_keys).fetch("volume").max())
     rig_volume = df.water_delivered.sum() / 1000  # convert to mL
@@ -444,6 +458,9 @@ def plot_daily_water(df, ax, title=""):
     # plot
     df.set_index("date").plot(kind="bar", stacked=True, color=["blue", "cyan"], ax=ax)
     ax.axhline(y=volume_target, xmin=0.2, xmax=0.8, color="black")
+    ax.text(x=-0.45, y=volume_target, s=str(volume_target), fontsize=12)
+    for cont in ax.containers:
+        _ = ax.bar_label(cont, fontsize=12, fmt="%.2f", label_type="center")
 
     # legend
     order = [1, 0]
@@ -469,7 +486,7 @@ POKE_MAP = {
 }
 
 RESULT_MAP = {
-    1: {"label": "hit", "color": "yellowgreen"},
+    1: {"label": "hit", "color": "darkgreen"},
     2: {"label": "error", "color": "maroon"},
     3: {"label": "viol", "color": "organgered"},
     4: {"label": "terr", "color": "lightcoral"},
