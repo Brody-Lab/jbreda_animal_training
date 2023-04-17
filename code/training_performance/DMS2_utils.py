@@ -202,8 +202,8 @@ def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
         layout = """ 
             AAABCCC
             DDDEFFF
-            GGGHIII
-            JJJK...
+            GGGHI..
+            JJJKLLL
         """
         fig = plt.figure(constrained_layout=True, figsize=(20, 15))
 
@@ -226,7 +226,7 @@ def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
         ## ROW 3
         plot_daily_delay_dur(df, ax_dict["G"], title="delay")
         plot_delay_early_spoke_hist(df, ax_dict["H"])
-        # VIOL/GO plot
+        plot_daily_first_spoke_hist(df, ax_dict["I"])
 
         # ROW 4
         plot_daily_trial_dur(df, ax_dict["J"], title="trial dur")
@@ -398,7 +398,7 @@ def plot_daily_first_spoke(df, ax, title="", plot_stage_info=False):
     first_poke_df = pd.melt(
         df, id_vars=["trial", "first_spoke"], value_vars=["first_lpoke", "first_rpoke"]
     )
-    df["was_no_answer"] = df["result"].apply(lambda row: True if row == 6.0 else np.nan)
+    was_no_answer = df["result"].apply(lambda row: True if row == 6.0 else np.nan)
 
     sns.scatterplot(
         data=first_poke_df,
@@ -408,20 +408,13 @@ def plot_daily_first_spoke(df, ax, title="", plot_stage_info=False):
         hue="first_spoke",
         palette=get_poke_colors(first_poke_df.first_spoke),
     )
-    sns.scatterplot(
-        data=df, x="trial", y="was_no_answer", ax=ax, marker="s", color="black"
-    )
+    ax.scatter(x=df.trial, y=was_no_answer, marker="s", color="black")
 
     if plot_stage_info:
         plot_daily_stage_info(df, first_poke_df, ax)
 
     _ = ax.set(ylabel="Time to spoke [s]", xlabel="Trials", title=title)
-    ax.legend(
-        labels=get_poke_labels(first_poke_df.first_spoke),
-        loc="best",
-        frameon=False,
-        borderaxespad=0,
-    )
+    ax.legend(frameon=False, borderaxespad=0)
 
 
 def plot_daily_stage_info(df, plot_df, ax):
@@ -585,11 +578,42 @@ def plot_delay_early_spoke_hist(df, ax, title=""):
         palette=["turquoise", "orangered"],
         element="step",
         ax=ax,
+        legend=False,
     )
-    ax.axvline(x=df.exp_del_tau.mean(), color="black")
+    ax.axvline(x=df.exp_del_tau.mean(), color="black", label="Tau")
 
     ax.set(xlabel="Delay [s]", title=title)
-    ax.legend(labels=["early", "on time", "tau"], frameon=False, borderaxespad=0)
+    ax.legend(frameon=False, borderaxespad=0)
+
+
+def plot_daily_first_spoke_hist(df, ax, title=""):
+    first_poke_df = pd.melt(
+        df, id_vars=["trial", "first_spoke"], value_vars=["first_lpoke", "first_rpoke"]
+    )
+
+    sns.histplot(
+        data=first_poke_df,
+        x="value",
+        hue="first_spoke",
+        hue_order=["l", "r"],
+        palette=["darkseagreen", "indianred"],
+        element="step",
+        ax=ax,
+        legend=False,
+    )
+
+    ax.set(title=title, xlabel="Time to spoke [s]")
+
+
+def plot_daily_viol_pre_go_durs(df, ax, title=""):
+    sns.lineplot(data=df, x="trial", y="pre_go_dur", label="pre go", color="teal")
+    sns.lineplot(data=df, x="trial", y="viol_off_dur", label="viol off", color="orange")
+
+    was_violation = df["result"].apply(lambda row: True if row == 3.0 else np.nan)
+    ax.scatter(x=df.trial, y=was_violation, marker="s", color="orangered")
+
+    ax.set(ylabel="Duration [s]")
+    ax.legend(frameon=False, borderaxespad=0)
 
 
 ##################################################
@@ -619,7 +643,7 @@ def get_poke_colors(poke_column):
 
 
 def get_poke_labels(poke_column):
-    pokes = poke_column.unique()  # any colum with 'l', 'r', or 'c'
+    pokes = poke_column.sort_values().unique()  # any colum with 'l', 'r', or 'c'
     colors = [POKE_MAP[poke]["label"] for poke in pokes]
     return colors
 
@@ -641,22 +665,22 @@ def get_result_order(result_column):
     return result_column.sort_values().unique()
 
 
-def get_poke_pallete(poke_column):
-    pokes = poke_column.unique()
+# def get_poke_pallete(poke_column):
+#     pokes = poke_column.unique()
 
-    poke_map = {}
-    if "l" in pokes and "r" in pokes and "c" in pokes:
-        palette = ["darkseagreen", "khaki", "indianred"]
-    elif "l" in pokes and "r" in pokes:
-        palette = ["darkseagreen", "indianred"]
-    elif "l" in pokes:
-        palette = ["darkseagreen"]
-    elif "r" in pokes:
-        palette = ["indianred"]
-    elif "c" in pokes:
-        palette = ["khaki"]
+#     poke_map = {}
+#     if "l" in pokes and "r" in pokes and "c" in pokes:
+#         palette = ["darkseagreen", "khaki", "indianred"]
+#     elif "l" in pokes and "r" in pokes:
+#         palette = ["darkseagreen", "indianred"]
+#     elif "l" in pokes:
+#         palette = ["darkseagreen"]
+#     elif "r" in pokes:
+#         palette = ["indianred"]
+#     elif "c" in pokes:
+#         palette = ["khaki"]
 
-    return palette
+#     return palette
 
 
 # Helper function used for visualization in the following examples
