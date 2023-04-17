@@ -134,12 +134,17 @@ def fetch_daily_restriction_target(animal_id, date):
     Water_keys = {"rat": animal_id, "date": date}
 
     # can't do fetch1 with this because water table
-    # has a 0 entry and actual entry for every day
+    # sometimes has a 0 entry and actual entry so
     # I'm taking the max to get around this
     # this needs to be address w/ DJ people
-    percent_target = float((ratinfo.Water & Water_keys).fetch("percent_target").max())
+    percent_target = (ratinfo.Water & Water_keys).fetch("percent_target")
 
-    return percent_target
+    if len(percent_target) == 0:
+        percent_target = 4  # NOTE assumption made here to 4%- be careful!
+    elif len(percent_target) > 1:
+        percent_target = percent_target.max()
+
+    return float(percent_target)
 
 
 def fetch_daily_mass(animal_id, date):
@@ -447,12 +452,17 @@ def plot_daily_water(df, ax, title=""):
 
     # get the data
     Water_keys = {"rat": animal_id, "date": date}  # specific to Water table
-    pub_volume = float((ratinfo.Water & Water_keys).fetch("volume").max())
+    pub_volume = (ratinfo.Water & Water_keys).fetch("volume")
+    if len(pub_volume) == 0:
+        pub_volume = 0
+    elif len(pub_volume) > 1:
+        pub_volume = pub_volume.max()
+
     rig_volume = df.water_delivered.sum() / 1000  # convert to mL
     volume_target = fetch_daily_water_target(animal_id, date, verbose=False)
 
     df = pd.DataFrame(
-        {"date": [date], "rig_volume": [rig_volume], "pub_volume": [pub_volume]}
+        {"date": [date], "rig_volume": [rig_volume], "pub_volume": [float(pub_volume)]}
     )
 
     # plot
