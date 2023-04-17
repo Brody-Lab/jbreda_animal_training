@@ -172,43 +172,110 @@ def fetch_daily_mass(animal_id, date):
 ##################################################
 ###                  PLOTS                     ###
 ##################################################
-def make_daily_spoke_stage_plot(df, overwrite=False):
-    """
-    TODO
-    final plot format TBD
-    """
-    for (date, animal_id), df in df.groupby(["date", "animal_id"]):
-        fig_name = f"{animal_id}_{date}_daily_spoke_stage.png"
 
-        if not Path.exists(SAVE_PATH / fig_name) or overwrite:
-            print(f"plotting for {animal_id}")
 
-            layout = """
-                AAAB
-                CCCD
-                EEEF
-                GGG.
-                HHH.
-            """
-            fig = plt.figure(constrained_layout=True, figsize=(15, 15))
-
-            plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
-            ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
-
-            plot_daily_results(df, ax=ax_dict["A"], title="trial result")
-            plot_daily_result_summary(df, ax=ax_dict["B"], title="frac result")
-            plot_daily_npokes(df, ax_dict["C"], plot_stage_info=False)
-            plot_pokes_hist(df, ax_dict["D"], title="pokes summary")
-            plot_daily_first_spoke(
-                df, ax_dict["E"], title="first poke time", plot_stage_info=True
+def make_daily_stage_plots(df, overwrite=False):
+    for (date, animal_id), sub_df in df.groupby(["date", "animal_id"]):
+        if sub_df.stage.max() < 3:
+            make_daily_spoke_stage_plot(
+                sub_df, overwrite=overwrite, date=date, animal_id=animal_id
             )
-            plot_daily_water(df, ax_dict["F"], title="water")
-            plot_daily_trial_dur(df, ax_dict["G"], title="trial dur")
-            plot_daily_perfs(df, ax_dict["H"], title="performance")
+        else:
+            make_daily_stage_3_plot(
+                sub_df, overwrite=overwrite, date=date, animal_id=animal_id
+            )
 
-            # save out
-            plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
-            plt.close("all")
+
+def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
+    # if we don't get date/animal id values assume we are working
+    # with a groupby df and grab the first dow
+    if date is None:
+        date = df.date.iloc[0]
+    if animal_id is None:
+        animal_id = df.animal_id.iloc[0]
+
+    fig_name = f"{animal_id}_{date}_daily_stage_3.png"
+
+    if not Path.exists(SAVE_PATH / fig_name) or overwrite:
+        print(f"plotting stage 3 plot {animal_id} on {date}")
+
+        layout = """ 
+            AAABCCC
+            DDDEFFF
+            GGGHIII
+            JJJK...
+        """
+        fig = plt.figure(constrained_layout=True, figsize=(20, 15))
+
+        plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
+        ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+        # identify_axes(ax_dict) # prints the letter for id
+
+        ## ROW 1
+        plot_daily_results(df, ax=ax_dict["A"], title="trial result")
+        plot_daily_result_summary(df, ax=ax_dict["B"], title="frac result")
+        plot_daily_perfs(df, ax_dict["C"], title="performance")
+
+        ## ROW 2
+        plot_daily_npokes(df, ax_dict["D"], plot_stage_info=False)
+        plot_pokes_hist(df, ax_dict["E"], title="pokes summary")
+        plot_daily_first_spoke(
+            df, ax_dict["F"], title="first poke time", plot_stage_info=True
+        )
+
+        ## ROW 3
+        plot_daily_delay_dur(df, ax_dict["G"], title="delay")
+        plot_delay_early_spoke_hist(df, ax_dict["H"])
+        # VIOL/GO plot
+
+        # ROW 4
+        plot_daily_trial_dur(df, ax_dict["J"], title="trial dur")
+        plot_daily_water(df, ax_dict["K"], title="water")
+
+        # save out
+        plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
+        plt.close("all")
+
+
+def make_daily_spoke_stage_plot(df, overwrite=False, date=None, animal_id=None):
+    # if we don't get date/animal id values assume we are working
+    # with a groupby df and grab the first dow
+    if date is None:
+        date = df.date.iloc[0]
+    if animal_id is None:
+        animal_id = df.animal_id.iloc[0]
+
+    fig_name = f"{animal_id}_{date}_daily_spoke_stage.png"
+
+    if not Path.exists(SAVE_PATH / fig_name) or overwrite:
+        print(f"plotting spoke plot {animal_id} on {date}")
+
+        layout = """
+            AAAB
+            CCCD
+            EEEF
+            GGG.
+            HHH.
+        """
+        fig = plt.figure(constrained_layout=True, figsize=(15, 15))
+
+        plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
+        ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+
+        plot_daily_results(df, ax=ax_dict["A"], title="trial result")
+        plot_daily_result_summary(df, ax=ax_dict["B"], title="frac result")
+        plot_daily_npokes(df, ax_dict["C"], plot_stage_info=False)
+        plot_pokes_hist(df, ax_dict["D"], title="pokes summary")
+        plot_daily_first_spoke(
+            df, ax_dict["E"], title="first poke time", plot_stage_info=True
+        )
+        plot_daily_water(df, ax_dict["F"], title="water")
+        plot_daily_trial_dur(df, ax_dict["G"], title="trial dur")
+        plot_daily_perfs(df, ax_dict["H"], title="performance")
+
+        # save out
+        plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
+        plt.close("all")
 
 
 def plot_daily_results(df, ax, title=""):
@@ -233,15 +300,10 @@ def plot_daily_results(df, ax, title=""):
         hue=df["result"].astype("category"),
         hue_order=get_result_order(df.result),
         palette=get_result_colors(df.result),
+        legend=False,
     )
 
     _ = ax.set(ylim=(0, 7), ylabel="Results", xlabel="Trials", title=title)
-    ax.legend(
-        labels=get_result_labels(df.result),
-        loc="best",
-        frameon=False,
-        borderaxespad=0,
-    )
 
 
 def plot_daily_trial_dur(df, ax, title=""):
@@ -434,7 +496,7 @@ def plot_daily_result_summary(df, ax, title=""):
     """
     TODO
     """
-    res_summary = df.result.value_counts(normalize=True).sort_values()
+    res_summary = df.result.value_counts(normalize=True).sort_index(ascending=True)
     res_summary.plot(kind="bar", color=get_result_colors(df.result), ax=ax)
 
     _ = ax.bar_label(ax.containers[0], fontsize=12, fmt="%.2f")
@@ -442,6 +504,8 @@ def plot_daily_result_summary(df, ax, title=""):
     ax.set(ylim=(0, 1), ylabel="Proportion", title=title)
 
     ax.set(title=title)
+    ax.set_xticklabels(get_result_labels(df.result), rotation=45)
+
     ##############################
     ####      WATER/MASS      ####
     ##############################
@@ -561,7 +625,7 @@ def get_poke_labels(poke_column):
 
 
 def get_result_labels(result_column):
-    results = result_column.unique()
+    results = result_column.sort_values().unique()
     labels = [RESULT_MAP[res]["label"] for res in results]
     return labels
 
