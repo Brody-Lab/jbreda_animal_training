@@ -172,7 +172,7 @@ def make_daily_spoke_stage_plot(df, overwrite=False):
     TODO
     final plot format TBD
     """
-    for (date, animal_id), sub_df in df.groupby(["date", "animal_id"]):
+    for (date, animal_id), df in df.groupby(["date", "animal_id"]):
         fig_name = f"{animal_id}_{date}_daily_spoke_stage.png"
 
         if not Path.exists(SAVE_PATH / fig_name) or overwrite:
@@ -190,16 +190,16 @@ def make_daily_spoke_stage_plot(df, overwrite=False):
             plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
             ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
 
-            plot_daily_results(sub_df, ax=ax_dict["A"], title="trial result")
-            plot_daily_result_summary(sub_df, ax=ax_dict["B"], title="frac result")
-            plot_daily_npokes(sub_df, ax_dict["C"], plot_stage_info=False)
-            plot_pokes_hist(sub_df, ax_dict["D"], title="pokes summary")
+            plot_daily_results(df, ax=ax_dict["A"], title="trial result")
+            plot_daily_result_summary(df, ax=ax_dict["B"], title="frac result")
+            plot_daily_npokes(df, ax_dict["C"], plot_stage_info=False)
+            plot_pokes_hist(df, ax_dict["D"], title="pokes summary")
             plot_daily_first_spoke(
-                sub_df, ax_dict["E"], title="first poke time", plot_stage_info=True
+                df, ax_dict["E"], title="first poke time", plot_stage_info=True
             )
-            plot_daily_water(sub_df, ax_dict["F"], title="water")
-            plot_daily_trial_dur(sub_df, ax_dict["G"], title="trial dur")
-            plot_daily_perfs(sub_df, ax_dict["H"], title="performance")
+            plot_daily_water(df, ax_dict["F"], title="water")
+            plot_daily_trial_dur(df, ax_dict["G"], title="trial dur")
+            plot_daily_perfs(df, ax_dict["H"], title="performance")
 
             # save out
             plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
@@ -473,6 +473,35 @@ def plot_daily_water(df, ax, title=""):
     # _ = ax.set_xticklabels(ax.get_xticks(), rotation=45)
     _ = ax.set(xlabel="", ylabel="volume (mL)", title=title)
     sns.despine()
+
+
+def plot_daily_delay_dur(df, ax, title=""):
+    was_early_poke = df["valid_early_spoke"].apply(lambda row: 0.1 if row else np.nan)
+
+    sns.lineplot(data=df, x="trial", y="delay_dur")
+    ax.scatter(
+        x=df.trial, y=was_early_poke, marker="s", color="orangered", label="was early"
+    )
+
+    ax.legend(frameon=False, borderaxespad=0)
+
+    ax.set(title=title, ylabel="Delay [s]")
+
+
+def delay_early_spoke_hist(df, ax, title=""):
+    sns.histplot(
+        data=df,
+        x="delay_dur",
+        hue="valid_early_spoke",
+        hue_order=[False, True],
+        palette=["turquoise", "orangered"],
+        element="step",
+        ax=ax,
+    )
+    ax.axvline(x=df.exp_del_tau.mean(), color="black")
+
+    ax.set(xlabel="Delay [s]", title=title)
+    ax.legend(labels=["early", "on time", "tau"], frameon=False, borderaxespad=0)
 
 
 ##################################################
