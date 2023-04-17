@@ -399,7 +399,14 @@ def plot_daily_perfs(df, ax, title=""):
     perf_rates_df = pd.melt(
         df, id_vars=["trial"], value_vars=["violation_rate", "error_rate", "hit_rate"]
     )
-    sns.lineplot(data=perf_rates_df, x="trial", y="value", hue="variable")
+    sns.lineplot(
+        data=perf_rates_df,
+        x="trial",
+        y="value",
+        hue="variable",
+        palette=["orangered", "maroon", "darkgreen"],
+        ax=ax,
+    )
     _ = ax.set(ylabel="Rate", xlabel="Trials", title=title)
     ax.legend(loc="best", frameon=False, borderaxespad=0)
 
@@ -440,7 +447,7 @@ def plot_daily_result_summary(df, ax, title=""):
     ##############################
 
 
-def plot_daily_water(df, ax, title=""):
+def plot_daily_water(df, ax, title="", legend=False):
     """
     Quick function for plotting water consumed in rig or pub for a day
     and marking the target with a horizontal line
@@ -470,13 +477,20 @@ def plot_daily_water(df, ax, title=""):
     ax.axhline(y=volume_target, xmin=0.2, xmax=0.8, color="black")
     ax.text(x=-0.45, y=volume_target, s=str(volume_target), fontsize=12)
     for cont in ax.containers:
-        _ = ax.bar_label(cont, fontsize=12, fmt="%.2f", label_type="center")
+        _ = ax.bar_label(
+            cont, fontsize=12, fmt="%.2f", label_type="center", color="white"
+        )
 
     # legend
-    order = [1, 0]
-    handles, _ = ax.get_legend_handles_labels()
-    labels = ["rig", "pub"]
-    ax.legend([handles[i] for i in order], [labels[i] for i in order], loc=(0.9, 0.75))
+    if legend:
+        order = [1, 0]
+        handles, _ = ax.get_legend_handles_labels()
+        labels = ["rig", "pub"]
+        ax.legend(
+            [handles[i] for i in order], [labels[i] for i in order], loc=(0.9, 0.75)
+        )
+    else:
+        ax.get_legend().remove()
 
     # aesthetics
     ax.set_xticks([])
@@ -488,7 +502,7 @@ def plot_daily_water(df, ax, title=""):
 def plot_daily_delay_dur(df, ax, title=""):
     was_early_poke = df["valid_early_spoke"].apply(lambda row: 0.1 if row else np.nan)
 
-    sns.lineplot(data=df, x="trial", y="delay_dur")
+    sns.lineplot(data=df, x="trial", y="delay_dur", ax=ax)
     ax.scatter(
         x=df.trial, y=was_early_poke, marker="s", color="orangered", label="was early"
     )
@@ -498,7 +512,7 @@ def plot_daily_delay_dur(df, ax, title=""):
     ax.set(title=title, ylabel="Delay [s]")
 
 
-def delay_early_spoke_hist(df, ax, title=""):
+def plot_delay_early_spoke_hist(df, ax, title=""):
     sns.histplot(
         data=df,
         x="delay_dur",
