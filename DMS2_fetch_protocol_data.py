@@ -12,7 +12,9 @@ dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 bdata = dj.create_virtual_module("bdata", "bdata")
 
 
-def fetch_latest_training_data(animal_ids=None, verbose=False):
+def fetch_latest_training_data(
+    animal_ids=None, date_min="2000-01-01", date_max="2030-01-01", verbose=False
+):
     """
     TODO
     """
@@ -27,15 +29,17 @@ def fetch_latest_training_data(animal_ids=None, verbose=False):
 
     for animal_id in animal_ids:
         subject_session_key = {"ratname": animal_id}
+        date_min_key = f"sessiondate >= '{date_min}'"
+        date_max_key = f"sessiondate <= '{date_max}'"
 
-        protocol_blobs = (bdata.Sessions & subject_session_key).fetch(
-            "protocol_data", as_dict=True
-        )
+        protocol_blobs = (
+            bdata.Sessions & subject_session_key & date_min_key & date_max_key
+        ).fetch("protocol_data", as_dict=True)
 
         # n session long items are fetched together
-        sess_ids, dates, trials = (bdata.Sessions & subject_session_key).fetch(
-            "sessid", "sessiondate", "n_done_trials"
-        )
+        sess_ids, dates, trials = (
+            bdata.Sessions & subject_session_key & date_min_key & date_max_key
+        ).fetch("sessid", "sessiondate", "n_done_trials")
 
         animals_trials_df.append(
             create_animals_trials_df(
