@@ -173,9 +173,14 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
 
     """
     for df, sess_id, date, n_done_trials in zip(dfs, sess_ids, dates, trials):
+        # sometimes lengths can get one off depending on when the
+        # session ends in the PNT cycle, clipping the last row if needed
+        if len(df) == n_done_trials + 1:
+            df.drop(df.tail(1).index, inplace=True)
+
         assert (
             len(df) == n_done_trials
-        ), f"session {sess_id} df is not {n_done_trials} long  its {len(df)}!"
+        ), f"session {sess_id} df is outside of length tolerance! trials: {n_done_trials} df: {len(df)}!"
 
         df.insert(0, "trial", np.arange(1, n_done_trials + 1, dtype=int))
         df.insert(1, "animal_id", [animal_id] * n_done_trials)
