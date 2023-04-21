@@ -181,12 +181,12 @@ def make_daily_stage_plots(df, overwrite=False):
                 sub_df, overwrite=overwrite, date=date, animal_id=animal_id
             )
         else:
-            make_daily_stage_3_plot(
+            make_daily_stage_3_4_plot(
                 sub_df, overwrite=overwrite, date=date, animal_id=animal_id
             )
 
 
-def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
+def make_daily_stage_3_4_plot(df, overwrite=False, date=None, animal_id=None):
     # if we don't get date/animal id values assume we are working
     # with a groupby df and grab the first dow
     if date is None:
@@ -194,18 +194,20 @@ def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
     if animal_id is None:
         animal_id = df.animal_id.iloc[0]
 
-    fig_name = f"{animal_id}_{date}_daily_stage_3.png"
+    fig_name = f"{animal_id}_{date}_daily_stage_3_4.png"
 
     if not Path.exists(SAVE_PATH / fig_name) or overwrite:
-        print(f"plotting stage 3 plot {animal_id} on {date}")
+        print(f"plotting stage 3 / 4 plot {animal_id} on {date}")
 
-        layout = """ 
+        layout = """
             AAABCCC
             DDDEFFF
-            GGGHI..
-            JJJKLLL
+            GGGHIJK
+            LLLMNNN
         """
         fig = plt.figure(constrained_layout=True, figsize=(20, 15))
+
+        max_stage = df.stage.max()
 
         plt.suptitle(f"\n{animal_id} on {date}\n", fontweight="semibold")
         ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
@@ -224,13 +226,24 @@ def make_daily_stage_3_plot(df, overwrite=False, date=None, animal_id=None):
         )
 
         ## ROW 3
-        plot_daily_delay_dur(df, ax_dict["G"], title="delay")
-        plot_delay_early_spoke_hist(df, ax_dict["H"])
+        if max_stage == 3:
+            plot_daily_delay_dur(df, ax_dict["G"], title="delay")
+            plot_type = "early"
+        else:
+            plot_daily_viol_pre_go_durs(df, ax_dict["G"])
+            plot_type = "viol"
+
+        plot_delay_poke_hist(df, ax_dict["H"], plot_type=plot_type)
+
         plot_daily_first_spoke_hist(df, ax_dict["I"])
+        plot_daily_side_bias(df, ax=ax_dict["J"])
+        plot_daily_side_counts(df, ax=ax_dict["K"])
 
         # ROW 4
-        plot_daily_trial_dur(df, ax_dict["J"], title="trial dur")
-        plot_daily_water(df, ax_dict["K"], title="water")
+        plot_daily_trial_dur(df, ax_dict["L"], title="trial dur")
+        plot_daily_water(df, ax_dict["M"], title="water")
+        # ANTIBIAS GOES HERE
+        # plot_daily_trial_dur(df, ax_dict["N"], title="trial dur")
 
         # save out
         plt.savefig(SAVE_PATH / fig_name[:-4], bbox_inches="tight")
@@ -462,7 +475,7 @@ def plot_daily_perfs(df, ax, title=""):
         palette=["orangered", "maroon", "darkgreen"],
         ax=ax,
     )
-    _ = ax.set(ylabel="Rate", xlabel="Trials", title=title)
+    _ = ax.set(ylabel="Rate", xlabel="Trials", title=title, ylim=(0, 1))
     ax.legend(loc="best", frameon=False, borderaxespad=0)
 
 
@@ -498,6 +511,58 @@ def plot_daily_result_summary(df, ax, title=""):
 
     ax.set(title=title)
     ax.set_xticklabels(get_result_labels(df.result), rotation=45)
+
+
+def plot_daily_side_bias(df, ax):
+    """ "
+    TODO
+    """
+    lr_hits = df.groupby(["sides"]).hits.mean().sort_index()
+    lr_hits.plot(kind="bar", color=["darkseagreen", "indianred"], ax=ax)
+    lr_hits.fillna(
+        0, inplace=True
+    )  # for early side poke stages, there can be an nan for one side
+    bias = lr_hits["l"] - lr_hits["r"]
+    ax.set(
+        ylim=(0, 1), title=f"Bias: {np.round(bias, 2)}", xlabel="", ylabel="performance"
+    )
+    # ax.text(0.1, 0.9, f"Bias: {np.round(bias, 2)}")
+
+
+def plot_daily_side_counts(df, ax):
+    side_count = df.sides.value_counts().sort_index()
+
+    side_count.plot(kind="bar", color=["darkseagreen", "indianred"], ax=ax)
+    lr_ratio = side_count["l"] / side_count["r"]
+    ax.set(
+        title=f"L to R Ratio: {np.round(lr_ratio,2)}",
+        xlabel="",
+        ylabel="number of trials",
+    )
+
+
+def plot_daily_side_bias_and_counts(df, ax):
+    # get sub data (kind of hacky, but good enough for now)
+    side_count = df.sides.value_counts(normalize=True)
+    lr_hits = df.groupby(["sides"]).hits.mean()
+    lr_hits.fillna(
+        0, inplace=True
+    )  # for early side poke stages, there can be an nan for one side
+    side_info_df = pd.merge(side_count, lr_hits, right_index=True, left_index=True)
+    # plot
+    side_info_df.plot(kind="bar", color=["gray", "darkgreen"], ax=ax)
+
+    # title info
+    bias = lr_hits["l"] - lr_hits["r"]
+    lr_ratio = side_count["l"] / side_count["r"]
+    print(bias, print(lr_ratio))
+    ax.set(
+        ylim=(0, 1),
+        title=f"LR Ratio: {np.round(lr_ratio,2)} Bias: {np.round(bias, 2)}",
+        xlabel="",
+    )
+
+    ax.legend(frameon=False, borderaxespad=0)
 
     ##############################
     ####      WATER/MASS      ####
@@ -569,11 +634,16 @@ def plot_daily_delay_dur(df, ax, title=""):
     ax.set(title=title, ylabel="Delay [s]")
 
 
-def plot_delay_early_spoke_hist(df, ax, title=""):
+def plot_delay_poke_hist(df, ax, plot_type="early", title=""):
+    if plot_type == "early":
+        hue = "valid_early_spoke"
+    elif plot_type == "viol":
+        hue = df.violations.astype("category")
+
     sns.histplot(
         data=df,
         x="delay_dur",
-        hue="valid_early_spoke",
+        hue=hue,
         hue_order=[False, True],
         palette=["turquoise", "orangered"],
         element="step",
@@ -582,7 +652,7 @@ def plot_delay_early_spoke_hist(df, ax, title=""):
     )
     ax.axvline(x=df.exp_del_tau.mean(), color="black", label="Tau")
 
-    ax.set(xlabel="Delay [s]", title=title)
+    ax.set(xlabel="Delay [s]", title=plot_type)
     ax.legend(frameon=False, borderaxespad=0)
 
 
@@ -606,8 +676,12 @@ def plot_daily_first_spoke_hist(df, ax, title=""):
 
 
 def plot_daily_viol_pre_go_durs(df, ax, title=""):
-    sns.lineplot(data=df, x="trial", y="pre_go_dur", label="pre go", color="teal")
-    sns.lineplot(data=df, x="trial", y="viol_off_dur", label="viol off", color="orange")
+    sns.lineplot(
+        data=df, x="trial", y="pre_go_dur", label="pre go", color="teal", ax=ax
+    )
+    sns.lineplot(
+        data=df, x="trial", y="viol_off_dur", label="viol off", color="orange", ax=ax
+    )
 
     was_violation = df["result"].apply(lambda row: True if row == 3.0 else np.nan)
     ax.scatter(x=df.trial, y=was_violation, marker="s", color="orangered")
@@ -629,7 +703,7 @@ POKE_MAP = {
 RESULT_MAP = {
     1: {"label": "hit", "color": "darkgreen"},
     2: {"label": "error", "color": "maroon"},
-    3: {"label": "viol", "color": "organgered"},
+    3: {"label": "viol", "color": "orangered"},
     4: {"label": "terr", "color": "lightcoral"},
     5: {"label": "crash", "color": "cyan"},
     6: {"label": "noans", "color": "black"},
