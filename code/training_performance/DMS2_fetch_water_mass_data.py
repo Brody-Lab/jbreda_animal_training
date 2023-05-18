@@ -2,6 +2,7 @@ import datajoint as dj
 import numpy as np
 import pandas as pd
 from datetime import timedelta
+from datajoint.errors import DataJointError
 
 
 ratinfo = dj.create_virtual_module("intfo", "ratinfo")
@@ -33,11 +34,11 @@ def fetch_daily_water_and_mass_info(animal_id, date):
 
     D["animal_id"] = animal_id
     D["date"] = date
-    D["percent_target"], D["volume_target"], D["mass"] = fetch_daily_water_target(
-        animal_id, date, verbose=False, return_mass_and_percent=True
-    )
     D["pub_volume"] = fetch_pub_volume(animal_id, date)
     D["rig_volume"] = fetch_rig_volume(animal_id, date)
+    D["volume_target"], D["percent_target"], D["mass"] = fetch_daily_water_target(
+        animal_id, date, verbose=False, return_mass_and_percent=True
+    )
 
     return pd.DataFrame(D, index=[0])
 
@@ -190,7 +191,11 @@ def fetch_rig_volume(animal_id, date):
     """
 
     Rig_keys = {"ratname": animal_id, "dateval": date}  # Specific to Rigwater table
-    rig_volume = float((ratinfo.Rigwater & Rig_keys).fetch1("totalvol"))
+    try:
+        rig_volume = float((ratinfo.Rigwater & Rig_keys).fetch1("totalvol"))
+    except DataJointError:
+        rig_volume = 0
+        print(f"rig volume wasn't tracked on {date}, defaulting to 0 mL")
 
     return rig_volume  # note this doesn't account for give water as of 5/18/2023
 
