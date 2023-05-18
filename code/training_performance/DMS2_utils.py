@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 import blob_transformation as bt
 from pathlib import Path
+from datetime import timedelta
 
 SAVE_PATH = Path("X:\\jbreda\\animal_data\\training_data\\figures\\cohort_2_progress")
 
@@ -164,8 +165,16 @@ def fetch_daily_mass(animal_id, date):
     """
 
     Mass_keys = {"ratname": animal_id, "date": date}
-    mass = float((ratinfo.Mass & Mass_keys).fetch1("mass"))
-
+    try:
+        mass = float((ratinfo.Mass & Mass_keys).fetch1("mass"))
+    except:
+        print(
+            f"mass data not found for {animal_id} on {date},",
+            f"using previous days mass",
+        )
+        prev_date = date - timedelta(days=1)
+        Mass_keys = {"ratname": animal_id, "date": prev_date}
+        mass = float((ratinfo.Mass & Mass_keys).fetch1("mass"))
     return mass
 
 
@@ -226,14 +235,12 @@ def make_daily_stage_3_4_plot(df, overwrite=False, date=None, animal_id=None):
         )
 
         ## ROW 3
-        if max_stage == 3:
-            plot_daily_delay_dur(df, ax_dict["G"], title="delay")
-            plot_type = "early"
-        else:
-            plot_daily_viol_pre_go_durs(df, ax_dict["G"])
-            plot_type = "viol"
+        # if max_stage == 3:
+        #     plot_daily_delay_dur(df, ax_dict["G"], title="delay")
+        #     plot_type = "early"
+        plot_daily_viol_pre_go_durs(df, ax_dict["G"])
 
-        plot_delay_poke_hist(df, ax_dict["H"], plot_type=plot_type)
+        plot_delay_poke_hist(df, ax_dict["H"])
 
         plot_daily_first_spoke_hist(df, ax_dict["I"])
         plot_daily_side_bias(df, ax=ax_dict["J"])
@@ -634,25 +641,47 @@ def plot_daily_delay_dur(df, ax, title=""):
     ax.set(title=title, ylabel="Delay [s]")
 
 
-def plot_delay_poke_hist(df, ax, plot_type="early", title=""):
-    if plot_type == "early":
-        hue = "valid_early_spoke"
-    elif plot_type == "viol":
-        hue = df.violations.astype("category")
+def create_early_poke_type_col(df):
+    """
+    Function to make a new column where a valid early
+    spoke is marked as a 1 and a violation is marked as
+    a 2 and 0 otherwise.
+    """
+    # define the conditions for the new column
+    df = df.copy()
+
+    df.loc[:, "violations"].fillna(0, inplace=True)
+    df.loc[:, "valid_early_spoke"].fillna(0, inplace=True)
+
+    conditions = [
+        (df["valid_early_spoke"] == 0) & (df["violations"] == 0).astype(bool),
+        (df["valid_early_spoke"] == 1).astype(bool),
+        (df["violations"] == 1).astype(bool),
+    ]
+
+    # define the values for the new column based on the conditions
+    values = [0, 1, 2]
+
+    # use numpy.select() to create the new column
+    df["early_spoke_type"] = np.select(conditions, values)
+    return df
+
+
+def plot_delay_poke_hist(df, ax, title=""):
+    df = create_early_poke_type_col(df)
 
     sns.histplot(
         data=df,
         x="delay_dur",
-        hue=hue,
-        hue_order=[False, True],
-        palette=["turquoise", "orangered"],
+        hue="early_spoke_type",
+        palette=get_early_poke_colors(df),
         element="step",
         ax=ax,
-        legend=False,
+        legend=True,
     )
     ax.axvline(x=df.exp_del_tau.mean(), color="black", label="Tau")
 
-    ax.set(xlabel="Delay [s]", title=plot_type)
+    ax.set(xlabel="Delay [s]", title=title)
     ax.legend(frameon=False, borderaxespad=0)
 
 
@@ -709,6 +738,12 @@ RESULT_MAP = {
     6: {"label": "noans", "color": "black"},
 }
 
+EARLY_POKE_MAP = {
+    "none": {"color": "turquoise"},
+    "viol": {"color": "orangered"},
+    "early": {"color": "gold"},
+}
+
 
 def get_poke_colors(poke_column):
     pokes = poke_column.unique()  # any colum with 'l', 'r', or 'c'
@@ -739,22 +774,17 @@ def get_result_order(result_column):
     return result_column.sort_values().unique()
 
 
-# def get_poke_pallete(poke_column):
-#     pokes = poke_column.unique()
+def get_early_poke_colors(df):
+    keys = ["none"]
+    if df.violations.sum() > 0:
+        keys.append("viol")
 
-#     poke_map = {}
-#     if "l" in pokes and "r" in pokes and "c" in pokes:
-#         palette = ["darkseagreen", "khaki", "indianred"]
-#     elif "l" in pokes and "r" in pokes:
-#         palette = ["darkseagreen", "indianred"]
-#     elif "l" in pokes:
-#         palette = ["darkseagreen"]
-#     elif "r" in pokes:
-#         palette = ["indianred"]
-#     elif "c" in pokes:
-#         palette = ["khaki"]
+    if df.valid_early_spoke.sum() > 0:
+        keys.append("early")
 
-#     return palette
+    colors = [EARLY_POKE_MAP[key]["color"] for key in keys]
+
+    return colors
 
 
 # Helper function used for visualization in the following examples
