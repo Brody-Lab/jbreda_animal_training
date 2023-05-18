@@ -1,13 +1,71 @@
-
 import numpy as np
 import datajoint as dj
 import pandas as pd
 
+#################
+###    VARS   ###
+#################
+
+ANIMAL_IDS = ["R610", "R611", "R612", "R613", "R614"]
+
+
+###################
+###  FUNCTIONS  ###
+###################
+
+
+def return_date_window(latest_date=None, n_days_back=None):
+    """
+    Function to create a date window for querying the DataJoint
+    SQL database. Pairs nicely with `fetch_latest_trials_data`
+    or `fetch_daily_summary_data`
+
+    params
+    ------
+    latest_date : str  (optional, default = None)
+        latest date to include in the window, defaults to today
+        if left empty
+    n_days_back : int (optional, default = None)
+        number of days back from `latest_date` to include,
+        defaults to all days if left empty
+
+    Note: if you are out of range of your table (e.g min date)
+    is before the start of training) it's okay.
+
+    returns
+    ------
+    min_date : str
+        minimum date in the specified date window
+    max_date : str
+        maximum date in the specified date window
+
+    example usage
+    ------------
+    `return_date_window(latest_date='2022-11-3', n_days_back=8)`
+    `return_date_window(latest_date=None, n_days_back=7)`
+    """
+
+    if latest_date:
+        date_max = pd.to_datetime(latest_date)
+    else:
+        date_max = pd.Timestamp.today()
+
+    if n_days_back:
+        date_min = date_max - pd.Timedelta(days=n_days_back)
+        date_min = date_min.strftime("%Y-%m-%d")
+    else:
+        date_min = n_days_back  # none
+
+    return date_min, date_max.strftime("%Y-%m-%d")
+
+
+### BLOB TRANSFORMATIONS ###
+
 
 def transform_blob(peh):
-    '''
+    """
     Transform a mym blob (saved with matlab datajoint) to a list of dictionaries like structure.
-    '''
+    """
 
     # Transform each element of the array into dictionary
     a = list()
@@ -19,12 +77,13 @@ def transform_blob(peh):
 
     return a
 
-def blob_dict_to_df(blob_dict):
-    '''
-    Expand dictionary from transform_blob function to create a trial by trial DataFrame
-    '''
 
-    #Check if all sizes of the dictionary arrays are the same size
+def blob_dict_to_df(blob_dict):
+    """
+    Expand dictionary from transform_blob function to create a trial by trial DataFrame
+    """
+
+    # Check if all sizes of the dictionary arrays are the same size
     sizes = list()
     sizes_dict = dict()
     for i in blob_dict.keys():
@@ -37,32 +96,33 @@ def blob_dict_to_df(blob_dict):
         all_trials_list = list()
         for i in range(f_size):
             this_trial_dict = dict()
-            this_trial_dict = {key:value[i] for (key,value) in blob_dict.items()}
+            this_trial_dict = {key: value[i] for (key, value) in blob_dict.items()}
             all_trials_list.append(this_trial_dict)
 
         df_protocol_data2 = pd.DataFrame(all_trials_list)
         return df_protocol_data2
     else:
-        #If not the same sizes, we cannot convert return empty DF
-        print('Not all variables are the same length. Cannot create proper DataFrame')
-        result = '\n'.join(f'{key}: {value}' for key, value in sizes_dict.items())
+        # If not the same sizes, we cannot convert return empty DF
+        print("Not all variables are the same length. Cannot create proper DataFrame")
+        result = "\n".join(f"{key}: {value}" for key, value in sizes_dict.items())
         print(result)
         return pd.DataFrame()
 
+
 def blob_peh_to_df(blob_peh, append_original_columnname=False):
-    '''
+    """
     Expand peh dictionary columns so each event has it's own column
-    '''
+    """
 
     df_peh = pd.DataFrame(blob_peh)
     dh_peh2 = df_peh.copy()
-    #For each column of the dataframe
+    # For each column of the dataframe
     for i in df_peh.columns:
-        #Expand dictionary columns
+        # Expand dictionary columns
         this_column_df = dh_peh2[i].apply(pd.Series)
-        #Add original column name to each of the new columns created
+        # Add original column name to each of the new columns created
         if append_original_columnname:
-            this_column_df = this_column_df.add_prefix(i+'_')
+            this_column_df = this_column_df.add_prefix(i + "_")
         # Replace original column
         dh_peh2 = pd.concat([dh_peh2.drop([i], axis=1), this_column_df], axis=1)
 
@@ -70,10 +130,10 @@ def blob_peh_to_df(blob_peh, append_original_columnname=False):
 
 
 def _blob_to_dict(array_test, parent_fields=None):
-    '''
+    """
     "Private function"
     Recursive transformation of numpy array (saved with matlab datjoint) to dictionary.
-    '''
+    """
 
     # Set array as writable for further use
     if isinstance(array_test, np.ndarray):
@@ -88,7 +148,6 @@ def _blob_to_dict(array_test, parent_fields=None):
 
     # Go deeper into the array
     while 1:
-        
         # Get "child" fieldnames
         new_level = array_test[0]
         new_level_fields_trial = new_level.dtype.names
@@ -102,7 +161,6 @@ def _blob_to_dict(array_test, parent_fields=None):
 
     # If "child" level has different fieldnames
     if new_level_fields_trial is not None:
-        
         # If it's only length one, go deeper into the structure and repeat
         if len(array_test) == 1:
             out_array = _blob_to_dict(array_test[0], parent_fields=fields_trial)
@@ -120,16 +178,16 @@ def _blob_to_dict(array_test, parent_fields=None):
     # If we don't have more fieldnames, presumably we are in latest level
     else:
         out_array = _mymblob_to_dict2(array_test)
-    
+
     return out_array
 
-    
+
 def _mymblob_to_dict2(np_array, as_int=True):
-    '''
+    """
     "Private function"
-    Last level numpy numpy array transformation to a dictionary. 
+    Last level numpy numpy array transformation to a dictionary.
     (If a field contains a dj.blob.MatStruct array, it transforms it recursively with _blob_to_dict)
-    '''
+    """
 
     # Last level of recursion, fieldnames on dtype
     fields = np_array.dtype.names
@@ -146,10 +204,10 @@ def _mymblob_to_dict2(np_array, as_int=True):
             out_dict[fields[idx]] = _blob_to_dict(field)
         # If element is array with 1 element, unpack it.
         else:
-            l=len(field) if field.shape else 0
-            if l==1:
+            l = len(field) if field.shape else 0
+            if l == 1:
                 field = field[0]
-            
+
             # Check if variable is indeed a nested structure or dictionary
             this_field_names = field.dtype.names
             # If not just append
@@ -163,46 +221,5 @@ def _mymblob_to_dict2(np_array, as_int=True):
                 if len(a) == 1:
                     a = a[0]
                 out_dict[fields[idx]] = a
-            
-
-    return out_dict
-
-
-def mymblob_to_dict(np_array, as_int=True):
-    '''
-    DEPRECTATED ------------------------------
-     Transform a numpy array to dictionary:
-    (numpy array are stored when saving Blobs in  MATLAB Datajoint, normally a dictionary will be the fit)
-    '''
-
-    # Transform numpy array to DF
-    out_dict = pd.DataFrame(np_array.flatten())
-
-    # Flatten each column and get the "real value of it"
-    out_dict = out_dict.applymap(lambda x: x.flatten())
-
-    #Get not empty columns to extract fist value of only those columns
-    s = out_dict.applymap(lambda x: x.shape[0])
-    not_empty_columns = s.loc[:, ~(s == 0).any()].columns.to_list()
-    out_dict = out_dict.apply(lambda x: x[0].flatten() if x.name in not_empty_columns else x)
-    
-    if not isinstance(out_dict, pd.DataFrame):
-        out_dict = out_dict.to_frame()
-        #Get columns that are "real" arrays not unique values disguised
-        s = out_dict.applymap(lambda x: x.size).T
-        real_array_columns = s.loc[:, (s > 1).any()].columns.to_list()
-        out_dict = out_dict.T
-        out_dict = out_dict.apply(lambda x: x[0] if x.name not in real_array_columns else x, axis=0)
-        
-    columns = out_dict.columns.copy()
-    out_dict = out_dict.squeeze()
-
-    #Transform numeric columns to int (normally for params)
-    if as_int:
-        for i in columns:
-            if (isinstance(out_dict[i],np.float64) and out_dict[i].is_integer()):
-                out_dict[i] = out_dict[i].astype('int')
-
-    out_dict = out_dict.to_dict()
 
     return out_dict
