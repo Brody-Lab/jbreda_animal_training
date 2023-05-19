@@ -169,11 +169,14 @@ def fetch_daily_water_and_mass_info(animal_id, date):
 
     D["animal_id"] = animal_id
     D["date"] = date
+    D["mass"], D["tech"] = fetch_daily_mass(animal_id, date)
+    D["percent_target"] = fetch_daily_restriction_target(animal_id, date)
     D["pub_volume"] = fetch_pub_volume(animal_id, date)
     D["rig_volume"] = fetch_rig_volume(animal_id, date)
-    D["volume_target"], D["percent_target"], D["mass"] = fetch_daily_water_target(
-        animal_id, date, verbose=False, return_mass_and_percent=True
+    D["volume_target"] = fetch_daily_water_target(
+        D["mass"], D["percent_target"], verbose=False
     )
+    D["water_diff"] = (D["pub_volume"] + D["rig_volume"]) - D["volume_target"]
 
     return pd.DataFrame(D, index=[0])
 
@@ -181,34 +184,27 @@ def fetch_daily_water_and_mass_info(animal_id, date):
 ###  SUB FUNCTIONS  ###
 
 
-def fetch_daily_water_target(
-    animal_id, date, verbose=False, return_mass_and_percent=False
-):
+def fetch_daily_water_target(mass, percent_target, verbose=False):
     """
     Function for getting an animals water volume target on
     a specific date
 
     inputs
     ------
-    animal_id : str,
-        animal name e.g. "R501"
-    date : str
-        date to query in YYYY-MM-DD format, e.g. "2022-01-04
+    mass : float
+        mass in grams for a given animal, date fetched the Mass table
+        using fetch_daily_mass()
+    percent_target : float
+        water restriction target in terms of percentage of body weight
+        fetched from the Water table using fetch_daily_restriction_target()
     verbose : bool
         if you want to print restriction information
-    return_mass_and_percent : bool
-        if you want to return the volume_target, percent_target and
-        mass together. useful for the building the sessions date table
 
     returns
     ------
     volume_target : float
         water restriction target in mL
     """
-
-    percent_target = fetch_daily_restriction_target(animal_id, date)
-    mass = fetch_daily_mass(animal_id, date)
-
     # sometimes the pub isn't run- let's assume the minimum value
     if percent_target == 0:
         percent_target = 4
@@ -226,10 +222,7 @@ def fetch_daily_water_target(
         """
         )
 
-    if return_mass_and_percent:
-        return volume_target, percent_target, mass
-    else:
-        return volume_target
+    return volume_target
 
 
 def fetch_daily_mass(animal_id, date):
@@ -241,17 +234,19 @@ def fetch_daily_mass(animal_id, date):
     animal_id : str,
         animal name e.g. "R501"
     date : str
-        date to query in YYYY-MM-DD format, e.g. "2022-01-04
+        date to query in YYYY-MM-DD format, e.g. "2022-01-04"
     returns
     ------
     mass : float
         weight in grams on date
+    tech : str
+        initials of technician that weighed given animal, date
     """
 
     Mass_keys = {"ratname": animal_id, "date": date}
     try:
-        mass = float((ratinfo.Mass & Mass_keys).fetch1("mass"))
-    except:
+        mass, tech = (ratinfo.Mass & Mass_keys).fetch1("mass", "tech")
+    except DataJointError:
         print(
             f"mass data not found for {animal_id} on {date},",
             f"using previous days mass",
@@ -259,7 +254,8 @@ def fetch_daily_mass(animal_id, date):
         prev_date = date - datetime.timedelta(days=1)
         Mass_keys = {"ratname": animal_id, "date": prev_date}
         mass = float((ratinfo.Mass & Mass_keys).fetch1("mass"))
-    return mass
+        tech = "NA"
+    return float(mass), tech
 
 
 def fetch_daily_restriction_target(animal_id, date):
