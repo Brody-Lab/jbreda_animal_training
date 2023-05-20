@@ -31,7 +31,7 @@ def plot_multianimal_trials(df, ax, title=""):
 ####################
 ### HIT/VIOL/ETC ###
 ####################
-def plot_multiday_perfs(df, ax, title=""):
+def plot_multiday_perfs(df, ax, title="", legend=False):
     perf_rates_df = pd.melt(
         df, id_vars=["date"], value_vars=["violation_rate", "error_rate", "hit_rate"]
     )
@@ -45,10 +45,13 @@ def plot_multiday_perfs(df, ax, title=""):
         errorbar=None,
         marker="o",
         ax=ax,
+        legend=legend,
     )
     ax.tick_params(axis="x", labelrotation=45)
     _ = ax.set(ylabel="Rate", xlabel="", title=title)
-    ax.legend(loc="best", frameon=False, borderaxespad=0)
+    if legend:
+        ax.legend(loc="best", frameon=False, borderaxespad=0)
+    ax.set(ylim=(0, 1))
 
 
 ####################
