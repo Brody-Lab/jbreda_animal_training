@@ -69,6 +69,37 @@ def plot_stage(df, ax, **kwargs):
 
 
 ####################
+###    DELAY     ###
+####################
+
+
+def plot_multiday_delay_params(df, ax, title="", legend=False):
+    sns.lineplot(data=df, x="date", y="delay_dur", legend=legend, ax=ax)
+
+    delay_melt = df.melt(
+        id_vars=["date"],
+        value_name="delay_params",
+        value_vars=["exp_del_max", "exp_del_tau", "exp_del_min"],
+    )
+
+    sns.lineplot(
+        data=delay_melt,
+        x="date",
+        y="delay_params",
+        hue="variable",
+        palette="gray",
+        errorbar=None,
+        legend=legend,
+        ax=ax,
+    )
+
+    ax.tick_params(axis="x", labelrotation=45)
+    if legend:
+        ax.legend(frameon=False, borderaxespad=0)
+    _ = ax.set(title=title, xlabel="", ylabel="Delay Dur [s]")
+
+
+####################
 ###     BIAS     ###
 ####################
 def calculate_bias_history(df):
