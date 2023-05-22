@@ -28,6 +28,33 @@ def plot_multianimal_trials(df, ax, title=""):
     ax.legend(bbox_to_anchor=(1, 1), loc="upper left", borderaxespad=0, frameon=False)
 
 
+def plot_multiday_trials(df, ax, title="", legend=False):
+    """
+    TODO
+    """
+    trial_melt = df.melt(
+        id_vars=["date"],
+        value_name="trial_var",
+        value_vars=["n_done_trials", "trial_rate"],
+    )
+
+    sns.lineplot(
+        data=trial_melt,
+        x="date",
+        y="trial_var",
+        hue="variable",
+        marker="o",
+        ax=ax,
+    )
+
+    set_date_x_ticks(ax)
+    set_legend(ax, legend)
+
+    _ = ax.set(ylabel="Count || Per Hr", xlabel="", title=title)
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5)
+
+
 ####################
 ### HIT/VIOL/ETC ###
 ####################
@@ -45,12 +72,12 @@ def plot_multiday_perfs(df, ax, title="", legend=False):
         errorbar=None,
         marker="o",
         ax=ax,
-        legend=legend,
     )
-    ax.tick_params(axis="x", labelrotation=45)
+
+    set_date_x_ticks(ax)
+    set_legend(ax, legend)
+
     _ = ax.set(ylabel="Rate", xlabel="", title=title)
-    if legend:
-        ax.legend(loc="best", frameon=False, borderaxespad=0)
     ax.set(ylim=(0, 1))
 
 
@@ -89,14 +116,29 @@ def plot_multiday_delay_params(df, ax, title="", legend=False):
         hue="variable",
         palette="gray",
         errorbar=None,
-        legend=legend,
         ax=ax,
     )
 
-    ax.tick_params(axis="x", labelrotation=45)
-    if legend:
-        ax.legend(frameon=False, borderaxespad=0)
+    set_date_x_ticks(ax, everyother=False)
+    set_legend(ax, legend)
     _ = ax.set(title=title, xlabel="", ylabel="Delay Dur [s]")
+
+
+####################
+### MASS & WATER ###
+####################
+
+
+def plot_multiday_mass(df, ax, title=""):
+    """
+    TODO
+    """
+
+    sns.lineplot(data=df, x="date", y="mass", marker="o", color="k", ax=ax)
+
+    set_date_x_ticks(ax)
+    ax.grid(alpha=0.5)
+    ax.set(ylabel="Mass [g]", xlabel="", title=title)
 
 
 ####################
@@ -159,7 +201,7 @@ def plot_multiday_side_bias(df, ax, **kwargs):
     )
     ax.axhline(0, color="k", linestyle="--", zorder=1)
 
-    _ = plt.xticks(rotation=45)
+    set_date_x_ticks(ax)
     _ = ax.set(ylabel="<- R bias | L bias ->", title="Side Bias", ylim=[-1, 1])
 
     return None
@@ -182,7 +224,7 @@ def plot_multiday_water_vols(df, ax):
         ax=ax,
     )
 
-    ax.tick_params(axis="x", labelrotation=45)
+    set_date_x_ticks(ax)
     _ = ax.set(title="", xlabel="", ylabel="Volume (uL)")
     ax.legend(frameon=False, borderaxespad=0)
 
@@ -202,7 +244,7 @@ def plot_multiday_antibias_probs(df, ax):
     )
     ax.axhline(0.5, color="k", linestyle="--", zorder=1)
 
-    ax.tick_params(axis="x", labelrotation=45)
+    set_date_x_ticks(ax)
     ax.set(title="Antibias L/R probs", xlabel="", ylabel="Probability")
     ax.legend(frameon=False, borderaxespad=0)
 
@@ -215,5 +257,48 @@ def plot_multiday_antibias_beta(df, ax):
     sns.barplot(
         data=df, x="date", y="ab_beta", color="cornflowerblue", errorbar=None, ax=ax
     )
-    ax.tick_params(axis="x", labelrotation=45)
+    set_date_x_ticks(ax)
     _ = ax.set(ylim=(-0.5, df.ab_beta.max() + 1), ylabel="Beta", xlabel="")
+
+
+def plot_multiday_sidebias_params(df, ax, title="", legend=False):
+    """
+    TODO
+    """
+    sidebias_melt = df.melt(
+        id_vars=["date"],
+        value_name="sb_vars",
+        value_vars=["l_water_vol", "r_water_vol", "ab_beta"],
+    )
+    sns.barplot(
+        data=sidebias_melt,
+        x="date",
+        y="sb_vars",
+        hue="variable",
+        palette=["teal", "purple", "blue"],
+        alpha=0.5,
+        ax=ax,
+    )
+
+    set_date_x_ticks(ax)
+    set_legend(ax, legend)
+
+    _ = ax.set(title=title, xlabel="", ylabel="Value")
+
+
+def set_date_x_ticks(ax, everyother=False):
+    ticks = ax.get_xticks()
+
+    if everyother:
+        ax.set_xticks(ticks[::2])
+    else:
+        ax.set_xticks(ticks)
+
+    ax.set_xticklabels(ax.get_xticklabels(), ha="right", rotation=45)
+
+
+def set_legend(ax, legend):
+    if legend:
+        ax.legend(frameon=False, borderaxespad=0)
+    else:
+        ax.get_legend().remove()
