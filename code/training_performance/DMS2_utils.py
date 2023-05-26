@@ -652,7 +652,6 @@ def create_early_poke_type_col(df):
     df = df.copy()
 
     df.loc[:, "violations"].fillna(0, inplace=True)
-    df.loc[:, "valid_early_spoke"].fillna(0, inplace=True)
 
     conditions = [
         (df["valid_early_spoke"] == 0) & (df["violations"] == 0).astype(bool),
