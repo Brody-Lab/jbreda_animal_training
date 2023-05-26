@@ -1,6 +1,7 @@
 import datajoint as dj
 import numpy as np
 import pandas as pd
+import pyarrow as pa
 
 import dj_utils as djut
 from dj_utils import ANIMAL_IDS
@@ -189,10 +190,18 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         df["sound_pair"] = df.apply(
             lambda row: str(row.sa) + ", " + str(row.sb), axis=1
         )
+        # determine the minimum spoke time if animal poked l & r on a trial
+        df.loc[:, "min_time_to_spoke"] = df[["first_lpoke", "first_rpoke"]].min(
+            axis=1, skipna=True
+        )
 
-        # convert data types (matlab makes everything a float)
-        int_columns = ["result", "hits", "violations", "temperror"]
-        df[int_columns] = df[int_columns].astype("Int64")
+        # convert data types (matlab makes everything a float) and utilize
+        # pyarrow backend
+        string_columns = ["animal_id", "first_spoke", "go_type"]
+        df[string_columns] = df[string_columns].astype("string[pyarrow]")
+
+        int_columns = ["trial", "sess_id", "result", "hits", "violations", "temperror"]
+        df[int_columns] = df[int_columns].astype("uint64[pyarrow]")
 
         bool_columns = [
             "valid_early_spoke",
@@ -203,7 +212,7 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
             "give_water_not_drunk",
             "crash_hist",
         ]
-        df[bool_columns] = df[bool_columns].astype("bool")
+        df[bool_columns] = df[bool_columns].astype("bool[pyarrow]")
 
         category_columns = [
             "sess_id",
