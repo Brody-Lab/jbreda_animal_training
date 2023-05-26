@@ -37,7 +37,6 @@ def plot_multiday_trials(df, ax, title="", legend=False):
         value_name="trial_var",
         value_vars=["n_done_trials", "trial_rate"],
     )
-
     sns.lineplot(
         data=trial_melt,
         x="date",
@@ -47,7 +46,7 @@ def plot_multiday_trials(df, ax, title="", legend=False):
         ax=ax,
     )
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     set_legend(ax, legend)
 
     _ = ax.set(ylabel="Count || Per Hr", xlabel="", title=title)
@@ -74,9 +73,10 @@ def plot_multiday_perfs(df, ax, title="", legend=False):
         ax=ax,
     )
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     set_legend(ax, legend)
 
+    ax.grid(alpha=0.5)
     _ = ax.set(ylabel="Rate", xlabel="", title=title)
     ax.set(ylim=(0, 1))
 
@@ -86,13 +86,12 @@ def plot_multiday_perfs(df, ax, title="", legend=False):
 ####################
 def plot_stage(df, ax, **kwargs):
     sns.lineplot(
-        data=df.groupby("date").mean().stage, drawstyle="steps-post", ax=ax, **kwargs
+        data=df.groupby("date").stage.mean(), drawstyle="steps-post", ax=ax, **kwargs
     )
 
     _ = plt.xticks(rotation=45)
-    _ = plt.yticks(np.arange(1, 11, 1))
+    _ = plt.yticks(np.arange(1, 6, 1))
     _ = ax.set(ylabel="stage number", title="")
-    sns.despine()
 
 
 ####################
@@ -119,9 +118,18 @@ def plot_multiday_delay_params(df, ax, title="", legend=False):
         ax=ax,
     )
 
-    set_date_x_ticks(ax, everyother=False)
+    set_date_x_ticks(ax, len(df.date.unique()))
     set_legend(ax, legend)
     _ = ax.set(title=title, xlabel="", ylabel="Delay Dur [s]")
+
+
+def plot_multiday_avg_delay(df, ax, title=""):
+    sns.lineplot(data=df, x="date", y="delay_dur", marker="o", ax=ax)
+
+    set_date_x_ticks(ax, len(df.date.unique()))
+    _ = ax.set(title=title, xlabel="", ylabel="Avg Delay [s]")
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5)
 
 
 ####################
@@ -136,9 +144,29 @@ def plot_multiday_mass(df, ax, title=""):
 
     sns.lineplot(data=df, x="date", y="mass", marker="o", color="k", ax=ax)
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
+
+
+def plot_multiday_water_restriction(df, ax, title="", legend=True):
+    """
+    TODO
+    df : summary_df
+    """
+    columns_to_plot = ["date", "rig_volume", "pub_volume"]
+    df[columns_to_plot].plot(
+        x="date", kind="bar", stacked=True, color=["blue", "cyan"], ax=ax
+    )
+
+    # iterate over dates to plot volume target
+    for i in range(len(df)):
+        ax.hlines(y=df.volume_target[i], xmin=i - 0.5, xmax=i + 0.5, color="black")
+
+    set_date_x_ticks(ax, len(df.date.unique()))
+    set_legend(ax, legend)
+
+    ax.set(title=title, xlabel="", ylabel="Volume [mL]")
 
 
 ####################
@@ -166,7 +194,7 @@ def calculate_bias_history(df):
     bias_df = pd.DataFrame(columns=["date", "bias"])
 
     for date, date_df in df.groupby("date"):
-        side_perf = date_df.groupby("sides").mean().hits.reset_index()
+        side_perf = date_df.groupby("sides").hits.mean().reset_index()
 
         # always make sure left row is first
         side_perf = side_perf.sort_values(by="sides")
@@ -201,7 +229,7 @@ def plot_multiday_side_bias(df, ax, **kwargs):
     )
     ax.axhline(0, color="k", linestyle="--", zorder=1)
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     _ = ax.set(ylabel="<- R bias | L bias ->", title="Side Bias", ylim=[-1, 1])
 
     return None
@@ -224,7 +252,7 @@ def plot_multiday_water_vols(df, ax):
         ax=ax,
     )
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     _ = ax.set(title="", xlabel="", ylabel="Volume (uL)")
     ax.legend(frameon=False, borderaxespad=0)
 
@@ -244,7 +272,7 @@ def plot_multiday_antibias_probs(df, ax):
     )
     ax.axhline(0.5, color="k", linestyle="--", zorder=1)
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     ax.set(title="Antibias L/R probs", xlabel="", ylabel="Probability")
     ax.legend(frameon=False, borderaxespad=0)
 
@@ -257,7 +285,7 @@ def plot_multiday_antibias_beta(df, ax):
     sns.barplot(
         data=df, x="date", y="ab_beta", color="cornflowerblue", errorbar=None, ax=ax
     )
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     _ = ax.set(ylim=(-0.5, df.ab_beta.max() + 1), ylabel="Beta", xlabel="")
 
 
@@ -280,19 +308,45 @@ def plot_multiday_sidebias_params(df, ax, title="", legend=False):
         ax=ax,
     )
 
-    set_date_x_ticks(ax)
+    set_date_x_ticks(ax, len(df.date.unique()))
     set_legend(ax, legend)
 
     _ = ax.set(title=title, xlabel="", ylabel="Value")
 
 
-def set_date_x_ticks(ax, everyother=False):
+def plot_multiday_time_to_spoke(df, ax, title="", legend=True):
+    sns.lineplot(
+        data=df,
+        x="date",
+        y="min_time_to_spoke",
+        hue="first_spoke",
+        palette=["darkseagreen", "indianred", "white"],
+        ax=ax,
+    )
+
+    set_date_x_ticks(ax, len(df.date.unique()))
+    set_legend(ax, legend)
+
+    ax.set(ylabel="time to spoke [s]", xlabel="", title=title, ylim=(0))
+    ax.grid(alpha=0.5)
+
+
+##### UTILS ####
+
+
+def create_figure(figsize=(10, 3)):
+    fig, ax = plt.subplots(figsize=figsize)
+    return fig, ax
+
+
+def set_date_x_ticks(ax, n_dates, n_plots=1):
     ticks = ax.get_xticks()
 
-    if everyother:
-        ax.set_xticks(ticks[::2])
-    else:
-        ax.set_xticks(ticks)
+    # if n_dates > 25:
+    #     # skip every other label
+    #     ax.set_xticks(ticks[::2])  # skip every other label
+
+    ax.set_xticks(ticks)
 
     ax.set_xticklabels(ax.get_xticklabels(), ha="right", rotation=45)
 
