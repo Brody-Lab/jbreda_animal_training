@@ -15,53 +15,10 @@ dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 bdata = dj.create_virtual_module("bdata", "bdata")
 ratinfo = dj.create_virtual_module("intfo", "ratinfo")
 
-##################################################
-###               CALCULATIONS                 ###
-##################################################
-# test ssh
-
 
 ##############################
-###        BHEAVIOR       ####
+###      WATER/MASS       ####
 ##############################
-def calculate_daily_trial_rate(animal_id, date, units="hours"):
-    """
-    function that queries the sessions dj table to determine
-    what the trial rate (in hours or minutes) was for an animal
-    for a given day. Drops sessions with 1 or less trials from calc.
-
-    params
-    ------
-    animal_id : str
-        animal name, e.g. "R500"
-    date : str or datetime
-        date of interest in YYYY-MM-DD, e.g. "2023-04-12"
-    units : str, "hours" (default) or "minutes"
-        what units to return trial rate in
-    """
-    # fetch data
-    query_keys = {
-        "ratname": animal_id,
-        "sessiondate": date,
-    }  # specific to Sessions table
-    n_done_trials, start_times, end_times = (bdata.Sessions & query_keys).fetch(
-        "n_done_trials", "starttime", "endtime"
-    )
-
-    # convert to rate
-    time_conversion = 1 / 3600 if units == "hours" else 1 / 60
-    daily_train_time_seconds = (
-        end_times[n_done_trials > 1] - start_times[n_done_trials > 1]
-    )[0].seconds
-    daily_trial_rate = np.sum(n_done_trials[n_done_trials > 1]) / (
-        daily_train_time_seconds * time_conversion
-    )
-
-    return np.round(daily_trial_rate, decimals=2)
-
-    ##############################
-    ###      WATER/MASS       ####
-    ##############################
 
 
 def fetch_daily_water_target(animal_id, date, verbose=False):

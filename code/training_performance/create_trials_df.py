@@ -1,7 +1,13 @@
+"""
+Author: Jess Breda
+Date: May 31, 2023
+Description: Functions for creating a trial-level dataframe
+from the DataJoint Sessions.protocol_data blob to be used
+in plotting and analysis of animal training performance. 
+"""
 import datajoint as dj
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 
 import dj_utils as djut
 from dj_utils import ANIMAL_IDS
@@ -11,11 +17,34 @@ dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 bdata = dj.create_virtual_module("bdata", "bdata")
 
 
-def fetch_latest_trials_data(
+def create_trials_df_from_dj(
     animal_ids=None, date_min="2000-01-01", date_max="2030-01-01", verbose=False
 ):
     """
-    TODO
+    Create a trial-level dataframe from the DataJoint Sessions.protocol_data blob
+    to be used in plotting and analysis of animal training performance. Note
+    dataframe has additional calculated attributes built from what is stored in
+    the blob.
+
+    params
+    -----
+    animal_ids : list (optional, default = None)
+        list of animal ids to fetch data for. If None,
+        defaults to ANIMAL_IDS in dj_utils.py
+    date_min : str (optional, default = "2000-01-01")
+        minimum date to fetch data for
+    date_max : str (optional, default = "2030-01-01")
+        maximum date to fetch data for
+    verbose : bool (optional, default = False)
+        whether to print out load number and date range
+        for each animal
+
+    returns
+    -------
+    trials_df : pd.DataFrame
+        dataframe with trial-level data for all animals fetched in
+        given date range
+
     """
     # TODO maybe add save out here if read in is
 
@@ -27,10 +56,12 @@ def fetch_latest_trials_data(
     animals_trials_df = []
 
     for animal_id in animal_ids:
+        ## Fetch
         subject_session_key = {"ratname": animal_id}
         date_min_key = f"sessiondate >= '{date_min}'"
         date_max_key = f"sessiondate <= '{date_max}'"
 
+        # TODO filter out empty sessions here to avoid having to do it later on
         protocol_blobs = (
             bdata.Sessions & subject_session_key & date_min_key & date_max_key
         ).fetch("protocol_data", as_dict=True)
@@ -40,6 +71,7 @@ def fetch_latest_trials_data(
             bdata.Sessions & subject_session_key & date_min_key & date_max_key
         ).fetch("sessid", "sessiondate", "n_done_trials")
 
+        ## Format
         animals_trials_df.append(
             create_animals_trials_df(
                 animal_id, protocol_blobs, sess_ids, dates, trials, verbose=verbose
@@ -55,7 +87,37 @@ def create_animals_trials_df(
     animal_id, protocol_blobs, sess_ids, dates, trials, verbose=True
 ):
     """
-    TODO
+    Create a trial-level dataframe from the DataJoint Sessions.protocol_data blob
+    given additional Session information (ids, dates, trials).
+
+    This function is a wraper for the following functions:
+        - drop_empty_sessions
+        - convert_to_dicts
+        - convert_to_dfs
+        - append_and_clean_protocol_dfs
+
+    params
+    -----
+    animal_id : str
+        animal id that data was fetched for
+    protocol_blobs : list of arrays
+        list returned when fetching pd data from bdata
+        tables with len = n sessions
+    sess_ids : list of ints
+        list of session ids for each session in protocol_blobs
+    dates : list of datetimes
+        list of session dates for each session in protocol_blobs
+    trials : list of ints
+        list of number of trials for each session in protocol_blobs
+    verbose : bool (optional, default = True)
+        whether to print out load number and date range
+        for each animal
+
+    returns
+    ------
+    animals_trials_df : pd.DataFrame
+        dataframe with trial-level data for all sessions fetched for
+        a given animal
     """
     protocol_blobs, sess_ids, dates, trials = drop_empty_sessions(
         protocol_blobs, sess_ids, dates, trials, verbose=verbose
