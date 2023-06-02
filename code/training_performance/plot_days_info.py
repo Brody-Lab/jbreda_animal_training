@@ -6,15 +6,16 @@ performance, water and mass metrics across days
 """
 
 import seaborn as sns
+import pandas as pd
 from plotting_utils import *
 
-# TODO move plots from `DMS_multiday_plots` to here and update df to be t_df
+# TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
 #######################
 ###  SUMMARY PLOTS  ###
 #######################
 
 
-def plot_multiday_summary(animal_id, d_df):
+def plot_multiday_summary(animal_id, days_df):
     """
     Plot the summary of the animal's performance over the
     date range in days_df
@@ -23,7 +24,7 @@ def plot_multiday_summary(animal_id, d_df):
     ------
     animal_id : str
         animal id to plot, e.g. "R610"
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe created by create_days_df_from_dj()
     """
 
@@ -36,7 +37,7 @@ def plot_multiday_summary(animal_id, d_df):
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
     plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
 
-    animal_df = d_df.query("animal_id == @animal_id")
+    animal_df = days_df.query("animal_id == @animal_id")
 
     ## Plot
     # left column
@@ -59,14 +60,15 @@ def plot_multiday_summary(animal_id, d_df):
 ######################
 
 
-def plot_trials(d_df, ax, title="", legend=False, xaxis_label=True):
+### TRIALS ###
+def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
     """
     Plot the number of trials completed and trial rate over
-    date range in d_d_df
+    date range in d_days_df
 
     params
     ------
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe with columns `date`, `n_done_trials`, `trial_rate` with
         dates as row index
     ax : matplotlib.axes.Axes
@@ -76,7 +78,7 @@ def plot_trials(d_df, ax, title="", legend=False, xaxis_label=True):
     legend : bool (optional, default = False)
         whether to include the legend or not
     """
-    trial_melt = d_df.melt(
+    trial_melt = days_df.melt(
         id_vars=["date"],
         value_name="trial_var",
         value_vars=["n_done_trials", "trial_rate"],
@@ -100,13 +102,33 @@ def plot_trials(d_df, ax, title="", legend=False, xaxis_label=True):
     return None
 
 
-def plot_mass(d_df, ax, title="", xaxis_label=True):
+### STAGE ###
+def plot_stage(trials_df, ax, max_stage=8, title="", xaxis_label=True, **kwargs):
     """
-    Plot the mass of the animal over date range in d_df
+    TODO
+    """
+    sns.lineplot(
+        data=trials_df.groupby("date").stage.mean(),
+        drawstyle="steps-post",
+        ax=ax,
+        **kwargs,
+    )
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    ax.grid(alpha=0.5)
+    _ = plt.yticks(range(1, max_stage, 1))
+    _ = ax.set(ylabel="Stage #", title=title)
+
+
+### MASS ###
+def plot_mass(days_df, ax, title="", xaxis_label=True):
+    """
+    Plot the mass of the animal over date range in days_df
 
     params
     ------
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe with columns `date`, `mass` with dates as row index
     ax : matplotlib.axes.Axes
         axes to plot on
@@ -114,7 +136,7 @@ def plot_mass(d_df, ax, title="", xaxis_label=True):
         title for the plot
     """
 
-    sns.lineplot(data=d_df, x="date", y="mass", marker="o", color="k", ax=ax)
+    sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
 
     # aethetics
     set_date_x_ticks(ax, xaxis_label)
@@ -124,14 +146,15 @@ def plot_mass(d_df, ax, title="", xaxis_label=True):
     return None
 
 
-def plot_water_restriction(d_df, ax, title="", legend=True, xaxis_label=True):
+### WATER ###
+def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True):
     """
     Plot the rig, pub and restriction target volume over date
-    range in d_df
+    range in days_df
 
     params
     ------
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe with columns `date`, `rig_volume`, `pub_volume`
         and `volume_target` with dates as row index
     ax : matplotlib.axes.Axes
@@ -147,7 +170,7 @@ def plot_water_restriction(d_df, ax, title="", legend=True, xaxis_label=True):
 
     # stacked bar chart only works with df.plot (not seaborn)
     columns_to_plot = ["date", "rig_volume", "pub_volume"]
-    d_df[columns_to_plot].plot(
+    days_df[columns_to_plot].plot(
         x="date",
         kind="bar",
         stacked=True,
@@ -156,7 +179,7 @@ def plot_water_restriction(d_df, ax, title="", legend=True, xaxis_label=True):
     )
 
     # iterate over dates to plot volume target black line
-    for i, row in d_df.reset_index().iterrows():
+    for i, row in days_df.reset_index().iterrows():
         ax.hlines(y=row["volume_target"], xmin=i - 0.35, xmax=i + 0.35, color="black")
 
     # aesthetics
@@ -167,13 +190,14 @@ def plot_water_restriction(d_df, ax, title="", legend=True, xaxis_label=True):
     return None
 
 
-def plot_rig_tech(d_df, ax, title="", legend=False, xaxis_label=True):
+### RIG/TECH ###
+def plot_rig_tech(days_df, ax, title="", legend=False, xaxis_label=True):
     """
-    Plot the tech and rig id over date range in d_df
+    Plot the tech and rig id over date range in days_df
 
     params
     ------
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe with columns `date`, `rigid` and `tech` with
         dates as row index
     ax : matplotlib.axes.Axes
@@ -186,8 +210,8 @@ def plot_rig_tech(d_df, ax, title="", legend=False, xaxis_label=True):
         whether to include the xaxis label or not, this is useful when
         plotting multiple plots on the same figure
     """
-    sns.lineplot(data=d_df, x="date", y="rigid", marker="o", color="gray", ax=ax)
-    sns.lineplot(data=d_df, x="date", y="tech", marker="o", color="purple", ax=ax)
+    sns.lineplot(data=days_df, x="date", y="rigid", marker="o", color="gray", ax=ax)
+    sns.lineplot(data=days_df, x="date", y="tech", marker="o", color="purple", ax=ax)
 
     set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(ylabel="Tech || Rig", xlabel="", title=title)
@@ -196,13 +220,14 @@ def plot_rig_tech(d_df, ax, title="", legend=False, xaxis_label=True):
     return None
 
 
-def plot_performance(d_df, ax, title="", legend=True, xaxis_label=True):
+### PERFORMANCE ###
+def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
     """
-    Plot the hit and violation rate over date range in d_df
+    Plot the hit and violation rate over date range in days_df
 
     params
     ------
-    d_df : pd.DataFrame
+    days_df : pd.DataFrame
         days dataframe with columns `date`, `hit_rate` and `viol_rate` with
         dates as row index
     ax : matplotlib.axes.Axes
@@ -216,7 +241,7 @@ def plot_performance(d_df, ax, title="", legend=True, xaxis_label=True):
         plotting multiple plots on the same figure
     """
     sns.lineplot(
-        data=d_df,
+        data=days_df,
         x="date",
         y="hit_rate",
         marker="o",
@@ -225,7 +250,7 @@ def plot_performance(d_df, ax, title="", legend=True, xaxis_label=True):
         ax=ax,
     )
     sns.lineplot(
-        data=d_df,
+        data=days_df,
         x="date",
         y="viol_rate",
         marker="o",
@@ -238,18 +263,77 @@ def plot_performance(d_df, ax, title="", legend=True, xaxis_label=True):
     set_date_x_ticks(ax, xaxis_label)
     set_legend(ax, legend)
     ax.grid(alpha=0.5)
-    ax.set(ylim=(0, 1), ylabel="Performance", xlabel="", title=title)
+    ax.set(ylim=(0, 1), ylabel="Perf Rate", xlabel="", title=title)
 
     return None
 
 
-def plot_side_bias(d_df, ax, title="", xaxis_label=True):
+def plot_performance_bars(
+    trial_df, ax, normalize=False, title="", legend=False, xaxis_label=True
+):
     """
-    Plot the side bias over date range in d_df
+    TODO
+    """
+    ylabel = "eates" if normalize else "counts"
+    perf_df = (
+        trial_df.groupby(["date"]).result.value_counts(normalize=normalize).unstack()
+    )
+
+    perf_df.plot(kind="bar", stacked=True, ax=ax)
+
+    set_date_x_ticks(ax, xaxis_label)
+    set_legend(ax, legend)
+    ax.set(title=title, xlabel="", ylabel=f"Perf {ylabel}")
+
+    return None
+
+
+def plot_performance_w_error(trials_df, ax, title="", legend=False, xaxis_label=True):
+    """
+    Plot hit, error and violation rate over date range in trials df
 
     params
     ------
-    d_df : pd.DataFrame
+    trials_df :
+
+    TODO
+
+    """
+    perf_rates_df = pd.melt(
+        trials_df,
+        id_vars=["date"],
+        value_vars=["violation_rate", "error_rate", "hit_rate"],
+    )
+
+    sns.lineplot(
+        data=perf_rates_df,
+        x="date",
+        y="value",
+        hue="variable",
+        palette=["orangered", "maroon", "darkgreen"],
+        errorbar=None,
+        marker="o",
+        ax=ax,
+    )
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    set_legend(ax, legend)
+    ax.grid(alpha=0.5)
+    _ = ax.set(ylabel="Perf Rate", xlabel="", title=title)
+    ax.set(ylim=(0, 1))
+
+    return None
+
+
+### SIDE BIAS ###
+def plot_side_bias(days_df, ax, title="", xaxis_label=True):
+    """
+    Plot the side bias over date range in days_df
+
+    params
+    ------
+    days_df : pd.DataFrame
         days dataframe with columns `date` and `side_bias` with
         dates as row index, positive values = right bias
     ax : matplotlib.axes.Axes
@@ -263,7 +347,7 @@ def plot_side_bias(d_df, ax, title="", xaxis_label=True):
         plotting multiple plots on the same figure
     """
     sns.lineplot(
-        data=d_df,
+        data=days_df,
         x="date",
         y="side_bias",
         color="lightseagreen",
@@ -276,5 +360,173 @@ def plot_side_bias(d_df, ax, title="", xaxis_label=True):
     set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     ax.set(ylim=(-1, 1), ylabel="< - Left | Right ->", xlabel="", title=title)
+
+    return None
+
+
+def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
+    """
+    TODO
+    """
+    ab_melt = trials_df.melt(
+        id_vars=["date"], value_vars=["ab_l_prob", "ab_r_prob"], value_name="antibias"
+    )
+
+    sns.lineplot(
+        data=ab_melt,
+        x="date",
+        y="antibias",
+        hue="variable",
+        palette=["darkseagreen", "indianred"],
+        ax=ax,
+    )
+    ax.axhline(0.5, color="k", linestyle="--", zorder=1)
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    ax.set(title=title, xlabel="", ylabel="Prob")
+    ax.legend(frameon=False, borderaxespad=0)
+
+    return None
+
+
+def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True):
+    """
+    TODO
+    """
+
+    sidebias_melt = trials_df.melt(
+        id_vars=["date"],
+        value_name="sb_vars",
+        value_vars=["l_water_vol", "r_water_vol", "ab_beta"],
+    )
+    sns.barplot(
+        data=sidebias_melt,
+        x="date",
+        y="sb_vars",
+        hue="variable",
+        palette=["teal", "purple", "blue"],
+        alpha=0.5,
+        ax=ax,
+    )
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    set_legend(ax, legend)
+    ax.grid(axis="y")
+    _ = ax.set(title=title, xlabel="", ylabel="Value")
+
+    return None
+
+
+### SIDE POKE ###
+def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="min_time_to_spoke",
+        hue="first_spoke",
+        palette=["darkseagreen", "indianred", "white"],
+        ax=ax,
+    )
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    set_legend(ax, legend)
+    ax.set(ylabel="time to spoke [s]", xlabel="", title=title, ylim=(0))
+    ax.grid(alpha=0.5)
+
+    return None
+
+
+### DELAY ###
+def plot_exp_delay_params(trials_df, ax, title="", legend=False, xaxis_label=True):
+    """
+    TODO
+    """
+    sns.lineplot(data=trials_df, x="date", y="delay_dur", legend=legend, ax=ax)
+
+    delay_melt = trials_df.melt(
+        id_vars=["date"],
+        value_name="delay_params",
+        value_vars=["exp_del_max", "exp_del_tau", "exp_del_min"],
+    )
+
+    sns.lineplot(
+        data=delay_melt,
+        x="date",
+        y="delay_params",
+        hue="variable",
+        palette="gray",
+        errorbar=None,
+        ax=ax,
+    )
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    set_legend(ax, legend)
+    _ = ax.set(title=title, xlabel="", ylabel="Delay Dur [s]")
+
+    return None
+
+
+def plot_avg_delay(trials_df, ax, title="", xaxis_label=True):
+    """
+    TODO
+    """
+    sns.lineplot(data=trials_df, x="date", y="delay_dur", marker="o", ax=ax)
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    _ = ax.set(title=title, xlabel="", ylabel="Avg Delay [s]")
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5)
+
+    return None
+
+
+### TIMING ###
+def plot_trial_structure(
+    trials_df, ax, kind="bar", title="", legend=True, xaxis_label=True
+):
+    """
+    TODO
+    """
+    columns_to_plot = [
+        "date",
+        "settling_in_dur",
+        "adj_pre_dur",
+        "stimulus_dur",
+        "delay_dur",
+    ]
+
+    day_avgs = trials_df[columns_to_plot].groupby("date").mean().reset_index()
+
+    day_avgs.plot(x="date", kind=kind, stacked=True, ax=ax, legend=legend)
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5, axis="y")
+
+    return None
+
+
+def plot_trial_end_timing(
+    trials_df, ax, kind="bar", title="", legend=True, xaxis_label=True
+):
+    """
+    TODO
+    """
+    columns_to_plot = ["date", "viol_off_dur", "pre_go_dur"]
+    day_avgs = trials_df[columns_to_plot].groupby("date").mean().reset_index()
+    day_avgs.plot(x="date", kind="bar", stacked=False, ax=ax, legend=legend)
+
+    # aesthetics
+    set_date_x_ticks(ax, xaxis_label)
+    _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5, axis="y")
 
     return None

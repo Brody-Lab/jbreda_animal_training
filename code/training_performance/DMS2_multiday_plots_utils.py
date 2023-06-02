@@ -30,8 +30,21 @@ def plot_multianimal_trials(df, ax, title=""):
 
 def plot_multiday_trials(df, ax, title="", legend=False):
     """
-    TODO
+    Plot the number of trials completed per day and the trial rate
+
+    params
+    ------
+    df : pd.DataFrame
+        dataframe with columns `date`, `n_done_trials`, `trial_rate` with
+        date as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = False)
+        whether to include the legend or not
     """
+
     trial_melt = df.melt(
         id_vars=["date"],
         value_name="trial_var",
@@ -46,9 +59,9 @@ def plot_multiday_trials(df, ax, title="", legend=False):
         ax=ax,
     )
 
+    # aesthetics
     set_date_x_ticks(ax, len(df.date.unique()))
     set_legend(ax, legend)
-
     _ = ax.set(ylabel="Count || Per Hr", xlabel="", title=title)
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5)
@@ -139,11 +152,21 @@ def plot_multiday_avg_delay(df, ax, title=""):
 
 def plot_multiday_mass(df, ax, title=""):
     """
-    TODO
+    Plot the mass of the animal over date range in df
+
+    params
+    ------
+    df : pd.DataFrame
+        dataframe with columns `date`, `mass` with date as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
     """
 
     sns.lineplot(data=df, x="date", y="mass", marker="o", color="k", ax=ax)
 
+    # aesthetics
     set_date_x_ticks(ax, len(df.date.unique()))
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
@@ -151,22 +174,66 @@ def plot_multiday_mass(df, ax, title=""):
 
 def plot_multiday_water_restriction(df, ax, title="", legend=True):
     """
-    TODO
-    df : summary_df
+    Plot the rig, pub and restriction target volume over data
+    range in df
+
+    params
+    ------
+    df : pd.DataFrame
+        dataframe with columns `date`, `rig_volume`, `pub_volume`
+        and `volume_target` with dates as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
     """
+    # stacked bar chart only works with df.plot (not seaborn)
     columns_to_plot = ["date", "rig_volume", "pub_volume"]
     df[columns_to_plot].plot(
         x="date", kind="bar", stacked=True, color=["blue", "cyan"], ax=ax
     )
 
-    # iterate over dates to plot volume target
+    # iterate over dates to plot volume target black line
     for i in range(len(df)):
         ax.hlines(y=df.volume_target[i], xmin=i - 0.5, xmax=i + 0.5, color="black")
 
-    set_date_x_ticks(ax, len(df.date.unique()))
+    # aesthetics
+    set_date_x_ticks(ax)
     set_legend(ax, legend)
-
     ax.set(title=title, xlabel="", ylabel="Volume [mL]")
+
+    return None
+
+
+####################
+###   RIG/TECH   ###
+####################
+def plot_multiday_rig_tech(df, ax, title="", legend=False):
+    """
+    Plot the tech and rig id over data range in df
+
+    params
+    ------
+    df : pd.DataFrame
+        dataframe with columns `date`, `rigid` and `tech` with
+        dates as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = False)
+        whether to include the legend or not
+    """
+    sns.lineplot(data=df, x="date", y="rigid", marker="o", ax=ax)
+    sns.lineplot(data=df, x="date", y="tech", marker="o", ax=ax)
+
+    set_date_x_ticks(ax)
+    _ = ax.set(ylabel="Tech || Rig", xlabel="", title=title)
+    ax.grid()
+
+    return None
 
 
 ####################
