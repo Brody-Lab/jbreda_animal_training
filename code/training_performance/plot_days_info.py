@@ -9,9 +9,54 @@ import seaborn as sns
 from plotting_utils import *
 
 # TODO move plots from `DMS_multiday_plots` to here and update df to be t_df
-#####################
-###     PLOTS     ###
-#####################
+#######################
+###  SUMMARY PLOTS  ###
+#######################
+
+
+def plot_multiday_summary(animal_id, d_df):
+    """
+    Plot the summary of the animal's performance over the
+    date range in days_df
+
+    params
+    ------
+    animal_id : str
+        animal id to plot, e.g. "R610"
+    d_df : pd.DataFrame
+        days dataframe created by create_days_df_from_dj()
+    """
+
+    layout = """
+        AAABBB
+        CCCDDD
+        EEEFFF
+    """
+    fig = plt.figure(constrained_layout=True, figsize=(15, 8))
+    ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+    plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
+
+    animal_df = d_df.query("animal_id == @animal_id")
+
+    ## Plot
+    # left column
+    plot_trials(animal_df, ax_dict["A"], title="Trials", legend=True, xaxis_label=False)
+    plot_performance(animal_df, ax_dict["C"], title="Performance", xaxis_label=False)
+    plot_side_bias(animal_df, ax_dict["E"], title="Side Bias", xaxis_label=True)
+
+    # right column
+    plot_mass(animal_df, ax_dict["B"], title="Mass", xaxis_label=False)
+    plot_water_restriction(
+        animal_df, ax_dict["D"], title="Water", legend=False, xaxis_label=False
+    )
+    plot_rig_tech(animal_df, ax_dict["F"], title="Rig/Tech", xaxis_label=True)
+
+    return None
+
+
+######################
+###  SINGLE PLOTS  ###
+######################
 
 
 def plot_trials(d_df, ax, title="", legend=False, xaxis_label=True):
