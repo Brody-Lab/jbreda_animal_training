@@ -7,9 +7,11 @@ performance, water and mass metrics across days
 
 import seaborn as sns
 import pandas as pd
-from plotting_utils import *
+from plot_utils import *
 
-# TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
+# TODO change to import plot_utils as pu and add into below
+#  TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
+# july 2023 note, looks like this might be already done?
 #######################
 ###  SUMMARY PLOTS  ###
 #######################
