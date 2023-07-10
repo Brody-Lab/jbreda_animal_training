@@ -258,6 +258,7 @@ def make_daily_spoke_stage_plot(df, overwrite=False, date=None, animal_id=None):
 
 def plot_daily_results(df, ax, title=""):
     """
+    DONE
     plot trial result across a single day
 
     params
@@ -317,6 +318,7 @@ def plot_daily_trial_dur(df, ax, title=""):
 
 def plot_daily_npokes(df, ax, title="", plot_stage_info=True):
     """
+    DONE
     plot npokes (l,c,r) across a single day
 
     params
@@ -465,7 +467,7 @@ def plot_pokes_hist(df, ax, title=""):
 
 def plot_daily_result_summary(df, ax, title=""):
     """
-    TODO
+    DONE
     """
     res_summary = df.result.value_counts(normalize=True).sort_index(ascending=True)
     res_summary.plot(kind="bar", color=get_result_colors(df.result), ax=ax)
@@ -480,7 +482,7 @@ def plot_daily_result_summary(df, ax, title=""):
 
 def plot_daily_side_bias(df, ax):
     """ "
-    TODO
+    DONE
     """
     lr_hits = df.groupby(["sides"]).hits.mean().sort_index()
     lr_hits.plot(kind="bar", color=["darkseagreen", "indianred"], ax=ax)
@@ -495,6 +497,7 @@ def plot_daily_side_bias(df, ax):
 
 
 def plot_daily_side_counts(df, ax):
+    "DONE"
     side_count = df.sides.value_counts().sort_index()
 
     side_count.plot(kind="bar", color=["darkseagreen", "indianred"], ax=ax)
@@ -507,6 +510,7 @@ def plot_daily_side_counts(df, ax):
 
 
 def plot_daily_side_bias_and_counts(df, ax):
+    "NOT USED"
     # get sub data (kind of hacky, but good enough for now)
     side_count = df.sides.value_counts(normalize=True)
     lr_hits = df.groupby(["sides"]).hits.mean()
@@ -687,10 +691,10 @@ POKE_MAP = {
 }
 
 RESULT_MAP = {
-    1: {"label": "hit", "color": "darkgreen"},
     2: {"label": "error", "color": "maroon"},
     3: {"label": "viol", "color": "orangered"},
     4: {"label": "terr", "color": "lightcoral"},
+    1: {"label": "hit", "color": "darkgreen"},
     5: {"label": "crash", "color": "cyan"},
     6: {"label": "noans", "color": "black"},
 }
