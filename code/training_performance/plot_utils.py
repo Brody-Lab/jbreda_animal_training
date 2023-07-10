@@ -62,33 +62,66 @@ def get_result_order(result_column):
     return result_column.sort_values().unique()
 
 
-### Poke/Side column utilities ###
+### SIDE/Side column utilities ###
 
-POKE_MAP = {
+SIDE_MAP = {
     "l": {"label": "left", "color": "darkseagreen"},
     "c": {"label": "center", "color": "khaki"},
     "r": {"label": "right", "color": "indianred"},
     "n": {"label": "", "color": "white"},
     "order": ["l", "c", "r", "n"],
+    # "n_lpokes": {"label": "left", "color": "darkseagreen"},
+    # "n_cpokes": {"label": "center", "color": "khaki"},
+    # "n_rpokes": {"label": "right", "color": "indianred"},
 }
 
 
-def get_poke_labels(poke_column):
-    pokes = get_poke_order(poke_column)  # can be any colum with 'l', 'r', or 'c'
-    colors = [POKE_MAP[poke]["label"] for poke in pokes]
+def get_side_labels(side_column):
+    """
+    get the correct plot label (left, right, center) location
+    for each side
+
+    params:
+    -------
+    side_column: pandas.Series
+        a column of the dataframe that contains the side
+        of the poke ('l', 'r', or 'c') or variable relating
+        to side ('n_lpokes', 'n_rpokes', 'n_cpokes'
+    """
+    sides = get_side_order(side_column)  # can be any colum with 'l', 'r', or 'c'
+    colors = [SIDE_MAP[side]["label"] for side in sides]
     return colors
 
 
-def get_poke_colors(poke_column):
-    pokes = get_poke_order(poke_column)  # can any colum with 'l', 'r', or 'c'
-    colors = [POKE_MAP[poke]["color"] for poke in pokes]
+def get_side_colors(side_column):
+    """
+    get the correct plot color (red, yellow, green) for each side
+
+    params:
+    -------
+    side_column: pandas.Series
+        a column of the dataframe that contains the side
+        of the poke ('l', 'r', or 'c') or variable relating
+        to side ('n_lpokes', 'n_rpokes', 'n_cpokes'
+    """
+    sides = get_side_order(side_column)  # can any colum with 'l', 'r', or 'c'
+    colors = [SIDE_MAP[side]["color"] for side in sides]
     return colors
 
 
-def get_poke_order(poke_column):
+def get_side_order(side_column):
+    """
+    order the side in L-R-C order for plotting
+    params:
+    -------
+    side_column: pandas.Series
+        a column of the dataframe that contains the side
+        of the poke ('l', 'r', or 'c') or variable relating
+        to side ('n_lpokes', 'n_rpokes', 'n_cpokes'
+    """
     return sorted(
-        poke_column.unique(),
-        key=lambda x: POKE_MAP["order"].index(x)
-        if x in POKE_MAP["order"]
+        side_column.unique(),
+        key=lambda x: SIDE_MAP["order"].index(x)
+        if x in SIDE_MAP["order"]
         else float("inf"),
     )
