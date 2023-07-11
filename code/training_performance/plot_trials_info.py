@@ -438,3 +438,83 @@ def plot_first_spoke_summary_by_location_and_result(
     pu.set_legend(ax, legend)
 
     return None
+
+
+#### TRIAL LENGTH ####
+
+
+def plot_daily_trial_dur(trials_df, ax, title="", legend=True):
+    """
+    plot trial duration and iti across a single day
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `trial`, `trial_dur`,
+        and `inter_trial_dur` with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    title : str, (default = "")
+        title of plot
+    legend : bool, (default = False)
+        whether to include legend or not
+    """
+
+    trial_dur_df = pd.melt(
+        trials_df,
+        id_vars=["trial"],
+        value_vars=["trial_dur", "inter_trial_dur"],
+        var_name="duration_type",
+        value_name="duration",
+    )
+    sns.lineplot(
+        data=trial_dur_df,
+        x="trial",
+        y="duration",
+        palette=["cornflowerblue", "gray"],
+        hue="duration_type",
+        ax=ax,
+    )
+    ax.axhline(
+        trials_df.trial_dur.mean(), color="cornflowerblue", linestyle="--", zorder=1
+    )
+
+    _ = ax.set(ylabel="Duration [s]", xlabel="Trials", title=title)
+    pu.set_legend(ax, legend=legend)
+
+
+def plot_active_trial_dur_summary(trials_df, ax):
+    """
+    plot histogram of active trial duration, ie how long was
+    the trial when the iti duration is removed
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `trial_dur` and `inter_trial_dur`
+        with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    """
+
+    # remove inter trial duration time- animal is just waiting
+    active_time = trials_df.trial_dur - trials_df.inter_trial_dur
+
+    # plot
+    if active_time.max() > 100:
+        log_scale = True
+        units = "log(s)"
+    else:
+        log_scale = False
+        units = "s"
+
+    sns.histplot(active_time, bins=30, element="step", log_scale=log_scale, ax=ax)
+
+    # aesthetics
+    ax.set(
+        xlabel=f"Active Trial Dur [{units}]",
+        ylabel="Count",
+        title=f"Avg Active Dur: {active_time.mean():.2f} s",
+    )
+
+    return None
