@@ -7,11 +7,40 @@ Description: Plotting utilities for training performance
 import matplotlib.pyplot as plt
 
 
-def make_fig(figsize=(10, 3)):
+def make_fig(dims=None):
     "Quick fx for subplot w/ 10 x 3 size default"
 
-    fig, ax = plt.subplots(figsize=figsize)
+    if dims is "s":
+        dims = (4, 4)
+    elif dims is "w" or dims is None:
+        dims = (12, 4)
+
+    fig, ax = plt.subplots(figsize=dims)
     return fig, ax
+
+
+### Multiplot utilities ###
+
+
+def identify_axes(ax_dict, fontsize=48):
+    """
+    Helper to identify the Axes in a multiplot.
+    Draws the label in a large font in the center of the Axes.
+
+    Parameters
+    ----------
+    ax_dict : Dict[str, Axes]
+        Mapping between the title / label and the Axes.
+
+    fontsize : int, optional
+        How big the label should be
+    """
+    kw = dict(ha="center", va="center", fontsize=fontsize, color="darkgrey")
+    for k, ax in ax_dict.items():
+        ax.text(0.5, 0.5, k, transform=ax.transAxes, **kw)
+
+
+### Axis utilities ###
 
 
 def set_date_x_ticks(ax, xaxis_label):
