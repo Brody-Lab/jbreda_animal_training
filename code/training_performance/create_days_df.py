@@ -515,6 +515,43 @@ def fetch_pub_volume(animal_id, date):
     return float(pub_volume)
 
 
+def fetch_and_format_single_day_water(animal_id, date, verbose=False):
+    """
+    wrapper function to fetch mass and watering info for a single day
+    and return the information in a dataframe for easy plotting
+    wrt plot_trials_info/plot_watering_amounts()
+
+    params
+    ------
+    animal_id: str, e.g. 'R610'
+        id of animal of which to fetch data for from mass and water tables
+    date: str, e.g. '2021-04-15'
+        date of which to fetch data for from mass and water tables
+    verbose: bool, default False
+        whether to print out information about the animal's mass and water
+        consumption
+
+    returns
+    -------
+    df: pd.DataFrame
+        dataframe with columns 'date', 'rig_volume', 'pub_volume' to make
+        a stacked bar chart with (this is the preferred format for plotting)
+    volume_target: float
+        target volume of water to be consumed by the animal on given day to
+        mark on plot (i.e. the minimum threshold)
+    """
+    mass, _ = fetch_day_mass(animal_id, date)
+    percent_target = fetch_day_restriction_target(animal_id, date)
+    pub_volume = fetch_pub_volume(animal_id, date)
+    rig_volume = fetch_rig_volume(animal_id, date, verbose=verbose)
+    volume_target = fetch_day_water_target(mass, percent_target, date, verbose=verbose)
+
+    df = pd.DataFrame(
+        {"date": [date], "rig_volume": [rig_volume], "pub_volume": [float(pub_volume)]}
+    )
+    return df, volume_target
+
+
 ######################
 ### LAZY LOAD DATA ###
 ######################
