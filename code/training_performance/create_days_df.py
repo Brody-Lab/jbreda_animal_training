@@ -13,8 +13,6 @@ from datajoint.errors import DataJointError
 from pathlib import Path
 import os
 
-from dj_utils import ANIMAL_IDS
-
 
 ratinfo = dj.create_virtual_module("intfo", "ratinfo")
 bdata = dj.create_virtual_module("bdata", "bdata")
@@ -25,7 +23,7 @@ bdata = dj.create_virtual_module("bdata", "bdata")
 
 
 def create_days_df_from_dj(
-    animal_ids=None, date_min="2000-01-01", date_max="2030-01-01", verbose=False
+    animal_ids, date_min="2000-01-01", date_max="2030-01-01", verbose=False
 ):
     """
     Function to create a day level summary df from DataJoint
@@ -36,8 +34,7 @@ def create_days_df_from_dj(
     params
     ------
     animal_ids : list (optional, default = None)
-        list of animal ids to query. If None, defaults to ANIMAL_IDS
-        at the top of this script
+        list of animal ids to query.
     date_min : str (optional, default = "2000-01-01")
         minimum date to query in YYYY-MM-DD format, e.g. "2022-01-04"
     date_max : str (optional, default = "2030-01-01")
@@ -51,7 +48,6 @@ def create_days_df_from_dj(
         data frame containing day-level summary info for all animals
         in `animal_ids` between `date_min` and `date_max`
     """
-    animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
     assert type(animal_ids) == list, "animal ids must be in a list"
 
     animals_daily_summary_df = []
@@ -560,7 +556,7 @@ def fetch_and_format_single_day_water(animal_id, date, verbose=False):
 def lazy_load_days_summary_df(
     date_min,
     date_max,
-    animal_ids=ANIMAL_IDS,
+    animal_ids,
     save_dir=os.getcwd(),
     f_name="days_df.csv",
     save_out=False,

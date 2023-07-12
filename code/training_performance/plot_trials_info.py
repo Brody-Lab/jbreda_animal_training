@@ -54,7 +54,7 @@ def plot_result_summary(trials_df, ax, title=""):
     ------
     trials_df : DataFrame
         trials dataframe with columns `trial`, `result`, with
-        trails as row index
+        trials as row index
     ax : matplotlib.axes
         axis to plot to
     title : str, (default = "")
@@ -410,7 +410,7 @@ def plot_time_to_first_spoke(trials_df, ax, title="", legend=False):
     return None
 
 
-def plot_first_spokes_summary_by_correct_side_and_location(
+def plot_first_spokes_summary_by_correct_side_and_loc(
     trials_df, ax, title="", legend=False
 ):
     """
@@ -488,9 +488,7 @@ def plot_first_spokes_summary_by_correct_side_and_location(
     return None
 
 
-def plot_first_spoke_summary_by_location_and_result(
-    trials_df, ax, title="", legend=False
-):
+def plot_first_spoke_summary_by_loc_and_result(trials_df, ax, title="", legend=False):
     """
     plot first spoke summary given the location of the poke and
     the result of the trial. Note this only looks at the first

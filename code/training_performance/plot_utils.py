@@ -10,9 +10,9 @@ import matplotlib.pyplot as plt
 def make_fig(dims=None):
     "Quick fx for subplot w/ 10 x 3 size default"
 
-    if dims is "s":
+    if dims == "s":
         dims = (4, 4)
-    elif dims is "w" or dims is None:
+    elif dims == "w" or dims is None:
         dims = (12, 4)
 
     fig, ax = plt.subplots(figsize=dims)

@@ -2,12 +2,6 @@ import numpy as np
 import datajoint as dj
 import pandas as pd
 
-#################
-###    VARS   ###
-#################
-
-ANIMAL_IDS = ["R610", "R611", "R612", "R613", "R614"]
-
 
 ###################
 ###  FUNCTIONS  ###

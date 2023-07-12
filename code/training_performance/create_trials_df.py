@@ -9,8 +9,7 @@ import datajoint as dj
 import numpy as np
 import pandas as pd
 
-import dj_utils as djut
-from dj_utils import ANIMAL_IDS
+import dj_utils as dju
 
 dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 
@@ -18,7 +17,7 @@ bdata = dj.create_virtual_module("bdata", "bdata")
 
 
 def create_trials_df_from_dj(
-    animal_ids=None, date_min="2000-01-01", date_max="2030-01-01", verbose=False
+    animal_ids, date_min="2000-01-01", date_max="2030-01-01", verbose=False
 ):
     """
     Create a trial-level dataframe from the DataJoint Sessions.protocol_data blob
@@ -28,9 +27,8 @@ def create_trials_df_from_dj(
 
     params
     -----
-    animal_ids : list (optional, default = None)
-        list of animal ids to fetch data for. If None,
-        defaults to ANIMAL_IDS in dj_utils.py
+    animal_ids : list
+        list of animal ids to fetch data for
     date_min : str (optional, default = "2000-01-01")
         minimum date to fetch data for
     date_max : str (optional, default = "2030-01-01")
@@ -47,8 +45,6 @@ def create_trials_df_from_dj(
 
     """
     # TODO maybe add save out here if read in is
-
-    animal_ids = ANIMAL_IDS if animal_ids is None else animal_ids
     assert type(animal_ids) == list, "animal ids must be in a list"
 
     # each animal will have a df across all sessions fetched, will
@@ -186,7 +182,7 @@ def convert_to_dicts(blobs):
     dicts = []
 
     for session_blob in blobs:
-        sess_dict = djut.transform_blob(session_blob[data_type])
+        sess_dict = dju.transform_blob(session_blob[data_type])
         dicts.append(sess_dict)
 
     return dicts
@@ -200,7 +196,7 @@ def convert_to_dfs(dicts, sess_ids):
 
     for session_dict in dicts:
         try:
-            dfs.append(djut.blob_dict_to_df(session_dict))
+            dfs.append(dju.blob_dict_to_df(session_dict))
         except:
             print(f"error in fetching df for session {sess_ids}, skipping it")
             pass
@@ -279,8 +275,8 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         category_columns = [
             "sess_id",
             "sound_pair",
-            "first_spoke",
-            "sides",
+            # "first_spoke",
+            # "sides",
             "SMA_set",
             "go_type",
             "give_type_set",
