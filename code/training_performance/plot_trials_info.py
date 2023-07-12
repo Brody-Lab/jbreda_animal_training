@@ -10,6 +10,8 @@ import seaborn as sns
 import plot_utils as pu
 import numpy as np
 
+from create_days_df import fetch_and_format_single_day_water
+
 # TODO move plots from `DMS_utils` to here
 
 
@@ -71,6 +73,47 @@ def plot_result_summary(trials_df, ax, title=""):
     _ = ax.bar_label(ax.containers[0], fontsize=12, fmt="%.2f")
     ax.set(ylim=(0, 1), ylabel="performance", xlabel="", title=title)
     ax.set_xticklabels(pu.get_result_labels(trials_df.result), rotation=45)
+
+    return None
+
+
+def plot_performance_rates(trials_df, ax, title="", legend=True):
+    """
+    plot performance rates across a single day
+
+    params
+    ------
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `trial`,`violation_rate`,
+        `error_rate`, `hit_rate` with trials as row index
+    ax: matplotlib.axes.Axes
+        axes to plot to
+    title : str, (default = "")
+        title of plot
+    legend : bool, (default = False)
+        whether to include legend or not
+    """
+    # make long df
+    perf_rates_df = pd.melt(
+        trials_df,
+        id_vars=["trial"],
+        value_vars=["violation_rate", "error_rate", "hit_rate"],
+        var_name="perf_type",
+        value_name="rate",
+    )
+    sns.lineplot(
+        data=perf_rates_df,
+        x="trial",
+        y="rate",
+        hue="perf_type",
+        palette=["orangered", "maroon", "darkgreen"],
+        ax=ax,
+    )
+
+    # aesthetics
+    _ = ax.set(ylabel="Rate", xlabel="Trials", title=title, ylim=(0, 1))
+    ax.grid(alpha=0.5)
+    pu.set_legend(ax, legend=legend)
 
     return None
 
@@ -166,6 +209,60 @@ def plot_side_count_summary(trials_df, ax):
         xlabel="",
         ylabel="number of trials",
     )
+
+    return None
+
+
+### STAGE INFO ###
+
+
+def plot_stage_info(trials_df, ax):
+    """
+    plotting a bar indicating stage at top of plot
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with colums `sides` and `stage` with
+        trials as row idex
+    ax: matplotlib.axes.Axes
+        axes to plot to
+
+    notes
+    ----
+    NOTE this code assumes you are using this with
+    plot_correct_side() and the y axis is l and/or r
+    """
+
+    # the ax.text get's really weird when there is only 1 category
+    # for the y axis, so we need to adjust the y position manually
+    if trials_df.sides.nunique() == 1:
+        y_position = 0
+    else:
+        y_position = 0.5
+
+    gray_palette = sns.color_palette("gray")
+
+    # iterate over trials in each stage, make the hbar + plot
+    for s in trials_df.stage.unique():
+        # calculate trial start and stop numbers for a given stage
+        bounds = trials_df.query("stage == @s").agg({"trial": ["min", "max"]})
+        ax.axvspan(
+            xmin=bounds.iloc[0, 0],
+            xmax=bounds.iloc[1, 0] + 1,
+            ymin=0.25,
+            ymax=0.75,  # relative to plot (0,1)
+            alpha=0.3,
+            color=gray_palette[int(s - 1)],
+        )
+        # add text label
+        ax.text(
+            x=bounds.mean().values[0],
+            y=y_position,
+            s=f"stage {int(s)}",
+            ha="center",
+            va="center",
+        )
 
     return None
 
@@ -306,9 +403,11 @@ def plot_time_to_first_spoke(trials_df, ax, title="", legend=False):
 
     # aesthetics
     upper_lim = trials_df["min_time_to_spoke"].quantile(0.99)  # exclude outliers
-    ax.set_ylim(0.1, upper_lim)
+    ax.set_ylim(top=upper_lim)
     _ = ax.set(ylabel="1st Spoke Time [s]", xlabel="Trials", title=title)
     pu.set_legend(ax, legend)
+
+    return None
 
 
 def plot_first_spokes_summary_by_correct_side_and_location(
@@ -359,18 +458,19 @@ def plot_first_spokes_summary_by_correct_side_and_location(
         x="correct_side",
         y="poke_time",
         hue="poke_side",
+        order=[True, False],  # put correct on left
         palette=pu.get_side_colors(first_spoke_df.poke_side),
         ax=ax,
         dodge=True,
         alpha=0.5,
         jitter=0.2,
     )
-
     sns.boxplot(
         data=first_spoke_df,
         x="correct_side",
         y="poke_time",
         hue="poke_side",
+        order=[True, False],  # put correct on left
         showfliers=False,
         dodge=True,
         width=0.8,
@@ -382,8 +482,10 @@ def plot_first_spokes_summary_by_correct_side_and_location(
     # aesthetics
     upper_lim = first_spoke_df["poke_time"].quantile(0.99)  # exclude outliers
     ax.set_ylim(0.1, upper_lim)
-    ax.set(ylabel="Spoke Time [s]", xlabel="Correct")
+    ax.set(ylabel="Spoke Time [s]", xlabel="Correct", title=title)
     pu.set_legend(ax, legend)
+
+    return None
 
 
 def plot_first_spoke_summary_by_location_and_result(
@@ -407,7 +509,7 @@ def plot_first_spoke_summary_by_location_and_result(
         whether to include legend or not
     """
     sns.stripplot(
-        data=trials_df,
+        data=trials_df.query("first_spoke != 'n'"),
         x="first_spoke",
         y="min_time_to_spoke",
         hue="result",
@@ -419,7 +521,7 @@ def plot_first_spoke_summary_by_location_and_result(
         jitter=0.2,
     )
     sns.boxplot(
-        data=trials_df,
+        data=trials_df.query("first_spoke != 'n'"),
         x="first_spoke",
         y="min_time_to_spoke",
         hue="result",
@@ -443,7 +545,7 @@ def plot_first_spoke_summary_by_location_and_result(
 #### TRIAL LENGTH ####
 
 
-def plot_daily_trial_dur(trials_df, ax, title="", legend=True):
+def plot_trial_dur(trials_df, ax, title="", legend=True):
     """
     plot trial duration and iti across a single day
 
@@ -459,7 +561,7 @@ def plot_daily_trial_dur(trials_df, ax, title="", legend=True):
     legend : bool, (default = False)
         whether to include legend or not
     """
-
+    # make long df
     trial_dur_df = pd.melt(
         trials_df,
         id_vars=["trial"],
@@ -479,8 +581,11 @@ def plot_daily_trial_dur(trials_df, ax, title="", legend=True):
         trials_df.trial_dur.mean(), color="cornflowerblue", linestyle="--", zorder=1
     )
 
+    # aesthetics
     _ = ax.set(ylabel="Duration [s]", xlabel="Trials", title=title)
     pu.set_legend(ax, legend=legend)
+
+    return None
 
 
 def plot_active_trial_dur_summary(trials_df, ax):
@@ -516,5 +621,56 @@ def plot_active_trial_dur_summary(trials_df, ax):
         ylabel="Count",
         title=f"Avg Active Dur: {active_time.mean():.2f} s",
     )
+
+    return None
+
+
+#### WATER ####
+def plot_watering_amounts(trials_df, ax, title="", legend=False):
+    """
+    plot the water drunk in the rig and pub for a day with
+    restriction volume indicated. note the trials_df is only
+    being used to find the animal_id and date to fetch the
+    mass/water information with
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `animal_id` and `date`
+        with only one unique value in each
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    legend : bool, (default = True)
+        whether to include legend or not
+    """
+
+    assert (
+        len(trials_df.animal_id.unique()) == 1 and len(trials_df.date.unique()) == 1
+    ), print("trials_df must have only one unique animal_id and date")
+
+    animal_id = trials_df.animal_id.iloc[0]
+    date = trials_df.date.iloc[0]
+
+    # this makes a call to the create_days functions since they were
+    # already well written to query the ratinfo database
+    df, volume_target = fetch_and_format_single_day_water(animal_id, date)
+
+    # plot stacked bar
+    df.set_index("date").plot(kind="bar", stacked=True, color=["blue", "cyan"], ax=ax)
+    # plot the target threshold
+    ax.axhline(y=volume_target, xmin=0.2, xmax=0.8, color="black")
+    # label the amounts
+    ax.text(x=-0.45, y=volume_target, s=str(volume_target), fontsize=12)
+    for cont in ax.containers:
+        _ = ax.bar_label(
+            cont, fontsize=12, fmt="%.2f", label_type="center", color="white"
+        )
+
+    # aesthetics
+    ax.set_xticks([])
+    _ = ax.set(xlabel="", ylabel="volume (mL)", title=title)
+    pu.set_legend(ax, legend=legend)
 
     return None
