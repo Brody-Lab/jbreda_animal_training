@@ -385,8 +385,16 @@ def plot_n_failed_cpokes(trials_df, ax):
         axis to plot to
     """
 
-    sns.histplot(trials_df.n_settling_ins, binwidth=1, ax=ax)
-    ax.axvline(trials_df.n_settling_ins.mean(), color="k", linestyle="--")
+    if trials_df.n_settling_ins.nunique():
+        binwidth = None
+    else:
+        binwidth = 1
+
+    sns.histplot(trials_df.n_settling_ins, binwidth=binwidth, ax=ax)
+    ax.axvline(trials_df.n_settling_ins.mean(), color="k", linestyle="--", lw=3)
+
+    upper_lim = trials_df["n_settling_ins"].quantile(0.99)  # exclude outliers
+    ax.set_ylim(top=upper_lim)
     ax.set(
         xlabel="N failed / trial",
         title=f"Mean N failed cpoke: {trials_df.n_settling_ins.mean():.2f}",
@@ -413,7 +421,11 @@ def plot_avg_failed_cpoke_dur(trials_df, ax):
         binwidth=0.025,
         ax=ax,
     )
-    ax.axvline(trials_df.avg_settling_in.mean(), color="k", linestyle="--")
+    ax.axvline(
+        trials_df.avg_settling_in.mean(),
+        color=pu.RESULT_MAP[3]["color"],
+        lw=3,
+    )
 
     ax.set(
         xlabel="Failed Cpoke Dur [s]",
@@ -435,6 +447,9 @@ def plot_avg_valid_cpoke_dur(trials_df, ax):
     ax : matplotlib.axes
         axis to plot to
     """
+    if np.sum(trials_df.cpoke_dur) == 0:
+        print("No valid cpokes, make sure fixation is on!")
+        return None
 
     sns.histplot(
         trials_df.cpoke_dur,
@@ -442,11 +457,11 @@ def plot_avg_valid_cpoke_dur(trials_df, ax):
         binwidth=0.025,
         ax=ax,
     )
-    ax.axvline(trials_df.cpoke_dur.mean(), color="k", linestyle="--")
+    ax.axvline(trials_df.cpoke_dur.mean(), color="lightgreen", lw=3)
 
     ax.set(
         xlabel="Valid Cpoke Dur [s]",
-        title=f"Avg dur valid: {trials_df.avg_settling_in.mean():.2f}",
+        title=f"Avg dur valid: {trials_df.cpoke_dur.mean():.2f}",
     )
 
     return None
@@ -454,7 +469,7 @@ def plot_avg_valid_cpoke_dur(trials_df, ax):
 
 def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
     """
-    plot hisogram of cpoke timing relative to the go cue for failed and valid
+    plot histogram of cpoke timing relative to the go cue for failed and valid
     cpokes across trials. Note that if mode is settling_in, a single trial can
     have both a successful and failed cpoke dur
 
@@ -493,9 +508,9 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
     sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
 
     # vertical lines
-    ax.axvline(0, color="k", linestyle="--")
-    ax.axvline(data.failed_relative_to_go.mean(), color=pal[0])
-    ax.axvline(data.valid_relative_to_go.mean(), color=pal[1])
+    ax.axvline(0, color="k")
+    ax.axvline(data.failed_relative_to_go.mean(), color=pal[0], lw=3)
+    ax.axvline(data.valid_relative_to_go.mean(), color=pal[1], lw=3)
 
     ax.set(
         xlabel="Cpoke Dur Relative to Go [s]",
@@ -759,7 +774,41 @@ def plot_active_trial_dur_summary(trials_df, ax):
     return None
 
 
+#### GIVE ####
+def plot_give_info(trials_df, ax, legend=True):
+    """
+    plot give info for each trial. will plot the give type that
+    was set by the GUI and the give type that was implemented by
+    the underlying code (e.g. if fraction of give trials is not
+    100%, then the give type set by the GUI will not match the
+    type implemented every trial)
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `trial`, `give_type_imp`, and
+        `give_type_set` with trials as row index
+    ax : matplotlib.axes.Axes
+        axis to plot to
+    """
+
+    # make the names shorter for plotting
+    data = trials_df[["trial", "give_type_imp", "give_type_set"]].copy()
+    mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
+    data.give_type_imp = data.give_type_imp.replace(mapping)
+
+    sns.scatterplot(data=data, x="trial", y="give_type_imp", hue="give_type_set", ax=ax)
+
+    _ = ax.set(title="Give Type Implemented", xlabel="Trial", ylabel="")
+
+    pu.set_legend(ax, legend)
+
+    return None
+
+
 #### WATER ####
+# TODO update to take into account mouse/rate new code for the
+# TODO threshold bar
 def plot_watering_amounts(trials_df, ax, title="", legend=False):
     """
     plot the water drunk in the rig and pub for a day with
