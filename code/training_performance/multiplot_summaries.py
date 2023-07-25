@@ -80,12 +80,12 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
     ## ROW 1
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
-    plot_watering_amounts(trials_df, ax=ax_dict["C"])
+    # plot_watering_amounts(trials_df, ax=ax_dict["C"])
 
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["D"])
     plot_stage_info(trials_df, ax=ax_dict["D"])
-    plot_side_bias_summary(trials_df, ax=ax_dict["E"])
+    # plot_side_bias_summary(trials_df, ax=ax_dict["E"])
     plot_side_count_summary(trials_df, ax=ax_dict["F"])
 
     ## ROW 3

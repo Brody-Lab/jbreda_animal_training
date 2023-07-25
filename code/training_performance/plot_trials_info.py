@@ -370,6 +370,142 @@ def plot_npokes_summary(trials_df, ax, title=""):
     return None
 
 
+#### CENTER POKING ####
+
+
+def plot_n_failed_cpokes(trials_df, ax):
+    """
+    plot histogram of the number of failed cpokes per trial
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `n_settling_ins`
+        with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    """
+
+    sns.histplot(trials_df.n_settling_ins, binwidth=1, ax=ax)
+    ax.axvline(trials_df.n_settling_ins.mean(), color="k", linestyle="--")
+    ax.set(
+        xlabel="N failed / trial",
+        title=f"Mean N failed cpoke: {trials_df.n_settling_ins.mean():.2f}",
+    )
+
+    return None
+
+
+def plot_avg_failed_cpoke_dur(trials_df, ax):
+    """
+    plot avg failed cpoke dur for per trial
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `avg_settling_in`
+        with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    """
+
+    sns.histplot(
+        trials_df.avg_settling_in,
+        color=pu.RESULT_MAP[3]["color"],
+        binwidth=0.025,
+        ax=ax,
+    )
+    ax.axvline(trials_df.avg_settling_in.mean(), color="k", linestyle="--")
+
+    ax.set(
+        xlabel="Failed Cpoke Dur [s]",
+        title=f"Avg dur failed: {trials_df.avg_settling_in.mean():.2f}",
+    )
+
+    return None
+
+
+def plot_avg_valid_cpoke_dur(trials_df, ax):
+    """
+    plot avg valid cpoke dur for per trial
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `cpoke_dur`
+        with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    """
+
+    sns.histplot(
+        trials_df.cpoke_dur,
+        color="lightgreen",
+        binwidth=0.025,
+        ax=ax,
+    )
+    ax.axvline(trials_df.cpoke_dur.mean(), color="k", linestyle="--")
+
+    ax.set(
+        xlabel="Valid Cpoke Dur [s]",
+        title=f"Avg dur valid: {trials_df.avg_settling_in.mean():.2f}",
+    )
+
+    return None
+
+
+def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
+    """
+    plot hisogram of cpoke timing relative to the go cue for failed and valid
+    cpokes across trials. Note that if mode is settling_in, a single trial can
+    have both a successful and failed cpoke dur
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `avg_settling_in`, `cpoke_dur`,
+        `pre_go_dur`, `settling_in_dur` with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+    mode : str (default = "settling_in")
+        whether to plot the settling in dur or not. this is useful for the
+        early stages where an animal must poke for settling in dur length
+        to trigger go cue
+    legend : bool, (default = False)
+        whether to include legend or not
+    """
+
+    ## Curate Data
+    data = pd.DataFrame()
+    if mode == "settling_in":
+        # if in this mode, violations don't exist yet. animal is in an early stage where
+        # they need to poke for settling in dur length to start a trial and pre_go_dur
+        # is something very small
+        valid_time = trials_df.pre_go_dur + trials_df.settling_in_dur
+    else:
+        # this is like a normal trial- settling in dur is baked into pre_dur and pre_go_dur
+        # encapsulates all of the duration an animal should have fixated for
+        valid_time = trials_df.pre_go_dur
+
+    data["failed_relative_to_go"] = trials_df.avg_settling_in - valid_time
+    data["valid_relative_to_go"] = trials_df.cpoke_dur - valid_time
+
+    ## Plot
+    pal = [pu.RESULT_MAP[3]["color"], "lightgreen"]
+    sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+
+    # vertical lines
+    ax.axvline(0, color="k", linestyle="--")
+    ax.axvline(data.failed_relative_to_go.mean(), color=pal[0])
+    ax.axvline(data.valid_relative_to_go.mean(), color=pal[1])
+
+    ax.set(
+        xlabel="Cpoke Dur Relative to Go [s]",
+    )
+    pu.set_legend(ax, legend=legend)
+
+    return None
+
+
+#### SIDE POKING ####
 def plot_time_to_first_spoke(trials_df, ax, title="", legend=False):
     """
     plot time to first spoke across trials for a single day, this
