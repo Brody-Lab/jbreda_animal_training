@@ -244,7 +244,7 @@ def plot_stage_info(trials_df, ax):
     gray_palette = sns.color_palette("gray")
 
     # iterate over trials in each stage, make the hbar + plot
-    for s in trials_df.stage.unique():
+    for i, s in enumerate(trials_df.stage.unique()):
         # calculate trial start and stop numbers for a given stage
         bounds = trials_df.query("stage == @s").agg({"trial": ["min", "max"]})
         ax.axvspan(
@@ -253,7 +253,7 @@ def plot_stage_info(trials_df, ax):
             ymin=0.25,
             ymax=0.75,  # relative to plot (0,1)
             alpha=0.3,
-            color=gray_palette[int(s - 1)],
+            color=gray_palette[int(i - 1)],
         )
         # add text label
         ax.text(
@@ -477,7 +477,7 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
     ------
     trials_df : DataFrame
         trials dataframe with columns `avg_settling_in`, `cpoke_dur`,
-        `pre_go_dur`, `settling_in_dur` with trials as row index
+        `pre_go_dur`, `settling_in_dur` `n_settling_ins` with trials as row index
     ax : matplotlib.axes
         axis to plot to
     mode : str (default = "settling_in")
@@ -512,8 +512,12 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
     ax.axvline(data.failed_relative_to_go.mean(), color=pal[0], lw=3)
     ax.axvline(data.valid_relative_to_go.mean(), color=pal[1], lw=3)
 
+    # calculate how often animal needs multiple cpokes to start a trial
+    multi_cpokes = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+
     ax.set(
         xlabel="Cpoke Dur Relative to Go [s]",
+        title=f"Failure rate {multi_cpokes:.2f}",
     )
     pu.set_legend(ax, legend=legend)
 
