@@ -5,6 +5,8 @@ Description: General python utilities that are not specific to datajoint or plot
 """
 
 from pathlib import Path
+import platform
+
 
 ### create directories ###
 
@@ -23,3 +25,14 @@ def make_dirs(base_path, dir_names):
     for dir_name in dir_names:
         Path(base_path, dir_name).mkdir(parents=True, exist_ok=True)
     print("directories created")
+
+
+### Paths ###
+if platform.system() == "Windows":
+    ANIMAL_TABLE_PATH = Path(
+        "C:\\Users\\JB\\github\\jbreda_animal_training\\data\\animals.xlsx"
+    )
+else:
+    ANIMAL_TABLE_PATH = Path(
+        "/Users/jessbreda/Desktop/github/jbreda_animal_training/data/animals.xlsx"
+    )

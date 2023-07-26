@@ -7,7 +7,8 @@ performance, water and mass metrics across days
 
 import seaborn as sns
 import pandas as pd
-from plot_utils import *
+import numpy as np
+from plot_utils import *  # TODO make this a pu import
 
 # TODO change to import plot_utils as pu and add into below
 #  TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
@@ -119,14 +120,15 @@ def plot_stage(trials_df, ax, max_stage=8, title="", xaxis_label=True, **kwargs)
     # aesthetics
     set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
-    _ = plt.yticks(range(1, max_stage, 1))
+    _ = plt.yticks(range(1, max_stage + 1, 1))
     _ = ax.set(ylabel="Stage #", title=title)
 
 
 ### MASS ###
 def plot_mass(days_df, ax, title="", xaxis_label=True):
     """
-    Plot the mass of the animal over date range in days_df
+    Plot the mass of the animal over date range in days_df. If it's a mouse,
+    will also plot mass relative to baseline as a percent.
 
     params
     ------
@@ -138,14 +140,146 @@ def plot_mass(days_df, ax, title="", xaxis_label=True):
         title for the plot
     """
 
+    baseline_mass = get_baseline_mass(days_df)
+
+    if baseline_mass is np.nan:
+        plot_raw_mass(days_df, ax, title=title, xaxis_label=xaxis_label)
+    else:
+        plot_raw_and_relative_mass(
+            days_df, baseline_mass, ax, title=title, xaxis_label=xaxis_label
+        )
+
+    return None
+
+
+def get_baseline_mass(days_df):
+    """
+    Deterrmine if animal is a mouse or rat, so baseline mass plot
+    can be determined. This assumes you have an "ANIMALS_TABLE",
+    which is located in the data directory. I manually enter high-level
+    animal info here that's not easy to access/store on datajoint.
+
+    params
+    ------
+    days_df : pd.DataFrame
+        days dataframe with `animal_id` column
+    """
+
+    from dir_utils import ANIMAL_TABLE_PATH
+
+    animal_id = days_df.animal_id.unique()[0]
+    animal_table = pd.read_excel(ANIMAL_TABLE_PATH)
+    species = animal_table.query("animal_id == @animal_id").species.iloc[0]
+
+    if species == "mouse":
+        baseline_mass = animal_table.query(
+            "animal_id == @animal_id"
+        ).baseline_mass.iloc[0]
+    else:
+        baseline_mass = np.nan
+
+    return baseline_mass
+
+
+def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
+    """
+    Plot the raw mass in grams over date range in days_df.
+
+    params
+    ------
+    days_df : pd.DataFrame
+        days dataframe with columns `date`, `mass` with dates as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    """
     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
 
     # aethetics
+    print(xaxis_label)
     set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
 
     return None
+
+
+def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label=True):
+    """
+    Plot the raw & relative mass of an animal over the
+    date range in days_df. The axis are locked to each other
+    so that you can easily convert between the two.
+
+    params
+    ------
+    days_df : pd.DataFrame
+        days dataframe with columns `date`, `mass` with dates as row index
+    baseline_mass : float
+        baseline mass of the mouse in grams, calculated however
+        you like bust most easily by get_baseline_mass()
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    """
+
+    def _mass_to_relative(mass, baseline_mass):
+        return mass / baseline_mass * 100
+
+    def _convert_ax_r_to_relative(ax_m):
+        """
+        update second axis according to first axis, such that
+        mass -> relative mass
+        """
+
+        y1, y2 = ax.get_ylim()
+        ax_r.set_ylim(
+            _mass_to_relative(y1, baseline_mass), _mass_to_relative(y2, baseline_mass)
+        )
+        ax_r.figure.canvas.draw()
+
+    # make the baseline mass on the right y-axis always match
+    # the raw mass on the left y-axis
+    ax_r = ax.twinx()
+    ax.callbacks.connect("ylim_changed", _convert_ax_r_to_relative)
+    ax.plot(days_df["date"], days_df["mass"], color="k", marker="o")
+    ax.axhline(baseline_mass * 0.8, color="red", linestyle="--", alpha=0.5)
+
+    # aesthetics
+    ax.set(
+        ylim=(baseline_mass * 0.75, baseline_mass),
+        ylabel="Mass [g]",
+    )
+    ax_r.set(ylabel="Relative Mass [%]")
+    ax.grid()
+    set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
+# def plot_mass(days_df, ax, title="", xaxis_label=True):
+#     """
+#     Plot the mass of the animal over date range in days_df
+
+#     params
+#     ------
+#     days_df : pd.DataFrame
+#         days dataframe with columns `date`, `mass` with dates as row index
+#     ax : matplotlib.axes.Axes
+#         axes to plot on
+#     title : str (optional, default = "")
+#         title for the plot
+#     """
+
+#     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
+
+#     # aethetics
+#     set_date_x_ticks(ax, xaxis_label)
+#     ax.grid(alpha=0.5)
+#     ax.set(ylabel="Mass [g]", xlabel="", title=title)
+
+#     return None
 
 
 ### WATER ###
