@@ -197,7 +197,6 @@ def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
 
     # aethetics
-    print(xaxis_label)
     set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
@@ -208,7 +207,7 @@ def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
 def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label=True):
     """
     Plot the raw & relative mass of an animal over the
-    date range in days_df. The axis are locked to each other
+    date range in days_df. The axes are locked to each other
     so that you can easily convert between the two.
 
     params
