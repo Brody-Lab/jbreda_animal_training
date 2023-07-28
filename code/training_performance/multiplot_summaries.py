@@ -49,7 +49,6 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
                 else:
                     print(f"!!! plot not made yet!!!!")
             elif df.SMA_set.iloc[-1] == "spoke":
-                # TODO if/else logic here (or wrapper function) given new curricula
                 multiplot_spoke_lg(sub_df, save_out=save_out, save_path=full_path)
 
 
@@ -78,6 +77,7 @@ def multiplot_cpoke_pre_gnp(trials_df, save_out=False, save_path=None):
         EEEFGHIJ
         KKKLMNNN
         OOOPQRRR
+        SSSTUVVV
     """
     fig = plt.figure(constrained_layout=True, figsize=(30, 20))
 
@@ -115,8 +115,9 @@ def multiplot_cpoke_pre_gnp(trials_df, save_out=False, save_path=None):
     plot_active_trial_dur_summary(trials_df, ax=ax_dict["Q"])
     plot_trial_dur(trials_df, ax=ax_dict["R"])
 
-    # plot L here
-
+    ## ROW 5
+    plot_cpokes_over_trials(trials_df, ax=ax_dict["S"], mode="settling_in")
+    plot_ncpokes_over_trials(trials_df, ax=ax_dict["V"])
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")
         plt.close("all")
@@ -197,41 +198,82 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
 ######################
 
 
-def multiplot_multi_day_summary(animal_id, days_df):
+def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     """
-    Plot the summary of the animal's performance over the
-    date range in days_df
-
     params
     ------
     animal_id : str
         animal id to plot, e.g. "R610"
     days_df : pd.DataFrame
-        days dataframe created by create_days_df_from_dj()
-    """
+        days dataframe created by create_days_df_from_dj() with
+        day as row index
+    trials_df : pd.DataFrame
+        trials dataframe created by create_trials_df_from_dj() with
+        trial as row index
 
-    layout = """
-        AAABBB
-        CCCDDD
-        EEEFFF
     """
-    fig = plt.figure(constrained_layout=True, figsize=(15, 8))
+    layout = """
+        AAABBBCCC
+        DDDEEEFFF
+        GGGHHHIII
+        JJJKKKLLL
+        MMMNNNOOO
+    """
+    fig = plt.figure(constrained_layout=True, figsize=(30, 20))
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
     plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
 
-    animal_df = days_df.query("animal_id == @animal_id")
+    animal_days_df = days_df.query("animal_id == @animal_id").copy()
+    animal_trials_df = trials_df.query("animal_id == @animal_id").copy()
 
-    ## Plot
-    # left column
-    plot_trials(animal_df, ax_dict["A"], title="Trials", legend=True, xaxis_label=False)
-    plot_performance(animal_df, ax_dict["C"], title="Performance", xaxis_label=False)
-    plot_side_bias(animal_df, ax_dict["E"], title="Side Bias", xaxis_label=True)
-
-    # right column
-    plot_mass(animal_df, ax_dict["B"], title="Mass", xaxis_label=False)
-    plot_water_restriction(
-        animal_df, ax_dict["D"], title="Water", legend=False, xaxis_label=False
+    ## ROW 1
+    plot_trials(
+        animal_days_df, ax_dict["A"], title="Trials", legend=True, xaxis_label=False
     )
-    plot_rig_tech(animal_df, ax_dict["F"], title="Rig/Tech", xaxis_label=True)
+    plot_mass(animal_days_df, ax_dict["B"], title="Mass", xaxis_label=False)
+    plot_water_restriction(
+        animal_days_df, ax_dict["C"], title="Water", legend=False, xaxis_label=False
+    )
+
+    ## ROW 2
+    plot_performance(
+        animal_days_df, ax_dict["D"], title="Performance", xaxis_label=False
+    )
+    plot_performance_bars(
+        animal_trials_df, ax_dict["E"], title="Performance", xaxis_label=False
+    )
+    plot_stage(
+        animal_trials_df,
+        ax_dict["F"],
+        title="Stage",
+        xaxis_label=False,
+    )
+
+    ## ROW 3
+    plot_side_bias(animal_days_df, ax_dict["G"], title="Side Bias", xaxis_label=False)
+    plot_antibias_probs(
+        animal_trials_df, ax_dict["H"], title="Antibias", xaxis_label=False
+    )
+    plot_sidebias_params(
+        animal_trials_df, ax_dict["I"], title="Side Bias Params", xaxis_label=False
+    )
+
+    ## ROW 4
+    plot_time_to_spoke(
+        animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
+    )
+    if trials_df.stage.max() >= 5:
+        plot_cpoke_dur_timings_pregnp(
+            animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
+        )
+        plot_n_cpokes_and_multirate(
+            animal_trials_df, ax_dict["L"], title="Multi Cpokes", xaxis_label=False
+        )
+
+    ## ROW 5
+    plot_trial_structure(
+        animal_trials_df, ax_dict["M"], title="Trial Structure", xaxis_label=True
+    )
+    plot_rig_tech(animal_days_df, ax_dict["N"], title="Rig Tech", xaxis_label=True)
 
     return None

@@ -524,6 +524,43 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
     return None
 
 
+def plot_cpokes_over_trials(trials_df, ax, mode="settling_in", title=""):
+    """
+    TODO
+    """
+    if mode == "settling_in":
+        # if in this mode, violations don't exist yet. animal is in an early stage where
+        # they need to poke for settling in dur length to start a trial and pre_go_dur
+        # is something very small
+        valid_time = trials_df.pre_go_dur + trials_df.settling_in_dur
+    else:
+        # this is like a normal trial- settling in dur is baked into pre_dur and pre_go_dur
+        # encapsulates all of the duration an animal should have fixated for
+        valid_time = trials_df.pre_go_dur
+
+    sns.lineplot(x="trial", y="cpoke_dur", data=trials_df, ax=ax, color="k")
+    sns.lineplot(
+        x="trial", y=valid_time, data=trials_df, ax=ax, color="red", label="valid time"
+    )
+
+    ax.set(xlabel="Trial", ylabel="Time in Cport [s]", title=title)
+    ax.grid()
+
+    return None
+
+
+def plot_ncpokes_over_trials(trials_df, ax, title=""):
+    """
+    TODO
+    """
+    sns.lineplot(x="trial", y="n_settling_ins", data=trials_df, ax=ax)
+
+    ax.set(xlabel="Trial", ylabel="N Cpokes", title=title)
+    ax.grid()
+
+    return None
+
+
 #### SIDE POKING ####
 def plot_time_to_first_spoke(trials_df, ax, title="", legend=False):
     """
@@ -735,7 +772,11 @@ def plot_trial_dur(trials_df, ax, title="", legend=True):
     )
 
     # aesthetics
-    _ = ax.set(ylabel="Duration [s]", xlabel="Trials", title=title)
+    _ = ax.set(
+        ylabel="Duration [s]",
+        xlabel="Trials",
+        title=f"Avg ITI: {trials_df.inter_trial_dur.mean():.2f}",
+    )
     pu.set_legend(ax, legend=legend)
 
     return None

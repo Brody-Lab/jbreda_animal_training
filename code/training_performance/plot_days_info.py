@@ -8,7 +8,8 @@ performance, water and mass metrics across days
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from plot_utils import *  # TODO make this a pu import
+import plot_utils as pu  # TODO make this a pu import
+import matplotlib.pyplot as plt
 
 # TODO change to import plot_utils as pu and add into below
 #  TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
@@ -96,8 +97,8 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
     )
 
     # aethetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     _ = ax.set(ylabel="Count || Per Hr", xlabel="", title=title)
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5)
@@ -106,7 +107,7 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
 
 
 ### STAGE ###
-def plot_stage(trials_df, ax, max_stage=8, title="", xaxis_label=True, **kwargs):
+def plot_stage(trials_df, ax, title="", xaxis_label=True, **kwargs):
     """
     TODO
     """
@@ -118,10 +119,15 @@ def plot_stage(trials_df, ax, max_stage=8, title="", xaxis_label=True, **kwargs)
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    max_stage = int(trials_df.stage.max())
+    pu.set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
-    _ = plt.yticks(range(1, max_stage + 1, 1))
-    _ = ax.set(ylabel="Stage #", title=title)
+    ax.set(
+        ylabel="Stage #",
+        title=title,
+        ylim=(0, max_stage + 1),
+        yticks=range(max_stage + 1),
+    )
 
 
 ### MASS ###
@@ -197,7 +203,7 @@ def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
 
     # aethetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
 
@@ -252,33 +258,9 @@ def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label
     )
     ax_r.set(ylabel="Relative Mass [%]")
     ax.grid()
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
-
-
-# def plot_mass(days_df, ax, title="", xaxis_label=True):
-#     """
-#     Plot the mass of the animal over date range in days_df
-
-#     params
-#     ------
-#     days_df : pd.DataFrame
-#         days dataframe with columns `date`, `mass` with dates as row index
-#     ax : matplotlib.axes.Axes
-#         axes to plot on
-#     title : str (optional, default = "")
-#         title for the plot
-#     """
-
-#     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
-
-#     # aethetics
-#     set_date_x_ticks(ax, xaxis_label)
-#     ax.grid(alpha=0.5)
-#     ax.set(ylabel="Mass [g]", xlabel="", title=title)
-
-#     return None
 
 
 ### WATER ###
@@ -318,8 +300,8 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
         ax.hlines(y=row["volume_target"], xmin=i - 0.35, xmax=i + 0.35, color="black")
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     ax.set(title=title, xlabel="", ylabel="Volume [mL]")
 
     return None
@@ -348,7 +330,7 @@ def plot_rig_tech(days_df, ax, title="", legend=False, xaxis_label=True):
     sns.lineplot(data=days_df, x="date", y="rigid", marker="o", color="gray", ax=ax)
     sns.lineplot(data=days_df, x="date", y="tech", marker="o", color="purple", ax=ax)
 
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(ylabel="Tech || Rig", xlabel="", title=title)
     ax.grid()
 
@@ -395,8 +377,8 @@ def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     ax.grid(alpha=0.5)
     ax.set(ylim=(0, 1), ylabel="Perf Rate", xlabel="", title=title)
 
@@ -404,21 +386,42 @@ def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
 
 
 def plot_performance_bars(
-    trial_df, ax, normalize=False, title="", legend=False, xaxis_label=True
+    trials_df, ax, plot_type="counts", title="", legend=False, xaxis_label=True
 ):
     """
-    TODO
+    Plot the count or rate of results in a stacked bar over date
+    range in df
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and `result`
+        with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    legend : bool, (default = True)
+        whether to include legend or not
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
     """
-    ylabel = "eates" if normalize else "counts"
-    perf_df = (
-        trial_df.groupby(["date"]).result.value_counts(normalize=normalize).unstack()
+    if plot_type == "counts":
+        perf_df = trials_df.groupby(["date"]).result.value_counts().unstack()
+    elif plot_type == "rates":
+        perf_df = (
+            trials_df.groupby(["date"]).result.value_counts(normalize=True).unstack()
+        )
+    else:
+        raise ValueError("plot type can only be 'counts' or 'rates'")
+    perf_df.plot(
+        kind="bar", stacked=True, ax=ax, color=pu.get_result_colors(perf_df.columns)
     )
 
-    perf_df.plot(kind="bar", stacked=True, ax=ax)
-
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
-    ax.set(title=title, xlabel="", ylabel=f"Perf {ylabel}")
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
+    ax.set(title=title, xlabel="", ylabel=f"Perf {plot_type}")
 
     return None
 
@@ -452,8 +455,8 @@ def plot_performance_w_error(trials_df, ax, title="", legend=False, xaxis_label=
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     ax.grid(alpha=0.5)
     _ = ax.set(ylabel="Perf Rate", xlabel="", title=title)
     ax.set(ylim=(0, 1))
@@ -492,7 +495,7 @@ def plot_side_bias(days_df, ax, title="", xaxis_label=True):
     ax.axhline(0, color="k", linestyle="--", zorder=1)
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     ax.set(ylim=(-1, 1), ylabel="< - Left | Right ->", xlabel="", title=title)
 
@@ -518,7 +521,7 @@ def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
     ax.axhline(0.5, color="k", linestyle="--", zorder=1)
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     ax.set(title=title, xlabel="", ylabel="Prob")
     ax.legend(frameon=False, borderaxespad=0)
 
@@ -546,8 +549,8 @@ def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     ax.grid(axis="y")
     _ = ax.set(title=title, xlabel="", ylabel="Value")
 
@@ -561,15 +564,79 @@ def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
         x="date",
         y="min_time_to_spoke",
         hue="first_spoke",
-        palette=["darkseagreen", "indianred", "white"],
+        palette=pu.get_side_colors(trials_df.first_spoke),
         ax=ax,
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     ax.set(ylabel="time to spoke [s]", xlabel="", title=title, ylim=(0))
     ax.grid(alpha=0.5)
+
+    return None
+
+
+### CPOKE ###
+
+
+def plot_n_cpokes_and_multirate(trials_df, ax, title="", xaxis_label=True):
+    """
+    TODO
+    """
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="n_settling_ins",
+        ax=ax,
+        marker="o",
+        label="N Cpokes",
+    )
+
+    # aesthetics for left axis
+    ax.set_ylim(bottom=0)
+    ax.set(ylim=(0), ylabel=("Avg N Cpokes / Trial"), xlabel="", title=title)
+
+    ax2 = ax.twinx()
+
+    trials_df["multi_cpoke"] = trials_df["n_settling_ins"] > 1
+    trials_df.groupby("date").multi_cpoke.mean().plot(
+        kind="line", ax=ax2, marker="o", label="mutli cpoke rate", color="orangered"
+    )
+    # aesthetics for right axis
+    ax2.set(ylim=(-0.1, 1), ylabel="Multi Cpoke Rate", xlabel="")
+    pu.set_date_x_ticks(ax, xaxis_label=xaxis_label)
+    ax.grid()
+
+    return None
+
+
+def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
+    """
+    TODO
+    """
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="avg_settling_in",
+        marker="o",
+        ax=ax,
+        color="orangered",
+        label="Failed",
+    )
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="cpoke_dur",
+        marker="o",
+        ax=ax,
+        color="lightgreen",
+        label="Valid",
+    )
+
+    ax.set(ylabel="Duration [s]", xlabel="", title=title)
+    ax.grid()
+    pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
@@ -598,8 +665,8 @@ def plot_exp_delay_params(trials_df, ax, title="", legend=False, xaxis_label=Tru
     )
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
-    set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+    pu.set_legend(ax, legend)
     _ = ax.set(title=title, xlabel="", ylabel="Delay Dur [s]")
 
     return None
@@ -612,7 +679,7 @@ def plot_avg_delay(trials_df, ax, title="", xaxis_label=True):
     sns.lineplot(data=trials_df, x="date", y="delay_dur", marker="o", ax=ax)
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(title=title, xlabel="", ylabel="Avg Delay [s]")
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5)
@@ -633,14 +700,16 @@ def plot_trial_structure(
         "adj_pre_dur",
         "stimulus_dur",
         "delay_dur",
+        "post_dur",
     ]
 
     day_avgs = trials_df[columns_to_plot].groupby("date").mean().reset_index()
-
+    day_avgs.insert(5, "stimulus_dur_b", day_avgs["stimulus_dur"])
+    day_avgs["stimulus_dur_b"] = day_avgs["stimulus_dur"]
     day_avgs.plot(x="date", kind=kind, stacked=True, ax=ax, legend=legend)
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5, axis="y")
@@ -659,7 +728,7 @@ def plot_trial_end_timing(
     day_avgs.plot(x="date", kind="bar", stacked=False, ax=ax, legend=legend)
 
     # aesthetics
-    set_date_x_ticks(ax, xaxis_label)
+    pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5, axis="y")
