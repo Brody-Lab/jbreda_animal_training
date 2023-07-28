@@ -96,7 +96,11 @@ function dirpath = get_animal_settings_dir(animalid)
     % get experimenter
     experimenter = get_experimenter(animalid(1));
     % create path
-    dirpath = ['X:/RATTER/SoloData/Settings/' experimenter '/' animalid '/'];
+    if ispc
+        dirpath = ['X:/RATTER/SoloData/Settings/' experimenter '/' animalid '/'];
+    else
+        dirpath = ['/Volumes/brody/RATTER/SoloData/Settings/' experimenter '/' animalid '/'];
+    end
 end
 
 %% GENERATE_MODIFIED_FILEPATH
