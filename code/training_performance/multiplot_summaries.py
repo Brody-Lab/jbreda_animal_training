@@ -40,15 +40,15 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
         if not Path.exists(full_path) or overwrite:
             print(f"making {fig_name[:-4]}")
 
-            if df.SMA_set.iloc[-1] == "cpoke":
-                if not df.stimuli_on.iloc[-1]:
+            if sub_df.SMA_set.iloc[-1] == "cpoke":
+                if not sub_df.stimuli_on.iloc[-1]:
                     # in stage where animal is cpoking but not growing nose poke
                     multiplot_cpoke_pre_gnp(
                         sub_df, save_out=save_out, save_path=full_path
                     )
                 else:
                     print(f"!!! plot not made yet!!!!")
-            elif df.SMA_set.iloc[-1] == "spoke":
+            elif sub_df.SMA_set.iloc[-1] == "spoke":
                 multiplot_spoke_lg(sub_df, save_out=save_out, save_path=full_path)
 
 
@@ -100,8 +100,8 @@ def multiplot_cpoke_pre_gnp(trials_df, save_out=False, save_path=None):
     plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
     plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
-    plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"])
-    plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"])
+    # plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"])
+    # plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"])
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["K"])
