@@ -100,8 +100,8 @@ def multiplot_cpoke_pre_gnp(trials_df, save_out=False, save_path=None):
     plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
     plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
-    # plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"])
-    # plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"])
+    plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"])
+    plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"])
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["K"])
