@@ -515,6 +515,7 @@ def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
         x="date",
         y="antibias",
         hue="variable",
+        marker="o",
         palette=["darkseagreen", "indianred"],
         ax=ax,
     )
@@ -564,6 +565,8 @@ def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
         x="date",
         y="min_time_to_spoke",
         hue="first_spoke",
+        hue_order=pu.get_side_order(trials_df.first_spoke),
+        marker="o",
         palette=pu.get_side_colors(trials_df.first_spoke),
         ax=ax,
     )
@@ -601,7 +604,7 @@ def plot_n_cpokes_and_multirate(trials_df, ax, title="", xaxis_label=True):
 
     trials_df["multi_cpoke"] = trials_df["n_settling_ins"] > 1
     trials_df.groupby("date").multi_cpoke.mean().plot(
-        kind="line", ax=ax2, marker="o", label="mutli cpoke rate", color="orangered"
+        kind="line", ax=ax2, marker="o", label="mutli cpoke rate", color="orange"
     )
     # aesthetics for right axis
     ax2.set(ylim=(-0.1, 1), ylabel="Multi Cpoke Rate", xlabel="")
@@ -621,17 +624,27 @@ def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
         y="avg_settling_in",
         marker="o",
         ax=ax,
-        color="orangered",
-        label="Failed",
+        color="blue",
+        label="Settling",
     )
+
     sns.lineplot(
-        data=trials_df,
+        data=trials_df.query("violations == 0"),
         x="date",
         y="cpoke_dur",
         marker="o",
         ax=ax,
         color="lightgreen",
         label="Valid",
+    )
+    sns.lineplot(
+        data=trials_df.query("violations == 1"),
+        x="date",
+        y="cpoke_dur",
+        marker="o",
+        ax=ax,
+        color="orangered",
+        label="Viol",
     )
 
     ax.set(ylabel="Duration [s]", xlabel="", title=title)

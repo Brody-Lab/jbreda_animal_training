@@ -117,8 +117,8 @@ def get_side_labels(side_column):
         of the poke ('l', 'r', or 'c') or variable relating
         to side ('n_lpokes', 'n_rpokes', 'n_cpokes'
     """
-    # sides = get_side_order(side_column)  # can be any colum with 'l', 'r', or 'c'
-    sides = side_column.unique()
+    sides = get_side_order(side_column)  # can be any colum with 'l', 'r', or 'c'
+    # sides = side_column.unique()
     labels = [SIDE_MAP[side]["label"] for side in sides]
     return labels
 
@@ -134,8 +134,8 @@ def get_side_colors(side_column):
         of the poke ('l', 'r', or 'c') or variable relating
         to side ('n_lpokes', 'n_rpokes', 'n_cpokes'
     """
-    # sides = get_side_order(side_column)  # can any colum with 'l', 'r', or 'c'
-    sides = side_column.unique()
+    sides = get_side_order(side_column)  # can any colum with 'l', 'r', or 'c'
+    # sides = side_column.unique()
     colors = [SIDE_MAP[side]["color"] for side in sides]
     return colors
 

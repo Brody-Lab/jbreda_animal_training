@@ -403,7 +403,7 @@ def plot_n_failed_cpokes(trials_df, ax):
     return None
 
 
-def plot_avg_failed_cpoke_dur(trials_df, ax):
+def plot_avg_failed_cpoke_dur(trials_df, ax, mode="settling_in"):
     """
     plot avg failed cpoke dur for per trial
     params
@@ -415,27 +415,48 @@ def plot_avg_failed_cpoke_dur(trials_df, ax):
         axis to plot to
     """
 
-    sns.histplot(
-        trials_df.avg_settling_in,
-        color=pu.RESULT_MAP[3]["color"],
-        binwidth=0.025,
-        ax=ax,
-    )
-    ax.axvline(
-        trials_df.avg_settling_in.mean(),
-        color=pu.RESULT_MAP[3]["color"],
-        lw=3,
-    )
+    if mode == "settling_in":
+        sns.histplot(
+            trials_df.avg_settling_in,
+            color=pu.RESULT_MAP[3]["color"],
+            binwidth=0.025,
+            ax=ax,
+        )
+        ax.axvline(
+            trials_df.avg_settling_in.mean(),
+            color=pu.RESULT_MAP[3]["color"],
+            lw=3,
+        )
 
-    ax.set(
-        xlabel="Failed Cpoke Dur [s]",
-        title=f"Avg dur failed: {trials_df.avg_settling_in.mean():.2f}",
-    )
+        ax.set(
+            xlabel="Failed Cpoke Dur [s]",
+            title=f"Avg dur failed: {trials_df.avg_settling_in.mean():.2f}",
+        )
+    elif mode == "violations":
+        data = pd.DataFrame()
+
+        data["Settling"] = trials_df.avg_settling_in
+        data["Viol"] = trials_df.query("violations ==1").cpoke_dur
+
+        pal = ["blue", pu.RESULT_MAP[3]["color"]]
+
+        sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+
+        avg_viol_cpoke = trials_df.query("violations == 1").cpoke_dur.mean()
+        ax.axvline(avg_viol_cpoke, color=pal[1], lw=3)
+        avg_settling_in = trials_df.avg_settling_in.mean()
+        ax.axvline(avg_settling_in, color=pal[0], lw=3)
+        ax.axvline(trials_df.pre_go_dur.mean(), color="k", lw=3)
+
+        ax.set(
+            xlabel="Failed Cpoke Dur [s]",
+            title="Avg dur Viol {:.2f}".format(avg_viol_cpoke),
+        )
 
     return None
 
 
-def plot_avg_valid_cpoke_dur(trials_df, ax):
+def plot_avg_valid_cpoke_dur(trials_df, ax, mode="settling_in"):
     """
     plot avg valid cpoke dur for per trial
 
@@ -452,16 +473,24 @@ def plot_avg_valid_cpoke_dur(trials_df, ax):
         return None
 
     sns.histplot(
-        trials_df.cpoke_dur,
+        trials_df.query("violations == 0").cpoke_dur,
         color="lightgreen",
         binwidth=0.025,
         ax=ax,
     )
-    ax.axvline(trials_df.cpoke_dur.mean(), color="lightgreen", lw=3)
+
+    avg_valid_cpoke = trials_df.query("violations == 0").cpoke_dur.mean()
+    ax.axvline(avg_valid_cpoke, color="lightgreen", lw=3)
+
+    if mode == "settling_in":
+        valid_time = trials_df.pre_go_dur.mean() + trials_df.settling_in_dur.mean()
+    elif mode == "violations":
+        valid_time = trials_df.pre_go_dur.mean()
+    ax.axvline(valid_time, color="k", lw=3)
 
     ax.set(
         xlabel="Valid Cpoke Dur [s]",
-        title=f"Avg dur valid: {trials_df.cpoke_dur.mean():.2f}",
+        title=f"Avg dur valid: {avg_valid_cpoke:.2f}",
     )
 
     return None
@@ -490,36 +519,63 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
 
     ## Curate Data
     data = pd.DataFrame()
+
+    avg_cpoke_dur = trials_df.cpoke_dur.mean()
     if mode == "settling_in":
         # if in this mode, violations don't exist yet. animal is in an early stage where
         # they need to poke for settling in dur length to start a trial and pre_go_dur
         # is something very small
         valid_time = trials_df.pre_go_dur + trials_df.settling_in_dur
-    else:
+
+        data["failed_relative_to_go"] = trials_df.avg_settling_in - valid_time
+        data["valid_relative_to_go"] = trials_df.cpoke_dur - valid_time
+
+        ## Plot
+        pal = [pu.RESULT_MAP[3]["color"], "lightgreen"]
+        sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+
+        # vertical lines
+        ax.axvline(0, color="k")
+        ax.axvline(data.failed_relative_to_go.mean(), color=pal[0], lw=3)
+        ax.axvline(data.valid_relative_to_go.mean(), color=pal[1], lw=3)
+
+        # calculate how often animal needs multiple cpokes to start a trial
+        multi_cpokes = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+
+        ax.set(
+            xlabel="Cpoke Dur Relative to Go [s]",
+            title=f"Failure rate {multi_cpokes:.2f}, Avg Cpoke Dur: {avg_cpoke_dur:.2f}",
+        )
+
+    elif mode == "violations":
         # this is like a normal trial- settling in dur is baked into pre_dur and pre_go_dur
         # encapsulates all of the duration an animal should have fixated for
-        valid_time = trials_df.pre_go_dur
+        data["failed_settling_in"] = trials_df.avg_settling_in - trials_df.pre_go_dur
+        data["cpoke_dur"] = trials_df["cpoke_dur"] - trials_df.pre_go_dur
+        data["violated_trials"] = data["cpoke_dur"].where(
+            trials_df["violations"] == 1, np.nan
+        )
+        data["valid_trials"] = data["cpoke_dur"].where(
+            trials_df["violations"] == 0, np.nan
+        )
+        data.drop(columns=["cpoke_dur"], inplace=True)
 
-    data["failed_relative_to_go"] = trials_df.avg_settling_in - valid_time
-    data["valid_relative_to_go"] = trials_df.cpoke_dur - valid_time
+        pal = ["blue", pu.RESULT_MAP[3]["color"], "lightgreen"]
 
-    ## Plot
-    pal = [pu.RESULT_MAP[3]["color"], "lightgreen"]
-    sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+        sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+        ax.axvline(0, color="k")
 
-    # vertical lines
-    ax.axvline(0, color="k")
-    ax.axvline(data.failed_relative_to_go.mean(), color=pal[0], lw=3)
-    ax.axvline(data.valid_relative_to_go.mean(), color=pal[1], lw=3)
+        ax.axvline(0, color="k")
+        ax.axvline(data.violated_trials.mean(), color=pal[1], lw=3)
+        ax.axvline(data.valid_trials.mean(), color=pal[2], lw=3)
 
-    # calculate how often animal needs multiple cpokes to start a trial
-    multi_cpokes = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+        multi_cpokes = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+        viol_rate = np.sum(trials_df.violations) / len(trials_df)
 
-    ax.set(
-        xlabel="Cpoke Dur Relative to Go [s]",
-        title=f"Failure rate {multi_cpokes:.2f}",
-    )
-    pu.set_legend(ax, legend=legend)
+        ax.set(
+            xlabel="Cpoke Dur Relative to Go [s]",
+            title=f"Mutli-Settling {multi_cpokes:.2f}, Viol Rate: {viol_rate:.2f},  Avg Cpoke Dur: {avg_cpoke_dur:.2f}",
+        )
 
     return None
 
