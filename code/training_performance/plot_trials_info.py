@@ -9,6 +9,7 @@ import pandas as pd
 import seaborn as sns
 import plot_utils as pu
 import numpy as np
+from IPython.display import clear_output
 
 from create_days_df import fetch_and_format_single_day_water
 
@@ -41,7 +42,7 @@ def plot_results(trials_df, ax, title=""):
         legend=False,
     )
 
-    _ = ax.set(ylim=(0, 7), ylabel="Results", xlabel="Trials", title=title)
+    _ = ax.set(ylim=(0, 7), ylabel="Results", xlabel="Trial", title=title)
 
     return None
 
@@ -111,7 +112,7 @@ def plot_performance_rates(trials_df, ax, title="", legend=True):
     )
 
     # aesthetics
-    _ = ax.set(ylabel="Rate", xlabel="Trials", title=title, ylim=(0, 1))
+    _ = ax.set(ylabel="Rate", xlabel="Trial", title=title, ylim=(0, 1))
     ax.grid(alpha=0.5)
     pu.set_legend(ax, legend=legend)
 
@@ -143,7 +144,7 @@ def plot_correct_side(trials_df, ax, title=""):
         palette=pu.get_side_colors(trials_df.sides),
         legend=False,
     )
-    _ = ax.set(ylabel="Side", xlabel="Trials", title=title)
+    _ = ax.set(ylabel="Side", xlabel="Trial", title=title)
 
     return None
 
@@ -306,7 +307,7 @@ def plot_npokes(trials_df, ax, title="", legend=True):
     )
 
     # aesthetics
-    _ = ax.set(ylabel="N pokes", xlabel="Trials", title=title)
+    _ = ax.set(ylabel="N pokes", xlabel="Trial", title=title)
     pu.set_legend(ax, legend)
 
     return None
@@ -589,7 +590,7 @@ def plot_cpokes_over_trials(trials_df, ax, mode="settling_in", title=""):
         # they need to poke for settling in dur length to start a trial and pre_go_dur
         # is something very small
         valid_time = trials_df.pre_go_dur + trials_df.settling_in_dur
-    else:
+    elif mode == "violations":
         # this is like a normal trial- settling in dur is baked into pre_dur and pre_go_dur
         # encapsulates all of the duration an animal should have fixated for
         valid_time = trials_df.pre_go_dur
@@ -652,7 +653,7 @@ def plot_time_to_first_spoke(trials_df, ax, title="", legend=False):
     # aesthetics
     upper_lim = trials_df["min_time_to_spoke"].quantile(0.99)  # exclude outliers
     ax.set_ylim(top=upper_lim)
-    _ = ax.set(ylabel="1st Spoke Time [s]", xlabel="Trials", title=title)
+    _ = ax.set(ylabel="1st Spoke Time [s]", xlabel="Trial", title=title)
     pu.set_legend(ax, legend)
 
     return None
@@ -789,8 +790,6 @@ def plot_first_spoke_summary_by_loc_and_result(trials_df, ax, title="", legend=F
 
 
 #### TRIAL LENGTH ####
-
-
 def plot_trial_dur(trials_df, ax, title="", legend=True):
     """
     plot trial duration and iti across a single day
@@ -830,7 +829,7 @@ def plot_trial_dur(trials_df, ax, title="", legend=True):
     # aesthetics
     _ = ax.set(
         ylabel="Duration [s]",
-        xlabel="Trials",
+        xlabel="Trial",
         title=f"Avg ITI: {trials_df.inter_trial_dur.mean():.2f}",
     )
     pu.set_legend(ax, legend=legend)
@@ -907,6 +906,48 @@ def plot_give_info(trials_df, ax, legend=True):
     return None
 
 
+def plot_give_count_summary(trials_df, ax, title=""):
+    """
+    plot the count of give types implemented and color by
+    what was actually set in the GUI
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `give_type_imp` and `give_type_set`
+        with trials as row index
+    ax : matplotlib.axes
+        axis to plot to
+
+    TODO can update with give colors eventually
+    """
+    # summarize counts
+    count_data = (
+        trials_df.groupby(["give_type_imp", "give_type_set"])
+        .size()
+        .reset_index(name="count")
+    )
+    # make the names shorter for plotting
+    mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
+    count_data.replace(
+        {"give_type_imp": mapping, "give_type_set": mapping}, inplace=True
+    )
+
+    # plot
+    sns.barplot(
+        data=count_data, x="give_type_imp", y="count", hue="give_type_set", ax=ax
+    )
+    # aesthetics
+    ax.set(
+        title="Give Stats" if title == "" else title,
+        xlabel="Implemented",
+        ylabel="Count",
+    )
+    ax.legend(title="Set")
+
+    return None
+
+
 #### WATER ####
 # TODO update to take into account mouse/rate new code for the
 # TODO threshold bar
@@ -956,5 +997,189 @@ def plot_watering_amounts(trials_df, ax, title="", legend=False):
     ax.set_xticks([])
     _ = ax.set(xlabel="", ylabel="volume (mL)", title=title)
     pu.set_legend(ax, legend=legend)
+
+    return None
+
+
+### INTRODUCING STIMULI ###
+def plot_stimulus_and_delay_durations(trials_df, ax, title="", legend=True):
+    """
+    plot the stimulus and delay durations for each trial,
+    specifically for use in stages when the two are growing/shrinking
+    in relationship to each other.
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `trial` `stimulus_dur`
+        `delay_dur` with trials as row index
+    ax : matplotlib.axes.Axes
+        axis to plot to
+    title : str, (default = "Stim & Delay Periods Durations")
+        title of plot
+    legend : bool, (default = False)
+        whether to include legend or not
+    """
+
+    # make long df
+    stim_del_dur_df = trials_df.melt(
+        id_vars=["trial"],
+        value_vars=["stimulus_dur", "delay_dur"],
+        var_name="period",
+        value_name="duration",
+    )
+    # plot
+    sns.lineplot(
+        x="trial",
+        y="duration",
+        hue="period",
+        hue_order=["stimulus_dur", "delay_dur"],
+        palette=[pu.TRIAL_PERIOD_MAP["s_a"], pu.TRIAL_PERIOD_MAP["delay"]],
+        data=stim_del_dur_df,
+        ax=ax,
+    )
+    # aesthetics
+    ax.set(
+        title="Stim & Delay Periods Durations" if title == "" else title,
+        xlabel="Trial",
+        ylabel="Duration [s]",
+    )
+
+    return None
+
+
+### VIOLATIONS ###
+
+
+def create_viol_period_df(trials_df):
+    """
+    create a dataframe of violation only trials and
+    determine which trial period the violation occurred in
+    for plotting purposes
+
+    params
+    ------
+    trials_df: pandas.DataFrame
+        trials dataframe with columns listed within this
+        fx and trials as row index
+
+    returns
+    -------
+    viols_df: pandas.DataFrame
+        dataframe of only violation trials with period
+        end times and a volume ("violation_period") indicating
+        which period violation occurred in
+
+    NOTE: the column names have been adjusted for plotting to
+    remove the _dur from the end of the column name and add sa/sb
+    so they do not match trials_df column names
+    """
+
+    # grab columns of interest & and only violations
+    columns = [
+        "settling_in_dur",
+        "adj_pre_dur",
+        "stimulus_dur",
+        "delay_dur",
+        "post_dur",
+        "cpoke_dur",
+        "pre_go_dur",
+        "trial",
+        "violations",
+    ]
+    viols_df = trials_df[columns].query("violations == 1")
+
+    # remove _dur from column names & change stimulus to s_a or s_b
+    viols_df.insert(5, "s_b", viols_df["stimulus_dur"])
+    viols_df.rename(columns={"stimulus_dur": "s_a"}, inplace=True)
+    viols_df.columns = viols_df.columns.str.replace("_dur", "")
+
+    # calculate the period times in series and add to df as period_end
+    # currently only have the duration of the periods, but we know
+    # their order and the end of the trial (pre_go_dur).
+    periods = [
+        "settling_in",
+        "adj_pre",
+        "s_a",
+        "delay",
+        "s_b",
+        "post",
+    ]
+    elapsed_time = 0
+    for period in periods:
+        viols_df[period + "_end"] = elapsed_time + viols_df[period]
+        elapsed_time = viols_df[period + "_end"].values
+
+    def _determine_period(row):
+        """
+        quick function to determine which period the violation
+        occurred in to be used with df.apply() on rows
+        """
+        for period in periods:
+            if row["cpoke"] <= row[period + "_end"]:
+                return period
+        # a violation shouldn't happen after go, but there is a bug
+        # in the code somewhere that i have yet to find, so we will
+        # just mark it as go and color it white (August 2023)
+        return "go"
+
+    viols_df["violation_period"] = viols_df.apply(_determine_period, axis=1)
+
+    return viols_df
+
+
+def plot_violations_by_period(trials_df, ax, title="", legend=False):
+    """
+    plot a histogram of violations over time relative to the
+    go cue & color by the period they occurred in
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with period columns [`settling_in_dur`,
+        `adj_pre_dur`, `stimulus_dur`, `delay_dur`, `post_dur`,
+        `cpoke_dur`], poking information [`cpoke_dur`], and trial
+        information [`trial`, `violations`] with trials as
+        row index.
+    ax : matplotlib.axes.Axes
+        axis to plot to
+    title : str, (default = "Violation Histogram by Period")
+        title of plot
+    legend : bool, (default = False)
+        whether to include legend or not
+    """
+    # from IPython.display import clear_output
+
+    # create dataframe that marks the violation period
+    viols_df = create_viol_period_df(trials_df)
+
+    # make timing relative to go cue for alignment
+    viols_df["cpoke"] = viols_df.cpoke - viols_df.pre_go
+
+    hue_order = pu.get_period_order(viols_df.violation_period)
+    palette = pu.get_period_colors(viols_df.violation_period)
+    # plot
+    _ = sns.histplot(
+        data=viols_df,
+        x="cpoke",
+        hue="violation_period",
+        hue_order=hue_order,
+        palette=palette,
+        binwidth=0.05,
+        element="step",
+        ax=ax,
+    )
+    ax.axvline(0, color="black", linewidth=3)
+    clear_output(wait=True)
+    # aesthetics
+    _ = ax.set(
+        title="Violation Histogram by Period" if title == "" else title,
+        xlabel="Cpoke Dur Relative to Go [s]",
+        ylabel="Count",
+    )
+
+    ax.get_legend().set_title("")
+    # if not legend:  # weird bug with hist plot, hack around
+    #     pu.set_legend(ax, legend)
 
     return None
