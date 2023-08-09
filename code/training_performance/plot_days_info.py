@@ -717,9 +717,17 @@ def plot_trial_structure(
     ]
 
     day_avgs = trials_df[columns_to_plot].groupby("date").mean().reset_index()
-    day_avgs.insert(5, "stimulus_dur_b", day_avgs["stimulus_dur"])
-    day_avgs["stimulus_dur_b"] = day_avgs["stimulus_dur"]
-    day_avgs.plot(x="date", kind=kind, stacked=True, ax=ax, legend=legend)
+    day_avgs.insert(5, "s_b", day_avgs["stimulus_dur"])
+    day_avgs.rename(columns={"stimulus_dur": "s_a"}, inplace=True)
+    day_avgs.columns = day_avgs.columns.str.replace("_dur", "")
+    day_avgs.plot(
+        x="date",
+        kind=kind,
+        stacked=True,
+        ax=ax,
+        legend=legend,
+        color=pu.trial_period_palette,
+    )
 
     # aesthetics
     pu.set_date_x_ticks(ax, xaxis_label)

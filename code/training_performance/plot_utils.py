@@ -5,6 +5,7 @@ Description: Plotting utilities for training performance
 """
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def make_fig(dims=None):
@@ -156,3 +157,57 @@ def get_side_order(side_column):
         if x in SIDE_MAP["order"]
         else float("inf"),
     )
+
+
+### TRIAL DURATION utilities ###
+
+trial_period_palette = sns.color_palette("Set3", 6).as_hex()
+
+
+TRIAL_PERIOD_MAP = {
+    "settling_in": trial_period_palette[0],
+    "adj_pre": trial_period_palette[1],
+    "s_a": trial_period_palette[2],
+    "delay": trial_period_palette[3],
+    "s_b": trial_period_palette[4],
+    "post": trial_period_palette[5],
+    "order": ["settling_in", "adj_pre", "s_a", "delay", "s_b", "post", "go"],
+    "go": "white",
+}
+
+
+def get_period_order(trial_period_column):
+    """
+    order the trial period in settling_in_dur,
+    adj_pre_dur, sa, delay_dur, sb, post_dur order for plotting
+
+    params:
+    -------
+    trial_period_column: pandas.Series
+        a column of the dataframe that contains the trial period
+        of the poke ('settling_in_dur', 'adj_pre_dur', 'sa',
+        'delay_dur', 'sb', 'post_dur')
+    """
+    return sorted(
+        trial_period_column.unique(),
+        key=lambda x: TRIAL_PERIOD_MAP["order"].index(x)
+        if x in TRIAL_PERIOD_MAP["order"]
+        else float("inf"),
+    )
+
+
+def get_period_colors(trial_period_column):
+    """
+    get the correct plot color for the trial period
+
+    params:
+    -------
+    trial_period_column: pandas.Series
+        a column of the dataframe that contains the trial period
+        of the poke ('settling_in_dur', 'adj_pre_dur', 'sa',
+        'delay_dur', 'sb', 'post_dur')
+    """
+    periods = get_period_order(trial_period_column)
+    print(periods)
+    colors = [TRIAL_PERIOD_MAP[period] for period in periods]
+    return colors
