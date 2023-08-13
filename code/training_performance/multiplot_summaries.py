@@ -52,7 +52,7 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
                     # this determines how to calculate things related to center poking
                     # durations. if the animal is in the settling in stage, then violations
                     # don't exist. in more advanced stages, violations turn on
-                    if sub_df.delay_dur.iloc[-1] < 0.001:
+                    if sub_df.delay_dur.iloc[-1] <= 0.001:
                         mode = "settling_in"
                     else:
                         mode = "violations"
