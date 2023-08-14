@@ -245,7 +245,7 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
         DDDEF
         GGGHI
         JJJKL
-        MMMNP
+        MMMNN
     """
     fig = plt.figure(constrained_layout=True, figsize=(20, 20))
 
@@ -275,11 +275,12 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
     ## ROW 4
     plot_npokes(trials_df, ax=ax_dict["J"])
     plot_npokes_summary(trials_df, ax=ax_dict["K"])
+    plot_active_trial_dur_summary(trials_df, ax=ax_dict["L"])
     # plot L here
 
     ## ROW 5
     plot_trial_dur(trials_df, ax=ax_dict["M"])
-    plot_active_trial_dur_summary(trials_df, ax=ax_dict["N"])
+    plot_give_info(trials_df, ax=ax_dict["N"])
     # plot P here
 
     if save_out:
@@ -360,7 +361,8 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     plot_time_to_spoke(
         animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
     )
-    if trials_df.stage.max() >= 5:
+
+    if trials_df.SMA_set.iloc[-1] == "cpoke":
         plot_cpoke_dur_timings_pregnp(
             animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
         )
