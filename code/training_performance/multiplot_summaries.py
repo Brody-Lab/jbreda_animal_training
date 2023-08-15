@@ -61,7 +61,7 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
                     )
 
                 ## Cpoke stage with sounds introduced, but no rule yet
-                elif sub_df.stimuli_on.iloc[-1] and sub_df.stimulus_dur.nunique() > 2:
+                elif sub_df.stimuli_on.iloc[-1] and sub_df.stimulus_dur.max() > 0.001:
                     mutliplot_cpoke_sounds_on(
                         sub_df,
                         save_out=save_out,
@@ -113,7 +113,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
     plot_stage_info(trials_df, ax=ax_dict["E"])
-    plot_side_bias_summary(trials_df, ax=ax_dict["F"])
+    # plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
     plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
     plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode="violations")
@@ -121,8 +121,8 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["K"])
-    plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["L"])
-    plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["M"])
+    # plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["L"])
+    # plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["M"])
     plot_violations_by_period(trials_df, ax=ax_dict["N"])
     # plot_give_info(trials_df, ax=ax_dict["N"])
 
