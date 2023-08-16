@@ -62,6 +62,12 @@ def create_trials_df_from_dj(
             bdata.Sessions & subject_session_key & date_min_key & date_max_key
         ).fetch("protocol_data", as_dict=True)
 
+        if not len(protocol_blobs):
+            print(
+                f"no sessions found for {animal_id} between {date_min} and {date_max}"
+            )
+            continue
+
         # n session long items are fetched together
         sess_ids, dates, trials = (
             bdata.Sessions & subject_session_key & date_min_key & date_max_key
