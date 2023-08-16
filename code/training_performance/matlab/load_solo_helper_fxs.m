@@ -74,6 +74,8 @@ function experimenter = get_experimenter(animalprefix)
         experimenter = 'Emily';
     elseif animalprefix == 'Y'
         experimenter = 'Jorge';
+    elseif animalprefix == 'C'
+        experimenter = 'Julie';
     else
         error('animalprefix must be for a valid animal');
     end
