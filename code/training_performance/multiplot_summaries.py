@@ -123,7 +123,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     plot_performance_rates(trials_df, ax=ax_dict["K"])
     plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["L"])
     plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["M"])
-    plot_violations_by_period(trials_df, ax=ax_dict["N"])
+    # plot_violations_by_period(trials_df, ax=ax_dict["N"])
     # plot_give_info(trials_df, ax=ax_dict["N"])
 
     ## ROW 4
