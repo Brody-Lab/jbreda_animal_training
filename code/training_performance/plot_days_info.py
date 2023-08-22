@@ -115,6 +115,7 @@ def plot_stage(trials_df, ax, title="", xaxis_label=True, **kwargs):
         data=trials_df.groupby("date").stage.mean(),
         drawstyle="steps-post",
         ax=ax,
+        marker="o",
         **kwargs,
     )
 
