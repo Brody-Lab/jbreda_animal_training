@@ -362,13 +362,13 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
     )
 
-    if trials_df.SMA_set.iloc[-1] == "cpoke":
-        plot_cpoke_dur_timings_pregnp(
-            animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
-        )
-        plot_n_cpokes_and_multirate(
-            animal_trials_df, ax_dict["L"], title="Multi Cpokes", xaxis_label=False
-        )
+    if trials_df.SMA_set.iloc[0] == "cpoke":
+    plot_cpoke_dur_timings_pregnp(
+        animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
+    )
+    plot_n_cpokes_and_multirate(
+        animal_trials_df, ax_dict["L"], title="Multi Cpokes", xaxis_label=False
+    )
 
     ## ROW 5
     plot_trial_structure(
