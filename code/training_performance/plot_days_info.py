@@ -734,6 +734,7 @@ def plot_trial_structure(
     _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5, axis="y")
+    ax.legend(loc="upper left")
 
     return None
 
