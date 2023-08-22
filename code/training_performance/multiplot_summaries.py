@@ -41,12 +41,12 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
             print(f"making {fig_name[:-4]}")
 
             ## Early spoke only stages
-            if sub_df.SMA_set.iloc[-1] == "spoke":
+            if sub_df.SMA_set.iloc[0] == "spoke":
                 # TODO add give plot to this
                 multiplot_spoke_lg(sub_df, save_out=save_out, save_path=full_path)
 
             ## Later cpoke stages
-            elif sub_df.SMA_set.iloc[-1] == "cpoke":
+            elif sub_df.SMA_set.iloc[0] == "cpoke":
                 ## Cpoke stages without sounds
                 if not sub_df.stimuli_on.iloc[-1]:
                     # this determines how to calculate things related to center poking
@@ -123,7 +123,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     plot_performance_rates(trials_df, ax=ax_dict["K"])
     plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["L"])
     plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["M"])
-    # plot_violations_by_period(trials_df, ax=ax_dict["N"])
+    plot_violations_by_period(trials_df, ax=ax_dict["N"])
     # plot_give_info(trials_df, ax=ax_dict["N"])
 
     ## ROW 4
@@ -363,12 +363,12 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     )
 
     if trials_df.SMA_set.iloc[0] == "cpoke":
-    plot_cpoke_dur_timings_pregnp(
-        animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
-    )
-    plot_n_cpokes_and_multirate(
-        animal_trials_df, ax_dict["L"], title="Multi Cpokes", xaxis_label=False
-    )
+        plot_cpoke_dur_timings_pregnp(
+            animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
+        )
+        plot_n_cpokes_and_multirate(
+            animal_trials_df, ax_dict["L"], title="Multi Cpokes", xaxis_label=False
+        )
 
     ## ROW 5
     plot_trial_structure(
