@@ -1094,6 +1094,9 @@ def create_viol_period_df(trials_df):
     viols_df.rename(columns={"stimulus_dur": "s_a"}, inplace=True)
     viols_df.columns = viols_df.columns.str.replace("_dur", "")
 
+    # TODO- these should not be nans!
+    viols_df.dropna(subset=["cpoke"], inplace=True)
+
     # calculate the period times in series and add to df as period_end
     # currently only have the duration of the periods, but we know
     # their order and the end of the trial (pre_go_dur).
