@@ -113,7 +113,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
     plot_stage_info(trials_df, ax=ax_dict["E"])
-    # plot_side_bias_summary(trials_df, ax=ax_dict["F"])
+    plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
     plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
     plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode="violations")
