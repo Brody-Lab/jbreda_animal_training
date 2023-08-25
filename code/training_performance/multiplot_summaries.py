@@ -362,7 +362,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
     )
 
-    if trials_df.SMA_set.iloc[0] == "cpoke":
+    if animal_trials_df.SMA_set.iloc[-1] == "cpoke":
         plot_cpoke_dur_timings_pregnp(
             animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
         )
