@@ -259,6 +259,10 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
             axis=1, skipna=True
         )
 
+        # any negative cpokes should be nans (matlab code updated Aug 2024)
+        # so no longer needed after this
+        df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
+
         # convert data types (matlab makes everything a float) and utilize
         # pyarrow backend
         string_columns = ["animal_id", "first_spoke", "go_type"]
