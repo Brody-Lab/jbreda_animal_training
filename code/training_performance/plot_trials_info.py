@@ -10,6 +10,7 @@ import seaborn as sns
 import plot_utils as pu
 import numpy as np
 from IPython.display import clear_output
+import matplotlib.pyplot as plt
 
 from create_days_df import fetch_and_format_single_day_water
 
@@ -119,6 +120,76 @@ def plot_performance_rates(trials_df, ax, title="", legend=True):
     return None
 
 
+def plot_stim_grid_performance(trials_df, ax, mode):
+    """
+    plot performance (viol or hit) in sa vs sb grid
+    with rule boundary marked
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `sa` `sb`, `hits`
+        and `violations`
+        with trials as row index
+    ax: matplotlib.axes.Axes
+        axes to plot to, if None, create new axes
+    mode : str
+        mode to plot, either "violations" or "hits"
+    """
+    stim_table = (
+        trials_df.groupby(["sa", "sb"])
+        .agg(perf_rate=(mode, "mean"), perf_count=(mode, "size"))
+        .reset_index()
+    )
+
+    # plot each sa,sb pair with rate as color
+    scatter = ax.scatter(
+        stim_table.sa,
+        stim_table.sb,
+        c=stim_table.perf_rate,
+        cmap="flare",
+        vmin=0,
+        vmax=1,
+        marker=",",
+        s=100,
+    )
+
+    # Add a colorbar to the plot
+    cbar = plt.colorbar(scatter, ax=ax)
+    cbar.set_label(f"{mode[:-1]} rate")
+
+    # add labels to each point
+    for i, txt in enumerate(stim_table.perf_rate):
+        ax.text(
+            stim_table.sa[i] - 1,
+            stim_table.sb[i] + 0.5,
+            f"{round(txt, 2)} [{stim_table.perf_count[i]}]",
+            fontsize=8,
+        )
+
+    ## Aesthetics
+    # match/non-match boundary line
+    ax.axline((0, 1), slope=1, color="lightgray", linestyle="--")
+    ax.axline((1, 0), slope=1, color="lightgray", linestyle="--")
+
+    # Range& aesthetics
+    sp_min, sp_max = np.min(stim_table.sa), np.max(stim_table.sa)
+    stim_range = [sp_min, sp_max]
+    x_lim = [sp_min - 3, sp_max + 3]
+    y_lim = [sp_min - 3, sp_max + 3]
+
+    _ = ax.set(
+        xlabel="Sa",
+        ylabel="Sb",
+        xlim=x_lim,
+        ylim=y_lim,
+        xticks=stim_range,
+        yticks=stim_range,
+    )
+
+    return None
+
+
 #### SIDE INFO ####
 def plot_correct_side(trials_df, ax, title=""):
     """
@@ -210,6 +281,35 @@ def plot_side_count_summary(trials_df, ax):
         xlabel="",
         ylabel="number of trials",
     )
+
+    return None
+
+
+def plot_antibias_r_probs(trials_df, ax=None, title=""):
+    """
+    plot the probability of a right trial across trials
+    note: this is only in effect if antibias beta > 0
+    for animals settings file
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `trial` `ab_r_prob`,
+        with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    """
+    ax = plt.gca() if ax is None else ax
+
+    sns.lineplot(
+        data=trials_df, x="trial", y="ab_r_prob", marker="o", color="firebrick", ax=ax
+    )
+    ax.axhline(0.5, ls="--", color="black")
+
+    # aesthetics
+    _ = ax.set(ylim=(0, 1), xlabel="trial", ylabel="Antibias Prob R ", title=title)
 
     return None
 
@@ -944,6 +1044,70 @@ def plot_give_count_summary(trials_df, ax, title=""):
         ylabel="Count",
     )
     ax.legend(title="Set")
+
+    return None
+
+
+def plot_result_by_give(trials_df, ax=None, title="", legend=False):
+    """
+    plot result by give type implemented
+
+    params
+    -----
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `give_type_imp`,
+        `result` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    legend : bool (default = False)
+        whether to include legend or not
+    """
+    ax = plt.gca() if ax is None else ax
+
+    result_by_give = (
+        trials_df.groupby("give_type_imp").result.value_counts().reset_index()
+    )
+
+    sns.barplot(
+        data=result_by_give,
+        x="give_type_imp",
+        y="count",
+        hue="result",
+        hue_order=pu.get_result_order(trials_df.result),
+        palette=pu.get_result_colors(trials_df.result),
+        ax=ax,
+    )
+
+    # aesthetics
+    ax.set(xlabel="Give Type", ylabel="Count", title=title)
+    pu.set_legend(ax, legend=legend)
+
+    return None
+
+
+def plot_hit_rate_by_give(trials_df, ax=None, title=""):
+    """
+    plot hit rate by give type implemented
+
+    params
+    -----
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `give_type_imp`,
+        `hits` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    """
+    ax = plt.gca() if ax is None else ax
+
+    hit_rate_by_give = trials_df.groupby("give_type_imp").hits.mean().reset_index()
+    sns.barplot(x="give_type_imp", y="hits", data=hit_rate_by_give, ax=ax)
+
+    # aesthetics
+    ax.set(xlabel="Give Type", ylabel="Hit Rate", title=title)
 
     return None
 
