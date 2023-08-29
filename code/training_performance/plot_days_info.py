@@ -757,3 +757,33 @@ def plot_trial_end_timing(
     ax.grid(alpha=0.5, axis="y")
 
     return None
+
+
+### GIVE ###
+
+
+def plot_non_give_performance(trials_df, ax, title=""):
+    """
+    geneate a plot of hit rate for non-give trials
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `hits` and
+        `give_type_imp` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    """
+    sns.lineplot(
+        data=trials_df.query("give_type_imp == 'none'"),
+        x="date",
+        y="hits",
+        marker="o",
+        ax=ax,
+    )
+    # aethetics
+    pu.set_date_x_ticks(ax, True)
+    _ = ax.set(ylabel="Hit Rate", xlabel="", title=title, ylim=(0, 1))
+    ax.grid(alpha=0.5)
