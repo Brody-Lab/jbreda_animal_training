@@ -20,9 +20,19 @@ function message = update_delay_dur(animal_id)
     
     load_solo_helper_fxs(); 
     
-    % get the latest settings file for the animal
+    % get the latest settings file for the animal. Have to do end-1 since
+    % the last sorted name is '.' 
     file_paths = dir(get_animal_settings_dir(animal_id));
-    file_path = [file_paths(end).folder '/' file_paths(end).name];
+    [~, index] = sort([file_paths.datenum]); % Sort by the 'datenum' field
+    file_paths_by_date = file_paths(index);
+
+    if file_paths_by_date(end).name == '.'
+        fname = file_paths_by_date(end-1).name;
+    else
+        fname = file_paths_by_date(end).name;
+    end
+    
+    file_path = [file_paths_by_date(end).folder '/' fname];
     rec_date = file_path(end - 10 : end - 4);
     
     % load data and get current delay dur
