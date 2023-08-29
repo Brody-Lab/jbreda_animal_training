@@ -25,7 +25,14 @@ function message = update_water_volume(animal_id)
     file_paths = dir(get_animal_settings_dir(animal_id));
     [~, index] = sort([file_paths.datenum]); % Sort by the 'datenum' field
     file_paths_by_date = file_paths(index);
-    file_path = [file_paths_by_date(end).folder '/' file_paths_by_date(end-1).name];
+
+    if file_paths_by_date(end).name == '.'
+        fname = file_paths_by_date(end-1).name;
+    else
+        fname = file_paths_by_date(end).name;
+    end
+    
+    file_path = [file_paths_by_date(end).folder '/' fname];
     rec_date = file_path(end - 10 : end - 4);
     
     % load data and get current water volume
