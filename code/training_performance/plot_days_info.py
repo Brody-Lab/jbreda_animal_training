@@ -762,7 +762,7 @@ def plot_trial_end_timing(
 ### GIVE ###
 
 
-def plot_non_give_performance(trials_df, ax, title=""):
+def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True):
     """
     geneate a plot of hit rate for non-give trials
 
@@ -776,14 +776,28 @@ def plot_non_give_performance(trials_df, ax, title=""):
     title : str, (default = "")
         title of plot
     """
+
     sns.lineplot(
         data=trials_df.query("give_type_imp == 'none'"),
         x="date",
         y="hits",
         marker="o",
         ax=ax,
+        label="Non-give Perf",
+        errorbar=None,
+    )
+
+    # mark number of trials with give
+    sns.lineplot(
+        data=trials_df.query("give_type_imp == 'none'"),
+        x="date",
+        y="give_frac",
+        marker="o",
+        ax=ax,
+        label="Give Prob",
     )
     # aethetics
-    pu.set_date_x_ticks(ax, True)
-    _ = ax.set(ylabel="Hit Rate", xlabel="", title=title, ylim=(0, 1))
+    pu.set_date_x_ticks(ax, xaxis_label)
+    _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
     ax.grid(alpha=0.5)
+    ax.legend(loc="lower left")
