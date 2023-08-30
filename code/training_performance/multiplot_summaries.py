@@ -218,6 +218,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
 
     ## ROW 5
     plot_cpokes_over_trials(trials_df, ax=ax_dict["S"], mode="violations")
+    plot_stim_grid_performance(trials_df, ax=ax_dict["T"], mode="violations")
     plot_active_trial_dur_summary(trials_df, ax=ax_dict["U"])
     plot_trial_dur(trials_df, ax=ax_dict["V"])
 
