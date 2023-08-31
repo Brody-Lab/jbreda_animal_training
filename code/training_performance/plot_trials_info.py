@@ -120,7 +120,7 @@ def plot_performance_rates(trials_df, ax, title="", legend=True):
     return None
 
 
-def plot_stim_grid_performance(trials_df, ax, mode):
+def plot_stim_grid_performance(trials_df, ax, mode, title=""):
     """
     plot performance (viol or hit) in sa vs sb grid
     with rule boundary marked
@@ -185,6 +185,7 @@ def plot_stim_grid_performance(trials_df, ax, mode):
         ylim=y_lim,
         xticks=stim_range,
         yticks=stim_range,
+        title=title,
     )
 
     return None
@@ -926,11 +927,13 @@ def plot_trial_dur(trials_df, ax, title="", legend=True):
         trials_df.trial_dur.mean(), color="cornflowerblue", linestyle="--", zorder=1
     )
 
+    active_time = trials_df.trial_dur - trials_df.inter_trial_dur
+
     # aesthetics
     _ = ax.set(
         ylabel="Duration [s]",
         xlabel="Trial",
-        title=f"Avg ITI: {trials_df.inter_trial_dur.mean():.2f}",
+        title=f"Avg SMA ITI: {trials_df.inter_trial_dur.mean():.2f}, Avg Animal ITI: {active_time.mean():.2f}",
     )
     pu.set_legend(ax, legend=legend)
 
@@ -975,7 +978,7 @@ def plot_active_trial_dur_summary(trials_df, ax):
 
 
 #### GIVE ####
-def plot_give_info(trials_df, ax, legend=True):
+def plot_give_info(trials_df, ax, legend=False):
     """
     plot give info for each trial. will plot the give type that
     was set by the GUI and the give type that was implemented by
@@ -997,7 +1000,7 @@ def plot_give_info(trials_df, ax, legend=True):
     mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
     data.give_type_imp = data.give_type_imp.replace(mapping)
 
-    sns.scatterplot(data=data, x="trial", y="give_type_imp", hue="give_type_set", ax=ax)
+    sns.scatterplot(data=data, x="trial", y="give_type_imp", hue="give_type_imp", ax=ax)
 
     _ = ax.set(title="Give Type Implemented", xlabel="Trial", ylabel="")
 

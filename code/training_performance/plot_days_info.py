@@ -762,7 +762,7 @@ def plot_trial_end_timing(
 ### GIVE ###
 
 
-def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True):
+def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True, legend=True):
     """
     geneate a plot of hit rate for non-give trials
 
@@ -797,7 +797,10 @@ def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True):
         label="Give Prob",
     )
     # aethetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    # pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
     ax.grid(alpha=0.5)
-    ax.legend(loc="lower left")
+    if legend:
+        ax.legend(loc="lower left")
+    else:
+        ax.legend().remove()

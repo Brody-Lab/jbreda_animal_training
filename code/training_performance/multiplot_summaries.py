@@ -99,9 +99,9 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
     """
     layout = """
         AAABCDDD
-        EEEFGHIJ
-        KKKLMNNN
-        OOOPQRRR
+        EEEFGHHH
+        IIIJKLLL
+        MMMNOPQR
         SSSTUVVV
     """
     fig = plt.figure(constrained_layout=True, figsize=(30, 20))
@@ -124,28 +124,37 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
     plot_stage_info(trials_df, ax=ax_dict["E"])
     plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
-    plot_npokes_summary(trials_df, ax=ax_dict["H"])
-    plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode="violations")
-    plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"], mode="violations")
+    plot_violations_by_period(trials_df, ax=ax_dict["H"])
 
     ## ROW 3
-    plot_performance_rates(trials_df, ax=ax_dict["K"])
-    plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["L"])
-    plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["M"])
-    plot_violations_by_period(trials_df, ax=ax_dict["N"])
+    plot_performance_rates(trials_df, ax=ax_dict["I"])
+    plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["J"])
+    plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["K"])
+    plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
 
     ## ROW 4
-    plot_antibias_r_probs(trials_df, ax=ax_dict["O"])
+    plot_give_info(trials_df, ax=ax_dict["M"])
+    plot_stim_grid_performance(trials_df, ax=ax_dict["N"], mode="hits")
+    plot_stim_grid_performance(trials_df, ax=ax_dict["O"], mode="violations")
     plot_result_by_give(trials_df, ax=ax_dict["P"])
     plot_hit_rate_by_give(trials_df, ax=ax_dict["Q"])
-    plot_trial_dur(trials_df, ax=ax_dict["R"])
+    plot_npokes_summary(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-    plot_give_info(trials_df, ax=ax_dict["S"])
-    plot_stim_grid_performance(trials_df, ax=ax_dict["T"], mode="hits")
-    plot_stim_grid_performance(trials_df, ax=ax_dict["U"], mode="violations")
-    plot_trial_dur(trials_df, ax=ax_dict["R"])
-    plot_cpokes_over_trials(trials_df, ax=ax_dict["V"], mode="violations")
+    plot_antibias_r_probs(trials_df, ax=ax_dict["S"])
+    plot_stim_grid_performance(
+        trials_df.query("give_type_imp == 'none'"),
+        ax=ax_dict["T"],
+        mode="hits",
+        title="Give perf",
+    )
+    plot_stim_grid_performance(
+        trials_df.query("give_type_imp == 'none'"),
+        ax=ax_dict["U"],
+        mode="violations",
+        title="Give perf",
+    )
+    plot_trial_dur(trials_df, ax=ax_dict["V"])
 
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")
