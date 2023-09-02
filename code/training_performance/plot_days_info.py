@@ -479,8 +479,6 @@ def plot_side_bias(days_df, ax, title="", xaxis_label=True):
         axes to plot on
     title : str (optional, default = "")
         title for the plot
-    legend : bool (optional, default = True)
-        whether to include the legend or not
     xaxis_label : bool (optional, default = True)
         whether to include the xaxis label or not, this is useful when
         plotting multiple plots on the same figure
@@ -804,3 +802,41 @@ def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True, legend=
         ax.legend(loc="lower left")
     else:
         ax.legend().remove()
+
+    return None
+
+
+def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False):
+    """
+    Plot the give information across days.
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and
+        `give_type_imp` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+
+
+    """
+    # make the names shorter for plotting
+    data = trials_df[["date", "give_type_imp"]].copy()
+    mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
+    data.give_type_imp = data.give_type_imp.replace(mapping)
+
+    sns.scatterplot(data=data, x="date", y="give_type_imp", hue="give_type_imp", ax=ax)
+
+    # aesthetics
+    _ = ax.set(title=title, ylabel="")
+    pu.set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
