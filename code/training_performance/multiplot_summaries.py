@@ -455,9 +455,14 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     )
 
     ## ROW 4
-    plot_time_to_spoke(
-        animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
-    )
+    if animal_trials_df.stage.iloc[-1] == 9:
+        plot_sounds_info(
+            animal_trials_df, ax_dict["J"], title="Sounds", xaxis_label=False
+        )
+    else:
+        plot_time_to_spoke(
+            animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
+        )
 
     if animal_trials_df.SMA_set.iloc[-1] == "cpoke":
         plot_cpoke_dur_timings_pregnp(

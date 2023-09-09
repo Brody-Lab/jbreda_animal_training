@@ -654,6 +654,8 @@ def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
 
 
 ### DELAY ###
+
+
 def plot_exp_delay_params(trials_df, ax, title="", legend=False, xaxis_label=True):
     """
     TODO
@@ -700,6 +702,8 @@ def plot_avg_delay(trials_df, ax, title="", xaxis_label=True):
 
 
 ### TIMING ###
+
+
 def plot_trial_structure(
     trials_df, ax, kind="bar", title="", legend=True, xaxis_label=True
 ):
@@ -824,8 +828,6 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
         plotting multiple plots on the same figure
     legend : bool (optional, default = True)
         whether to include the legend or not
-
-
     """
     # make the names shorter for plotting
     data = trials_df[["date", "give_type_imp"]].copy()
@@ -835,8 +837,61 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
     sns.scatterplot(data=data, x="date", y="give_type_imp", hue="give_type_imp", ax=ax)
 
     # aesthetics
-    _ = ax.set(title=title, ylabel="")
+    _ = ax.set(title=title, ylabel="", xlabel="")
     pu.set_legend(ax, legend)
     pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
+### SOUNDS ###
+
+
+def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
+    """
+    Plot the sound volume and duration info across days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and
+        `volume_multiplier` `stimulus_dur` with trials as
+        row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+    # find minimum volume and stimulus dur for each day
+    plot_df = (
+        trials_df.melt(
+            id_vars=["date", "animal_id"],
+            value_vars=["volume_multiplier", "stimulus_dur"],
+            var_name="sound_var",
+            value_name="value",
+        )
+        .groupby(["date", "sound_var"])
+        .value.min()
+        .reset_index()
+    )
+
+    # plot
+    sns.lineplot(
+        data=plot_df,
+        x="date",
+        y="value",
+        hue="sound_var",
+        marker="o",
+        palette=["purple", "cornflowerblue"],
+        ax=ax,
+    )
+
+    # aesthetics
+    _ = ax.set(title=title, ylabel="Sound Variable Value", xlabel="")
+    pu.set_date_x_ticks(ax, True)
+    ax.legend(loc="center left")
 
     return None
