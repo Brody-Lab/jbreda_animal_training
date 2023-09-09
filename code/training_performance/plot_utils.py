@@ -211,3 +211,26 @@ def get_period_colors(trial_period_column):
     print(periods)
     colors = [TRIAL_PERIOD_MAP[period] for period in periods]
     return colors
+
+
+### STIMULUS utilities ###
+
+
+def create_palette_given_sounds(df):
+    """
+    Function to allow for assignment of specific colors to a sound pair
+    that is consistent across sessions where number of unique pairs varies
+    """
+    palette = []
+    sound_pairs = df.sound_pair.unique()
+
+    sound_pair_colormap = {
+        "3.0, 3.0": "skyblue",
+        "12.0, 12.0": "steelblue",
+        "3.0, 12.0": "thistle",
+        "12.0, 3.0": "mediumorchid",
+    }
+
+    for sp in sound_pairs:
+        palette.append(sound_pair_colormap[sp])
+    return palette

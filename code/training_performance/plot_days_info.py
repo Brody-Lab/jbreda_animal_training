@@ -895,3 +895,33 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
     ax.legend(loc="center left")
 
     return None
+
+
+def plot_non_give_stim_performance(trials_df, ax, title="", xaxis_label=True):
+    """
+    TODO
+    """
+    no_give_stim_perf = (
+        trials_df.query("give_type_imp == 'none'")
+        .groupby(["date", "sound_pair"])
+        .hits.mean()
+        .reset_index()
+    )
+
+    sns.lineplot(
+        data=no_give_stim_perf,
+        x="date",
+        y="hits",
+        hue="sound_pair",
+        palette=pu.create_palette_given_sounds(no_give_stim_perf),
+        marker="o",
+        ax=ax,
+    )
+
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate")
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.legend(loc="lower left")
+
+    return None

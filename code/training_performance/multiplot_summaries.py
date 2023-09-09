@@ -459,6 +459,10 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         plot_sounds_info(
             animal_trials_df, ax_dict["J"], title="Sounds", xaxis_label=False
         )
+    elif animal_trials_df.stage.iloc[-1] == 10:
+        plot_non_give_stim_performance(
+            animal_trials_df, ax_dict["J"], title="Non-Give Perf", xaxis_label=False
+        )
     else:
         plot_time_to_spoke(
             animal_trials_df, ax_dict["J"], title="Time to Spoke", xaxis_label=False
