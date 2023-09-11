@@ -900,14 +900,29 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
 
 def plot_non_give_stim_performance(trials_df, ax, title="", xaxis_label=True):
     """
-    TODO
+    Plot performance by sa, sb pair on non-give
+    trials across days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_type_imp` and `hits` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
     """
-    no_give_stim_perf = (
-        trials_df.query("give_type_imp == 'none'")
-        .groupby(["date", "sound_pair"])
-        .hits.mean()
-        .reset_index()
-    )
+
+    # when hits remains in pyarrow format, the groupby
+    # doesn't work properly for some edge cases
+    sub_df = trials_df.query("give_type_imp == 'none'").copy()
+    sub_df["hits"] = sub_df["hits"].astype("float64")
+
+    no_give_stim_perf = sub_df.groupby(["date", "sound_pair"]).hits.mean().reset_index()
 
     sns.lineplot(
         data=no_give_stim_perf,
