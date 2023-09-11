@@ -806,6 +806,7 @@ def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True, legend=
         ax.legend(loc="lower left")
     else:
         ax.legend().remove()
+    pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
