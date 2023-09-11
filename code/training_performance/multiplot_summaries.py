@@ -134,26 +134,32 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
 
     ## ROW 4
     plot_give_info(trials_df, ax=ax_dict["M"])
-    plot_stim_grid_performance(trials_df, ax=ax_dict["N"], mode="hits")
-    plot_stim_grid_performance(trials_df, ax=ax_dict["O"], mode="violations")
+    try:
+        plot_stim_grid_performance(trials_df, ax=ax_dict["N"], mode="hits")
+        plot_stim_grid_performance(trials_df, ax=ax_dict["O"], mode="violations")
+        plot_hit_rate_by_give(trials_df, ax=ax_dict["Q"])
+    except:
+        print("skipping stim/give plots due to hist error")
     plot_result_by_give(trials_df, ax=ax_dict["P"])
-    plot_hit_rate_by_give(trials_df, ax=ax_dict["Q"])
     plot_npokes_summary(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
     plot_antibias_r_probs(trials_df, ax=ax_dict["S"])
-    plot_stim_grid_performance(
-        trials_df.query("give_type_imp == 'none'"),
-        ax=ax_dict["T"],
-        mode="hits",
-        title="Give perf",
-    )
-    plot_stim_grid_performance(
-        trials_df.query("give_type_imp == 'none'"),
-        ax=ax_dict["U"],
-        mode="violations",
-        title="Give perf",
-    )
+    try:
+        plot_stim_grid_performance(
+            trials_df.query("give_type_imp == 'none'"),
+            ax=ax_dict["T"],
+            mode="hits",
+            title="Give perf",
+        )
+        plot_stim_grid_performance(
+            trials_df.query("give_type_imp == 'none'"),
+            ax=ax_dict["U"],
+            mode="violations",
+            title="Give perf",
+        )
+    except:
+        print("skipping stim grid plots due to hist error")
     plot_trial_dur(trials_df, ax=ax_dict["V"])
 
     if save_out:
