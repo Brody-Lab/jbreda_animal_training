@@ -1000,7 +1000,15 @@ def plot_give_info(trials_df, ax, legend=False):
     mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
     data.give_type_imp = data.give_type_imp.replace(mapping)
 
-    sns.scatterplot(data=data, x="trial", y="give_type_imp", hue="give_type_imp", ax=ax)
+    sns.scatterplot(
+        data=data,
+        x="trial",
+        y="give_type_imp",
+        hue="give_type_imp",
+        palette=pu.get_give_colors(data["give_type_imp"]),
+        hue_order=pu.get_give_order(data["give_type_imp"]),
+        ax=ax,
+    )
 
     _ = ax.set(title="Give Type Implemented", xlabel="Trial", ylabel="")
 
@@ -1038,7 +1046,13 @@ def plot_give_count_summary(trials_df, ax, title=""):
 
     # plot
     sns.barplot(
-        data=count_data, x="give_type_imp", y="count", hue="give_type_set", ax=ax
+        data=count_data,
+        x="give_type_imp",
+        y="count",
+        hue="give_type_set",
+        palette=pu.get_give_colors(count_data["give_type_imp"]),
+        hue_order=pu.get_give_order(count_data["give_type_imp"]),
+        ax=ax,
     )
     # aesthetics
     ax.set(
@@ -1107,7 +1121,14 @@ def plot_hit_rate_by_give(trials_df, ax=None, title=""):
     ax = plt.gca() if ax is None else ax
 
     hit_rate_by_give = trials_df.groupby("give_type_imp").hits.mean().reset_index()
-    sns.barplot(x="give_type_imp", y="hits", data=hit_rate_by_give, ax=ax)
+    sns.barplot(
+        x="give_type_imp",
+        y="hits",
+        data=hit_rate_by_give,
+        ax=ax,
+        hue_order=pu.get_give_order(hit_rate_by_give.give_type_imp),
+        palette=pu.get_give_colors(hit_rate_by_give.give_type_imp),
+    )
 
     # aesthetics
     ax.set(xlabel="Give Type", ylabel="Hit Rate", title=title)

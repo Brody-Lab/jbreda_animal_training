@@ -764,9 +764,9 @@ def plot_trial_end_timing(
 ### GIVE ###
 
 
-def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True, legend=True):
+def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=True):
     """
-    geneate a plot of hit rate for non-give trials
+    generate a plot of hit rate for non-give trials
 
     params
     ------
@@ -780,26 +780,33 @@ def plot_non_give_performance(trials_df, ax, title="", xaxis_label=True, legend=
     """
 
     sns.lineplot(
-        data=trials_df.query("give_type_imp == 'none'"),
+        data=trials_df,
         x="date",
         y="hits",
         marker="o",
+        hue="give_type_imp",
+        palette=pu.get_give_colors(trials_df["give_type_imp"]),
+        hue_order=pu.get_give_order(trials_df["give_type_imp"]),
         ax=ax,
-        label="Non-give Perf",
-        errorbar=None,
     )
 
     # mark number of trials with give
-    sns.lineplot(
-        data=trials_df.query("give_type_imp == 'none'"),
-        x="date",
-        y="give_frac",
-        marker="o",
-        ax=ax,
-        label="Give Prob",
+    give_proportions = (
+        trials_df.groupby("date")
+        .give_type_imp.value_counts(normalize=True)
+        .reset_index()
     )
+
+    sns.lineplot(
+        data=give_proportions.query("give_type_imp != 'none'"),
+        x="date",
+        y="proportion",
+        marker="x",
+        ax=ax,
+        color="black",
+    )
+
     # aethetics
-    # pu.set_date_x_ticks(ax, xaxis_label)
     _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
     ax.grid(alpha=0.5)
     if legend:
@@ -835,7 +842,15 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
     mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
     data.give_type_imp = data.give_type_imp.replace(mapping)
 
-    sns.scatterplot(data=data, x="date", y="give_type_imp", hue="give_type_imp", ax=ax)
+    sns.scatterplot(
+        data=data,
+        x="date",
+        y="give_type_imp",
+        hue="give_type_imp",
+        palette=pu.get_give_colors(data["give_type_imp"]),
+        hue_order=pu.get_give_order(data["give_type_imp"]),
+        ax=ax,
+    )
 
     # aesthetics
     _ = ax.set(title=title, ylabel="", xlabel="")

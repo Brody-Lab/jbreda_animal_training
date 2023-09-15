@@ -213,6 +213,55 @@ def get_period_colors(trial_period_column):
     return colors
 
 
+### GIVE utilities ###
+
+
+GIVE_MAP = {
+    "none": "green",
+    "n": "green",
+    "light": "#fcba03",
+    "l": "#fcba03",
+    "water_and_light": "cornflowerblue",
+    "w + l": "cornflowerblue",
+    "water": "cyan",
+    "w": "cyan",
+    "order": ["none", "n", "light", "l", "water_and_light", "w + l", "water", "w"],
+}
+
+
+def get_give_order(trial_give_column):
+    """
+    order the give types for plotting
+
+    params:
+    -------
+    trial_give_columb: pandas.Series
+        a column of the dataframe that contains the give
+        type for a trial
+    """
+    return sorted(
+        trial_give_column.unique(),
+        key=lambda x: GIVE_MAP["order"].index(x)
+        if x in GIVE_MAP["order"]
+        else float("inf"),
+    )
+
+
+def get_give_colors(trial_give_column):
+    """
+    color the give types for plotting
+
+    params:
+    -------
+    trial_give_column: pandas.Series
+        a column of the dataframe that contains the give
+        type for a trial
+    """
+    gives = get_give_order(trial_give_column)
+    colors = [GIVE_MAP[give] for give in gives]
+    return colors
+
+
 ### STIMULUS utilities ###
 
 

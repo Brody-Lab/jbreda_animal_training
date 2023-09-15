@@ -150,13 +150,13 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
             trials_df.query("give_type_imp == 'none'"),
             ax=ax_dict["T"],
             mode="hits",
-            title="Give perf",
+            title="Non-Give perf",
         )
         plot_stim_grid_performance(
             trials_df.query("give_type_imp == 'none'"),
             ax=ax_dict["U"],
             mode="violations",
-            title="Give perf",
+            title="Non-Give perf",
         )
     except:
         print("skipping stim grid plots due to hist error")
@@ -289,7 +289,7 @@ def multiplot_cpoke_pre_sounds(
     ## ROW 1
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
-    plot_watering_amounts(trials_df, ax=ax_dict["C"])
+    # plot_watering_amounts(trials_df, ax=ax_dict["C"])
     plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode=mode)
 
     ## ROW 2
@@ -311,7 +311,7 @@ def multiplot_cpoke_pre_sounds(
     plot_give_info(trials_df, ax=ax_dict["N"])
 
     ## ROW 4
-    plot_npokes(trials_df, ax=ax_dict["O"])
+    plot_antibias_r_probs(trials_df, ax=ax_dict["O"])
     plot_npokes_summary(trials_df, ax=ax_dict["P"])
     plot_active_trial_dur_summary(trials_df, ax=ax_dict["Q"])
     plot_trial_dur(trials_df, ax=ax_dict["R"])
@@ -488,7 +488,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     )
     plot_rig_tech(animal_days_df, ax_dict["N"], title="Rig Tech", xaxis_label=True)
     if animal_trials_df.stage.iloc[-1] == 10:
-        plot_non_give_performance(
+        plot_performance_by_give(
             animal_trials_df, ax_dict["O"], title="Give Metrics", xaxis_label=True
         )
     elif animal_trials_df.SMA_set.iloc[-1] == "cpoke":
