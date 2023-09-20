@@ -805,6 +805,7 @@ def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=T
         ax=ax,
         color="black",
     )
+    ax.axhline(0.6, color="gray", linestyle="--")
 
     # aethetics
     _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
