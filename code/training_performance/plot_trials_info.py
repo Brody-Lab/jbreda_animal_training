@@ -9,7 +9,6 @@ import pandas as pd
 import seaborn as sns
 import plot_utils as pu
 import numpy as np
-from IPython.display import clear_output
 import matplotlib.pyplot as plt
 
 from create_days_df import fetch_and_format_single_day_water
@@ -1339,7 +1338,6 @@ def plot_violations_by_period(trials_df, ax, title="", legend=False):
     legend : bool, (default = False)
         whether to include legend or not
     """
-    # from IPython.display import clear_output
 
     # create dataframe that marks the violation period
     viols_df = create_viol_period_df(trials_df)
@@ -1361,7 +1359,6 @@ def plot_violations_by_period(trials_df, ax, title="", legend=False):
         ax=ax,
     )
     ax.axvline(0, color="black", linewidth=3)
-    clear_output(wait=True)
     # aesthetics
     _ = ax.set(
         title="Violation Histogram by Period" if title == "" else title,
