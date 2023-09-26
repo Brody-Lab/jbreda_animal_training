@@ -487,7 +487,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         animal_trials_df, ax_dict["M"], title="Trial Structure", xaxis_label=True
     )
     plot_rig_tech(animal_days_df, ax_dict["N"], title="Rig Tech", xaxis_label=True)
-    if animal_trials_df.stage.iloc[-1] == 10:
+    if animal_trials_df.stage.iloc[-1] >= 10:
         plot_performance_by_give(
             animal_trials_df, ax_dict["O"], title="Give Metrics", xaxis_label=True
         )
