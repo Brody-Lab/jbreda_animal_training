@@ -497,3 +497,59 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         )
 
     return None
+
+
+def mutliplot_rule_learning(animal_id, days_df, trials_df):
+    """
+    specific to stage 10+ when only want to look at how the animals
+    performing with respect to the stimuli
+
+    params
+    ------
+    animal_id : str
+        animal id to plot, e.g. "R610"
+    days_df : pd.DataFrame
+        days dataframe created by create_days_df_from_dj() with
+        day as row index
+    trials_df : pd.DataFrame
+        trials dataframe created by create_trials_df_from_dj() with
+        trial as row index
+
+    """
+    layout = """
+        AAABBB
+        CCCDDD
+        EEEFFF
+    """
+
+    fig = plt.figure(constrained_layout=True, figsize=(23, 13))
+    ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+    plt.suptitle(f"{animal_id} Rule Learning Summary Plot", fontweight="semibold")
+
+    animal_days_df = days_df.query("animal_id == @animal_id").copy()
+    animal_trials_df = trials_df.query("animal_id == @animal_id").copy()
+
+    ## ROW 1
+    plot_performance(
+        animal_days_df, ax_dict["A"], title="Performance", xaxis_label=False
+    )
+    plot_trial_structure(
+        animal_trials_df, ax_dict["B"], title="Trial Structure", xaxis_label=False
+    )
+
+    ## ROW 2
+    plot_performance_bars(
+        animal_trials_df, ax_dict["C"], title="Performance", xaxis_label=False
+    )
+    plot_side_bias(animal_days_df, ax_dict["D"], title="Side Bias", xaxis_label=False)
+
+    ## ROW 3
+    plot_performance_by_give(
+        animal_trials_df, ax_dict["E"], title="Give Metrics", xaxis_label=True
+    )
+
+    plot_non_give_stim_performance(
+        animal_trials_df, ax_dict["F"], title="Non-Give Perf", xaxis_label=True
+    )
+
+    return None
