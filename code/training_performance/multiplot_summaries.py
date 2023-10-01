@@ -71,7 +71,7 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
                         save_out=save_out,
                         save_path=full_path,
                     )
-                elif sub_df.stage.iloc[0] == 10:
+                elif sub_df.stage.iloc[0] >= 10:
                     mutliplot_cpoke_decrease_give(
                         sub_df,
                         save_out=save_out,
@@ -465,7 +465,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         plot_sounds_info(
             animal_trials_df, ax_dict["J"], title="Sounds", xaxis_label=False
         )
-    elif animal_trials_df.stage.iloc[-1] == 10:
+    elif animal_trials_df.stage.iloc[-1] >= 10:
         plot_non_give_stim_performance(
             animal_trials_df, ax_dict["J"], title="Non-Give Perf", xaxis_label=False
         )
