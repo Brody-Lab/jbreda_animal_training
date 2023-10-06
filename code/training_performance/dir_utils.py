@@ -32,7 +32,23 @@ if platform.system() == "Windows":
     ANIMAL_TABLE_PATH = Path(
         "C:\\Users\\JB\\github\\jbreda_animal_training\\data\\animals.xlsx"
     )
+    DATA_PATH = Path("C:\\Users\\JB\\github\\jbreda_animal_training\\data\\days_dfs")
+
+    FIGURES_BASE_PATH = Path(
+        "C:\\Users\\JB\\github\\jbreda_animal_training\\figures"
+    )
+
 else:
     ANIMAL_TABLE_PATH = Path(
         "/Users/jessbreda/Desktop/github/jbreda_animal_training/data/animals.xlsx"
     )
+    DATA_PATH = Path(
+        "/Users/jessbreda/Desktop/github/jbreda_animal_training/data/days_dfs"
+    )
+    FIGURES_BASE_PATH = Path(
+        "/Users/jessbreda/Desktop/github/jbreda_animal_training/figures"
+    )
+
+def get_figures_path(species, cohort):
+
+    return FIGURES_BASE_PATH / species / cohort
