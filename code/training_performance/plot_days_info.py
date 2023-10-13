@@ -119,7 +119,7 @@ def plot_stage(
         data=trials_df.groupby(group).stage.mean(),
         drawstyle="steps-post",
         ax=ax,
-        # marker="o",
+        marker="o",
         **kwargs,
     )
     if aesthetics:
@@ -967,8 +967,8 @@ def plot_non_give_stim_performance(
 
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="Days in Stage 10", ylabel="Hit Rate")
-    # pu.set_date_x_ticks(ax, xaxis_label)
+    ax.set(title=title, xlabel="", ylabel="Hit Rate")
+    pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
 
     return None
