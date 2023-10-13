@@ -107,28 +107,31 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
 
 
 ### STAGE ###
-def plot_stage(trials_df, ax, title="", xaxis_label=True, **kwargs):
+def plot_stage(
+    trials_df, ax, title="", group="date", xaxis_label=True, aesthetics=True, **kwargs
+):
     """
-    TODO
+    Having the group variable allows you to group by other
+    things like "start_date" if you want to try and make a plot
+    with multiple animals that started at different times.
     """
     sns.lineplot(
-        data=trials_df.groupby("date").stage.mean(),
+        data=trials_df.groupby(group).stage.mean(),
         drawstyle="steps-post",
         ax=ax,
-        marker="o",
+        # marker="o",
         **kwargs,
     )
-
-    # aesthetics
-    max_stage = int(trials_df.stage.max())
-    pu.set_date_x_ticks(ax, xaxis_label)
-    ax.grid(alpha=0.5)
-    ax.set(
-        ylabel="Stage #",
-        title=title,
-        ylim=(0, max_stage + 1),
-        yticks=range(max_stage + 1),
-    )
+    if aesthetics:
+        max_stage = int(trials_df.stage.max())
+        pu.set_date_x_ticks(ax, xaxis_label)
+        ax.grid(alpha=0.5)
+        ax.set(
+            ylabel="Stage #",
+            title=title,
+            ylim=(0, max_stage + 1),
+            yticks=range(max_stage + 1),
+        )
 
 
 ### MASS ###
@@ -764,7 +767,15 @@ def plot_trial_end_timing(
 ### GIVE ###
 
 
-def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=True):
+def plot_performance_by_give(
+    trials_df,
+    ax,
+    title="",
+    group="date",
+    xaxis_label=True,
+    legend=True,
+    aesthetics=True,
+):
     """
     generate a plot of hit rate for non-give trials
 
@@ -781,7 +792,7 @@ def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=T
 
     sns.lineplot(
         data=trials_df,
-        x="date",
+        x=group,
         y="hits",
         marker="o",
         hue="give_type_imp",
@@ -792,14 +803,14 @@ def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=T
 
     # mark number of trials with give
     give_proportions = (
-        trials_df.groupby("date")
+        trials_df.groupby(group)
         .give_type_imp.value_counts(normalize=True)
         .reset_index()
     )
 
     sns.lineplot(
         data=give_proportions.query("give_type_imp != 'none'"),
-        x="date",
+        x=group,
         y="proportion",
         marker="x",
         ax=ax,
@@ -808,14 +819,16 @@ def plot_performance_by_give(trials_df, ax, title="", xaxis_label=True, legend=T
     ax.axhline(0.6, color="gray", linestyle="--")
 
     # aethetics
-    _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
-    ax.grid(alpha=0.5)
-    if legend:
-        ax.legend(loc="lower left")
+    if aesthetics:
+        _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
+        if legend:
+            ax.legend(loc="lower left")
+        else:
+            ax.legend().remove()
+        pu.set_date_x_ticks(ax, xaxis_label)
     else:
-        ax.legend().remove()
-    pu.set_date_x_ticks(ax, xaxis_label)
-
+        _ = ax.set(title=title, ylabel="Performance", xlabel="Days in Stage 10")
+    ax.grid(alpha=0.5)
     return None
 
 
@@ -914,7 +927,9 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
     return None
 
 
-def plot_non_give_stim_performance(trials_df, ax, title="", xaxis_label=True):
+def plot_non_give_stim_performance(
+    trials_df, ax, group="date", title="", xaxis_label=True
+):
     """
     Plot performance by sa, sb pair on non-give
     trials across days
@@ -938,11 +953,11 @@ def plot_non_give_stim_performance(trials_df, ax, title="", xaxis_label=True):
     sub_df = trials_df.query("give_type_imp == 'none'").copy()
     sub_df["hits"] = sub_df["hits"].astype("float64")
 
-    no_give_stim_perf = sub_df.groupby(["date", "sound_pair"]).hits.mean().reset_index()
+    no_give_stim_perf = sub_df.groupby([group, "sound_pair"]).hits.mean().reset_index()
 
     sns.lineplot(
         data=no_give_stim_perf,
-        x="date",
+        x=group,
         y="hits",
         hue="sound_pair",
         palette=pu.create_palette_given_sounds(no_give_stim_perf),
@@ -952,8 +967,8 @@ def plot_non_give_stim_performance(trials_df, ax, title="", xaxis_label=True):
 
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="", ylabel="Hit Rate")
-    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.set(title=title, xlabel="Days in Stage 10", ylabel="Hit Rate")
+    # pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
 
     return None
