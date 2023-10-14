@@ -525,7 +525,7 @@ def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
 
     # aesthetics
     pu.set_date_x_ticks(ax, xaxis_label)
-    ax.set(title=title, xlabel="", ylabel="Prob")
+    ax.set(title=title, xlabel="", ylabel="Prob", ylim=(0,1))
     ax.legend(frameon=False, borderaxespad=0)
 
     return None
@@ -967,7 +967,7 @@ def plot_non_give_stim_performance(
 
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="", ylabel="Hit Rate")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0,1))
     pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
 
