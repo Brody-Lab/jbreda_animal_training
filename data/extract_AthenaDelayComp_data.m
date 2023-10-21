@@ -1,6 +1,7 @@
 function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
 
     % stage 1: % data_@AthenaDelayComp_Athena_W075_150716a.mat
+    % stage 4: % data_@AthenaDelayComp_Athena_W075_151113a.mat
 
     warning('OFF','all')
 
@@ -15,9 +16,7 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
         files = dir(dirPath);
     end
     
-    % TODO- could find a better way to make these values with the
-    % fileds_to_update thing I am working in below. could also use this to
-    % fill in these fields
+    % initialize vars that need to be custom made
     ratdata = {};
     ratdata.rat_name           = {};
     ratdata.session_date       = {};
@@ -34,9 +33,6 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
         % skip any folders and only use .mat files
         if files(i).isdir == 1; continue; end
 
-        % TODO figure out why this is heere and if there is a cleaner way
-        % to write it? Might be easier to search for AthenaDelayComp in the
-        % list and drop all the others
         brks = find(files(i).name == '_');
         if numel(brks) == 4
             protocol = files(i).name(brks(1)+2:brks(2)-1);
@@ -47,6 +43,11 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
 
                 % skip if in spoke only stage
                 peh = saved_history.ProtocolsSection_parsed_events;
+                
+                if isempty(peh)
+                    disp(['Skipping ' files(i).name, ' because n trials == 0'])
+                end
+                
                 if isfield(peh{1}.states, 'sideled_on')
                     disp(['Skipping ' files(i).name, ' because spoke only stage']);
                     continue
@@ -54,10 +55,7 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
 
                 % skip if 0 trials were done in the session
                 n_trials = saved.ProtocolsSection_n_done_trials;
-                if n_trials <= 0
-                    disp(['Skipping ' files(i).name, ' because n trials == 0'])
-                    continue
-                else
+                if n_trials > 0
                     session_number = session_number + 1;
                     session_date = files(i).name(brks(4)+1:brks(4)+6);
                     rig_id = regexp(saved.SavingSection_hostname, '\d+', 'match');
