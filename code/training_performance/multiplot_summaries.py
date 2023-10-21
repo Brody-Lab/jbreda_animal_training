@@ -491,7 +491,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         plot_performance_by_give(
             animal_trials_df, ax_dict["O"], title="Give Metrics", xaxis_label=True
         )
-    elif animal_trials_df.SMA_set.iloc[-1] == "cpoke":
+    else:
         plot_give_info_days(
             trials_df, ax_dict["O"], title="Give Type", xaxis_label=True, legend=False
         )
