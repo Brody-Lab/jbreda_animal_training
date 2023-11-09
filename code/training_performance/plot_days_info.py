@@ -525,7 +525,7 @@ def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
 
     # aesthetics
     pu.set_date_x_ticks(ax, xaxis_label)
-    ax.set(title=title, xlabel="", ylabel="Prob", ylim=(0,1))
+    ax.set(title=title, xlabel="", ylabel="Prob", ylim=(0, 1))
     ax.legend(frameon=False, borderaxespad=0)
 
     return None
@@ -967,7 +967,88 @@ def plot_non_give_stim_performance(
 
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0,1))
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.legend(loc="lower left")
+
+    return None
+
+
+## PRO ANTI ##
+
+
+def plot_stim_performance(trials_df, ax, group="date", title="", xaxis_label=True):
+    """
+    Plot performance by sa, sb pair on all trials
+    trials across days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_type_imp` and `hits` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    sns.lineplot(
+        data=trials_df,
+        x=group,
+        y="hits",
+        hue="sound_pair",
+        palette=pu.create_palette_given_sounds(trials_df),
+        marker="o",
+        ax=ax,
+    )
+
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.legend(loc="lower left")
+
+    return None
+
+
+def plot_stim_performance_by_pro_anti(
+    trials_df, ax, group="date", title="", xaxis_label=True
+):
+    """
+    Plot performance by sa, sb pair on all trials
+    trials across days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_type_imp` and `hits` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    sns.lineplot(
+        data=trials_df,
+        x=group,
+        y="hits",
+        hue="pro_anti_block_type",
+        palette="husl",
+        marker="o",
+        ax=ax,
+    )
+
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
     pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
 

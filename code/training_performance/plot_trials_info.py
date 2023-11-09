@@ -172,18 +172,18 @@ def plot_stim_grid_performance(trials_df, ax, mode, title=""):
     ax.axline((1, 0), slope=1, color="lightgray", linestyle="--")
 
     # Range& aesthetics
-    sp_min, sp_max = np.min(stim_table.sa), np.max(stim_table.sa)
-    stim_range = [sp_min, sp_max]
-    x_lim = [sp_min - 3, sp_max + 3]
-    y_lim = [sp_min - 3, sp_max + 3]
+    # sp_min, sp_max = np.min(stim_table.sa), np.max(stim_table.sa)
+    # stim_range = [sp_min, sp_max]
+    x_lim = [0, 15]
+    y_lim = [0, 15]
 
     _ = ax.set(
         xlabel="Sa",
         ylabel="Sb",
         xlim=x_lim,
         ylim=y_lim,
-        xticks=stim_range,
-        yticks=stim_range,
+        xticks=[3, 12],
+        yticks=[3, 12],
         title=title,
     )
 
@@ -1371,3 +1371,50 @@ def plot_violations_by_period(trials_df, ax, title="", legend=False):
     #     pu.set_legend(ax, legend)
 
     return None
+
+
+### PRO ANTI
+
+
+def plot_pro_anti_perf_rates(trials_df, ax):
+    """
+    TODO
+    """
+    perf_rates_df = pd.melt(
+        trials_df,
+        id_vars=["trial"],
+        value_vars=["pro_hit_rate", "anti_hit_rate"],
+        var_name="perf_type",
+        value_name="rate",
+    )
+    sns.lineplot(
+        data=perf_rates_df,
+        x="trial",
+        y="rate",
+        hue="perf_type",
+        hue_order=["pro_hit_rate", "anti_hit_rate"],
+        palette="husl",
+        ax=ax,
+        marker=".",
+    )
+
+    block_switch = trials_df["n_blocks"].diff().fillna(0).abs() > 0
+    for trial in trials_df[block_switch].index:
+        ax.axvline(x=trial, color="black")
+
+    ax.grid(alpha=0.5)
+    ax.axhline(y=0.5, color="gray", linestyle="--")
+
+    _ = ax.set(
+        xlabel="Trial",
+        ylabel="Rate",
+        title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}",
+    )
+
+    ax.grid(alpha=0.5)
+    ax.legend(loc="lower left")
+
+    return None
+
+
+# TODO; pro anti count, perf rates & blocks?
