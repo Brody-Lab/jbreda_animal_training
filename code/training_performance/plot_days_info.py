@@ -977,7 +977,9 @@ def plot_non_give_stim_performance(
 ## PRO ANTI ##
 
 
-def plot_stim_performance(trials_df, ax, group="date", title="", xaxis_label=True):
+def plot_stim_performance(
+    trials_df, ax, x_var="date", title="", errorbar=None, xaxis_label=True, **kwargs
+):
     """
     Plot performance by sa, sb pair on all trials
     trials across days
@@ -989,6 +991,8 @@ def plot_stim_performance(trials_df, ax, group="date", title="", xaxis_label=Tru
         `give_type_imp` and `hits` with trials as row index
     ax : matplotlib.axes.Axes
         axes to plot on
+    x_var : str (default='date')
+        variable to plot on x axis
     title : str, (default = "")
         title of plot
     xaxis_label : bool (optional, default = True)
@@ -998,10 +1002,53 @@ def plot_stim_performance(trials_df, ax, group="date", title="", xaxis_label=Tru
 
     sns.lineplot(
         data=trials_df,
-        x=group,
+        x=x_var,
         y="hits",
         hue="sound_pair",
         palette=pu.create_palette_given_sounds(trials_df),
+        marker="o",
+        ax=ax,
+        errorbar=errorbar,
+        **kwargs,
+    )
+
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.legend(loc="lower left")
+
+    return None
+
+
+def plot_stim_performance_by_pro_anti(
+    trials_df, ax, x_var="date", title="", xaxis_label=True
+):
+    """
+    Plot performance by pro or anti trials across days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_type_imp` and `hits` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    x_var : str (default='date')
+        variable to plot on x axis
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    sns.lineplot(
+        data=trials_df,
+        x=x_var,
+        y="hits",
+        hue="pro_anti_block_type",
+        palette="husl",
         marker="o",
         ax=ax,
     )
@@ -1015,41 +1062,49 @@ def plot_stim_performance(trials_df, ax, group="date", title="", xaxis_label=Tru
     return None
 
 
-def plot_stim_performance_by_pro_anti(
-    trials_df, ax, group="date", title="", xaxis_label=True
+def plot_n_pro_anti_blocks_days(
+    trials_df, ax=None, x_var="date", title="", xaxis_label=True, aesthetics=True
 ):
     """
-    Plot performance by sa, sb pair on all trials
-    trials across days
+    Plot the number of pro-anti blocks per day
 
     params
     ------
     trials_df : pandas.DataFrame
-        trials dataframe with columns `date`, `sound_pair`,
-        `give_type_imp` and `hits` with trials as row index
-    ax : matplotlib.axes.Axes
-        axes to plot on
-    title : str, (default = "")
-        title of plot
+        trials dataframe with columns `date` and `n_blocks`
+        with trials as row index
+    ax : matplotlib.axes.Axes (default=None)
+        axes to plot to
+    x_var : str (default='date')
+        variable to plot on x axis
+    title : str (default='')
+        title for the plot
     xaxis_label : bool (optional, default = True)
         whether to include the xaxis label or not, this is useful when
         plotting multiple plots on the same figure
     """
+    if ax is None:
+        _, ax = pu.make_fig()
 
     sns.lineplot(
         data=trials_df,
-        x=group,
-        y="hits",
-        hue="pro_anti_block_type",
-        palette="husl",
-        marker="o",
+        x=x_var,
+        y="n_blocks",
+        estimator="max",
         ax=ax,
+        color="k",
+        marker="o",
     )
 
-    ax.grid()
-    ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
-    pu.set_date_x_ticks(ax, xaxis_label)
-    ax.legend(loc="lower left")
+    # aethetics
+    if aesthetics:
+        _ = ax.set(
+            ylabel="N Blocks",
+            xlabel="",
+            title=title,
+            ylim=(0, trials_df.n_blocks.max() + 1),
+        )
+        pu.set_date_x_ticks(ax, xaxis_label)
+    ax.grid(alpha=0.5)
 
     return None

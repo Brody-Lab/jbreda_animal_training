@@ -1378,7 +1378,17 @@ def plot_violations_by_period(trials_df, ax, title="", legend=False):
 
 def plot_pro_anti_perf_rates(trials_df, ax):
     """
-    TODO
+    Plot cumulative performance rates for pro and anti trials
+    across trials
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `trial`, `pro_hit_rate`,
+        `anti_hit_rate`, `pro_stim_set`, `anti_stim_set` with
+        trials as row index
+    ax : matplotlib.axes.Axes
+        axis to plot to
     """
     perf_rates_df = pd.melt(
         trials_df,
@@ -1399,6 +1409,7 @@ def plot_pro_anti_perf_rates(trials_df, ax):
     )
 
     block_switch = trials_df["n_blocks"].diff().fillna(0).abs() > 0
+    block_switch.reset_index(drop=True, inplace=True)
     for trial in trials_df[block_switch].index:
         ax.axvline(x=trial, color="black")
 
@@ -1417,4 +1428,69 @@ def plot_pro_anti_perf_rates(trials_df, ax):
     return None
 
 
-# TODO; pro anti count, perf rates & blocks?
+def plot_pro_anti_count_summary(trials_df, ax=None):
+    """
+    plot the count of pro or anti trials for a given day
+
+    params
+    ------
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `hits` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    """
+    if ax is None:
+        _, ax = pu.make_fig("s")
+
+    count_data = (
+        trials_df.groupby("pro_anti_block_type").size().reset_index(name="count")
+    )
+
+    sns.barplot(
+        data=count_data,
+        x="pro_anti_block_type",
+        y="count",
+        dodge=False,
+        palette="husl",
+        order=["pro", "anti"],
+        ax=ax,
+    )
+
+    _ = ax.set(
+        xlabel="",
+        ylabel="N Trials",
+        title="Pro-Anti Trial Counts",
+    )
+
+    return None
+
+
+def plot_hit_rate_by_pro_anti(trials_df, ax=None):
+    """
+    plot hti rate by pro or anti
+
+    params
+    -----
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `hits` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    """
+    if ax is None:
+        _, ax = pu.make_fig("s")
+
+    sns.barplot(
+        data=trials_df.dropna(subset=["hits"]),  # need to drop nan for barplot
+        x="pro_anti_block_type",
+        y="hits",
+        palette="husl",
+        order=["pro", "anti"],
+        ax=ax,
+    )
+    ax.axhline(0.5, ls="--", color="gray", alpha=0.5)
+
+    _ = ax.set(xlabel="", ylabel="Hit Rate", title="Pro-Anti Hit Rate", ylim=(0, 1))
+
+    return None

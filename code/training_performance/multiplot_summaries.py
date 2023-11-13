@@ -151,7 +151,8 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
 
     ## ROW 5
     plot_antibias_r_probs(trials_df, ax=ax_dict["S"])
-    # plot_give_info(trials_df, ax=ax_dict["T"])
+    plot_pro_anti_count_summary(trials_df, ax=ax_dict["T"])
+    plot_hit_rate_by_pro_anti(trials_df, ax=ax_dict["U"])
     plot_trial_dur(trials_df, ax=ax_dict["V"])
 
     if save_out:
@@ -670,23 +671,33 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
             plot_performance_by_give(
                 animal_trials_df, ax_dict["M"], title="Give Metrics", xaxis_label=True
             )
+
+            plot_n_cpokes_and_multirate(
+                animal_trials_df, ax_dict["N"], title="Multi Cpokes", xaxis_label=True
+            )
+
         elif animal_trials_df.stage.iloc[-1] > 11:
             plot_stim_performance_by_pro_anti(
                 animal_trials_df, ax_dict["M"], title="Pro Anti Perf", xaxis_label=True
             )
+
+            plot_n_pro_anti_blocks_days(
+                animal_trials_df,
+                ax_dict["N"],
+                title="Pro Anti Blocks",
+                xaxis_label=True,
+            )
         else:
             plot_give_info_days(
-                trials_df,
+                animal_trials_df,
                 ax_dict["M"],
                 title="Give Type",
                 xaxis_label=True,
                 legend=False,
             )
-
-        # TODO this becomes nblocks
-        plot_n_cpokes_and_multirate(
-            animal_trials_df, ax_dict["N"], title="Multi Cpokes", xaxis_label=True
-        )
+            plot_n_cpokes_and_multirate(
+                animal_trials_df, ax_dict["N"], title="Multi Cpokes", xaxis_label=True
+            )
 
     plot_rig_tech(animal_days_df, ax_dict["O"], title="Rig Tech", xaxis_label=True)
 
