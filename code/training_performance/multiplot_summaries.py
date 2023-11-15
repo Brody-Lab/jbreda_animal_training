@@ -678,7 +678,10 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
 
         elif animal_trials_df.stage.iloc[-1] > 11:
             plot_stim_performance_by_pro_anti(
-                animal_trials_df, ax_dict["M"], title="Pro Anti Perf", xaxis_label=True
+                animal_trials_df,
+                ax_dict["M"],
+                title=f"Pro: {animal_trials_df.pro_stim_set.dropna().unique()[0]},Anti: {animal_trials_df.anti_stim_set.dropna().unique()[0]}",
+                xaxis_label=True,
             )
 
             plot_n_pro_anti_blocks_days(

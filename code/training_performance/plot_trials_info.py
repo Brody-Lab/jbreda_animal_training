@@ -1409,8 +1409,7 @@ def plot_pro_anti_perf_rates(trials_df, ax):
     )
 
     block_switch = trials_df["n_blocks"].diff().fillna(0).abs() > 0
-    block_switch.reset_index(drop=True, inplace=True)
-    for trial in trials_df[block_switch].index:
+    for trial in trials_df[block_switch].trial:
         ax.axvline(x=trial, color="black")
 
     ax.grid(alpha=0.5)
@@ -1420,6 +1419,7 @@ def plot_pro_anti_perf_rates(trials_df, ax):
         xlabel="Trial",
         ylabel="Rate",
         title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}",
+        ylim=(0, 1),
     )
 
     ax.grid(alpha=0.5)

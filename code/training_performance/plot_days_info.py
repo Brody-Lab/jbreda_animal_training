@@ -978,7 +978,14 @@ def plot_non_give_stim_performance(
 
 
 def plot_stim_performance(
-    trials_df, ax, x_var="date", title="", errorbar=None, xaxis_label=True, **kwargs
+    trials_df,
+    ax,
+    x_var="date",
+    title="",
+    errorbar=None,
+    xaxis_label=True,
+    aesthetics=True,
+    **kwargs,
 ):
     """
     Plot performance by sa, sb pair on all trials
@@ -1015,14 +1022,16 @@ def plot_stim_performance(
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
     ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
-    pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
+
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
 
 def plot_stim_performance_by_pro_anti(
-    trials_df, ax, x_var="date", title="", xaxis_label=True
+    trials_df, ax, x_var="date", title="", xaxis_label=True, aesthetics=True
 ):
     """
     Plot performance by pro or anti trials across days
@@ -1044,7 +1053,7 @@ def plot_stim_performance_by_pro_anti(
     """
 
     sns.lineplot(
-        data=trials_df,
+        data=trials_df.dropna(subset=["pro_anti_block_type"]),
         x=x_var,
         y="hits",
         hue="pro_anti_block_type",
@@ -1055,9 +1064,10 @@ def plot_stim_performance_by_pro_anti(
 
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
-    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
-    pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
@@ -1105,6 +1115,8 @@ def plot_n_pro_anti_blocks_days(
             ylim=(0, trials_df.n_blocks.max() + 1),
         )
         pu.set_date_x_ticks(ax, xaxis_label)
+    else:
+        ax.set(ylim=(0, trials_df.n_blocks.max() + 1))
     ax.grid(alpha=0.5)
 
     return None
