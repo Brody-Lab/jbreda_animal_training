@@ -1052,8 +1052,15 @@ def plot_stim_performance_by_pro_anti(
         plotting multiple plots on the same figure
     """
 
+    # TODO once 20 days have passed since imp, add this to create_trials_df.py
+    plot_data = (
+        trials_df.query("pro_anti_block_type != 'NA'")
+        .dropna(subset=["pro_anti_block_type"])
+        .copy()
+    )
+
     sns.lineplot(
-        data=trials_df.dropna(subset=["pro_anti_block_type"]),
+        data=plot_data,
         x=x_var,
         y="hits",
         hue="pro_anti_block_type",
