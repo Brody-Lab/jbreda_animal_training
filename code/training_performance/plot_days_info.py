@@ -1111,7 +1111,19 @@ def plot_n_pro_anti_blocks_days(
         ax=ax,
         color="k",
         marker="o",
+        label="Block Switches",
     )
+
+    if trials_df.stage.max() == 15:
+        sns.lineplot(
+            data=trials_df,
+            x=x_var,
+            y="max_blocks",
+            color="purple",
+            marker="o",
+            label="Max Blocks",
+            ax=ax,
+        )
 
     # aethetics
     if aesthetics:
@@ -1124,6 +1136,154 @@ def plot_n_pro_anti_blocks_days(
         pu.set_date_x_ticks(ax, xaxis_label)
     else:
         ax.set(ylim=(0, trials_df.n_blocks.max() + 1))
+    ax.grid(alpha=0.5)
+
+    return None
+
+
+def plot_block_switch_thresholds(trials_df, ax=None, title="", xaxis_label=True):
+    """
+    Plot threshold used for switching blocks
+    across days (typically for pro-anti stages)
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and
+        `pro_anti_hit_thresh`, `pro_anti_viol_thresh`
+        with trials as row index
+    ax : matplotlib.axes.Axes, de
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+
+
+    """
+    thresh_df = pd.melt(
+        trials_df,
+        id_vars=["date"],
+        value_vars=["pro_anti_hit_thresh", "pro_anti_viol_thresh"],
+        var_name="type",
+        value_name="switch_thresh",
+    )
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=thresh_df,
+        x="date",
+        y="switch_thresh",
+        hue="type",
+        hue_order=["pro_anti_hit_thresh", "pro_anti_viol_thresh"],
+        palette=["green", "orangered"],
+        marker="o",
+        ax=ax,
+    )
+
+    ax.grid()
+    ax.legend(loc="lower left")
+    _ = ax.set(title=title, xlabel="", ylabel="Switch Threshold", ylim=(0, 1))
+    pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
+def plot_block_switch_days(
+    trials_df, ax=None, title="", xaxis_label=True, legend=False
+):
+    """
+    Plot the type of block switch being used
+    across days (typically for pro-anti stages)
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and
+        `block_switch_type` with trials as row index
+    ax : matplotlib.axes.Axes, de
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    """
+    # make the names shorter for plotting
+    data = trials_df[["date", "block_switch_type"]].copy()
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.scatterplot(
+        data=data,
+        x="date",
+        y="block_switch_type",
+        hue="block_switch_type",
+        hue_order=["sampled", "static", "none"],
+        ax=ax,
+    )
+
+    # aesthetics
+    _ = ax.set(title=title, ylabel="", xlabel="")
+    pu.set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
+def plot_min_block_size(
+    trials_df, ax=None, x_var="date", title="", xaxis_label=True, aesthetics=True
+):
+    """
+    Plot the block_size parameter that is used to
+    determine the minimum number of trials for a switch
+    before performance is evaluated over days.
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` and `block_size`
+        with trials as row index
+    ax : matplotlib.axes.Axes (default=None)
+        axes to plot to
+    x_var : str (default='date')
+        variable to plot on x axis
+    title : str (default='')
+        title for the plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=trials_df,
+        x=x_var,
+        y="block_size",
+        ax=ax,
+        marker="o",
+    )
+
+    # aethetics
+    if aesthetics:
+        _ = ax.set(
+            ylabel="Min. Block Size",
+            xlabel="",
+            title=title,
+            ylim=(0, trials_df.block_size.max() + 1),
+        )
+        pu.set_date_x_ticks(ax, xaxis_label)
+    else:
+        ax.set(ylim=(0, trials_df.block_size.max() + 1))
     ax.grid(alpha=0.5)
 
     return None
