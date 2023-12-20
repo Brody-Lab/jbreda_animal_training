@@ -106,8 +106,9 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
         IIIJKLLL
         MMMNOPQR
         SSSTUVVV
+        WWWXYZZZ
     """
-    fig = plt.figure(constrained_layout=True, figsize=(30, 20))
+    fig = plt.figure(constrained_layout=True, figsize=(30, 22))
 
     plt.suptitle(
         f"\n{trials_df.animal_id.iloc[0]} on {trials_df.date.iloc[0]}\n",
@@ -150,10 +151,15 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     plot_npokes_summary(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-    plot_antibias_r_probs(trials_df, ax=ax_dict["S"])
+    plot_anti_give_del_metrics(trials_df, ax=ax_dict["S"])
     plot_pro_anti_count_summary(trials_df, ax=ax_dict["T"])
     plot_hit_rate_by_pro_anti(trials_df, ax=ax_dict["U"])
     plot_trial_dur(trials_df, ax=ax_dict["V"])
+
+    ## ROW 6
+    plot_antibias_r_probs(trials_df, ax=ax_dict["W"])
+    plot_anti_hit_rate_by_give_use(trials_df, ax=ax_dict["X"])
+    plot_anti_hit_counts_by_give_use(trials_df, ax=ax_dict["Y"], legend=False)
 
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")

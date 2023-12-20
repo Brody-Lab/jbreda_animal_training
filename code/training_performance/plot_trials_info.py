@@ -1125,7 +1125,7 @@ def plot_hit_rate_by_give(trials_df, ax=None, title=""):
         y="hits",
         data=hit_rate_by_give,
         ax=ax,
-        hue_order=pu.get_give_order(hit_rate_by_give.give_type_imp),
+        order=pu.get_give_order(hit_rate_by_give.give_type_imp),
         palette=pu.get_give_colors(hit_rate_by_give.give_type_imp),
     )
 
@@ -1492,5 +1492,258 @@ def plot_hit_rate_by_pro_anti(trials_df, ax=None):
     ax.axhline(0.5, ls="--", color="gray", alpha=0.5)
 
     _ = ax.set(xlabel="", ylabel="Hit Rate", title="Pro-Anti Hit Rate", ylim=(0, 1))
+
+    return None
+
+
+### PRO & ANTI + Give Delay ###
+
+
+def calc_anti_give_use_rate(trials_df):
+    """
+    Calculate the cumulative give_use_rate for anti trials in a trials_df
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with 'give_use' (bool) and `pro_anti_block_type`
+        (str) columns with trials as row index
+
+    returns
+    -------
+    anti_trials_df : pd.DataFrame
+        trials dataframe with only anti trials and a new column
+        'give_use_rate' which is the cumulative give_use rate
+        for anti trials (since pro trials don't have giveß)
+    """
+
+    # Filter the DataFrame for rows where 'pro_anti_block_type' is 'anti'
+    anti_trials_df = trials_df.query('pro_anti_block_type == "anti"').copy()
+
+    # Calculate cumulative sum of 'give_use' for 'anti' trials
+    anti_trials_df["give_use_rate"] = anti_trials_df["give_use"].astype(
+        int
+    ).cumsum() / range(1, len(anti_trials_df) + 1)
+
+    return anti_trials_df
+
+
+def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
+    """
+    Plot a series of related metric for anti trials specific to when
+    the pre-give delay is growing for an animal on anti trials that
+    are light guided.
+
+    Specific metrics: give delay duration, anti hit rate, give use rate
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `give_delay_dur`, `anti_hit_rate`, `give_use_rate`
+        with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    legend : bool (default = True)
+        whether to include legend or not
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    # Create df of only anti trials and calculate cumulative give_use_rate
+    anti_trials_df = calc_anti_give_use_rate(trials_df)
+
+    sns.lineplot(
+        data=anti_trials_df,
+        x="trial",
+        y="give_delay_dur",
+        marker="o",
+        label="Anti Give Delay Dur",
+        color="gray",
+        ax=ax,
+    )
+
+    ax2 = ax.twinx()
+    sns.lineplot(
+        data=anti_trials_df,
+        x="trial",
+        y="anti_hit_rate",
+        marker="o",
+        color="lightblue",
+        label="Anti Hit Rate",
+        ax=ax2,
+    )
+
+    sns.lineplot(
+        data=anti_trials_df,
+        x="trial",
+        y="give_use_rate",
+        marker="o",
+        color="gold",
+        label="Anti Give Use Rate",
+        ax=ax2,
+    )
+
+    ax.set(ylabel="Give Delay [s]", xlabel="Trial", title=title, xlim=(-10, None))
+    ax2.set(ylabel="Proportion")
+    ax2.grid()
+    ax.grid()
+
+    return None
+
+
+def plot_anti_hit_rate_by_give_use(trials_df, ax=None, title="", legend=True):
+    """
+    For anti trials, plot the hit rate for trials where give was used
+    vs. trials where give was not used.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `give_use_rate` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    legend : bool (default = True)
+        whether to include legend or not
+
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig("s")
+
+    barplot = sns.barplot(
+        data=trials_df.dropna(subset=["hits"]).query("pro_anti_block_type=='anti'"),
+        x="pro_anti_block_type",
+        y="hits",
+        hue="give_use",
+        hue_order=[True, False],
+        palette=["gold", "green"],
+        ax=ax,
+    )
+
+    # display counts of each give use type above each bar
+    counts = (
+        trials_df.dropna(subset=["hits"])
+        .query("pro_anti_block_type=='anti'")
+        .groupby("give_use")
+        .size()
+        .sort_index(ascending=False)  # True, False
+    )
+
+    for i, bar in enumerate(barplot.patches):
+        # Get the count for this category
+        count = counts[i]
+
+        # Set the text above each bar
+        ax.text(
+            (bar.get_x() + bar.get_width() - 0.1) / 2,
+            bar.get_height(),
+            count,
+            ha="right",
+            va="bottom",
+        )
+
+    # aesthetics
+    ax.set(ylabel="Hit Rate", xlabel="", title=title)
+    if not legend:
+        ax.get_legend().remove()
+
+    return None
+
+
+def plot_anti_give_use_counts(trials_df, ax=None, title="", legend=True):
+    """
+    For anti trials, plot the count of trials give was used
+    vs. trials where give was not used.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `give_use_rate` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    legend : bool (default = True)
+        whether to include legend or not
+    """
+    count_data = (
+        trials_df.query("pro_anti_block_type == 'anti'")
+        .groupby(["pro_anti_block_type", "give_use"])
+        .size()
+        .reset_index(name="count")
+    )
+
+    if ax is None:
+        fig, ax = pu.make_fig("s")
+
+    sns.barplot(
+        data=count_data,
+        x="pro_anti_block_type",
+        y="count",
+        hue="give_use",
+        hue_order=[True, False],
+        palette=["gold", "green"],
+        ax=ax,
+    )
+
+    # aesthetics
+    ax.set(ylabel="Count", xlabel="", title=title)
+    if not legend:
+        ax.get_legend().remove()
+
+
+def plot_anti_hit_counts_by_give_use(trials_df, ax=None, title="", legend=True):
+    """
+    For anti trials, plot the count of hits conditioned on
+    where give was used vs. trials where give was not used.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `give_use_rate`, `hits`, with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    title : str, (default = "")
+        title of plot
+    legend : bool (default = True)
+        whether to include legend or not
+    """
+
+    count_data = (
+        trials_df.query('pro_anti_block_type == "anti"')
+        .groupby(["hits", "give_use"])
+        .size()
+        .reset_index(name="count")
+    )
+
+    if ax is None:
+        fig, ax = pu.make_fig("s")
+
+    sns.barplot(
+        data=count_data,
+        x="hits",
+        y="count",
+        hue="give_use",
+        order=[True, False],
+        hue_order=[True, False],
+        palette=["gold", "green"],
+        ax=ax,
+    )
+
+    ax.set(ylabel="Count", xlabel="Correct", title=title)
+
+    if legend:
+        ax.legend(title="give use", loc="upper left", frameon=False)
+    else:
+        ax.get_legend().remove()
 
     return None
