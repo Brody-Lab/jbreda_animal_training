@@ -861,9 +861,15 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
         x="date",
         y="give_type_imp",
         hue="give_type_imp",
-        palette=pu.get_give_colors(data["give_type_imp"]),
-        hue_order=pu.get_give_order(data["give_type_imp"]),
+        hue_order=["n", "l", "w", "w + l"],
+        palette=[
+            "green",
+            "gold",
+            "cyan",
+            "cornflowerblue",
+        ],
         ax=ax,
+        s=250,
     )
 
     # aesthetics
@@ -1271,6 +1277,8 @@ def plot_min_block_size(
         y="block_size",
         ax=ax,
         marker="o",
+        label="Min Block Size",
+        color="gray",
     )
 
     # aethetics
@@ -1285,5 +1293,177 @@ def plot_min_block_size(
     else:
         ax.set(ylim=(0, trials_df.block_size.max() + 1))
     ax.grid(alpha=0.5)
+
+    return None
+
+
+def plot_give_type_and_block_switch_days(
+    trials_df, ax=None, title="", xaxis_label=True, legend=False
+):
+    """
+    Plot the type of block switch and give type being used
+    across days (typically for pro-anti stages)
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`
+        `block_switch_type` and `give_type_imp`
+        with trials as row index
+    ax : matplotlib.axes.Axes, (default=None)
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    """
+    # make the names shorter for plotting
+    data = trials_df[["date", "block_switch_type", "give_type_imp"]].copy()
+
+    data = data.melt(
+        id_vars="date",
+        value_vars=["block_switch_type", "give_type_imp"],
+        var_name="metric",
+        value_name="type",
+    )
+
+    if ax is None:
+        _, ax = pu.make_fig()
+    ax.grid()
+    sns.scatterplot(
+        data=data,
+        x="date",
+        y="type",
+        style="metric",
+        hue_order=pu.get_block_switch_and_give_order(),
+        palette=pu.get_block_switch_and_give_colors(),
+        hue="type",
+        s=300,
+        ax=ax,
+    )
+
+    # aesthetics
+    _ = ax.set(title=title, ylabel="Block Switch or Give Type", xlabel="")
+    pu.set_legend(ax, legend)
+    pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
+def plot_block_switch_params(trials_df, ax=None, title="", xaxis_label=False):
+    """
+    TODO
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date` `block_size`
+        and `pro_anti_hit_thresh`, `pro_anti_viol_thresh`
+        with trials as row index
+    ax : matplotlib.axes.Axes, (default=None)
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+
+    """
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    plot_min_block_size(trials_df, ax=ax, xaxis_label=xaxis_label)
+    ax.set_label("Min Block Size")
+    ax.legend(loc="upper left")
+    ax2 = ax.twinx()
+    plot_block_switch_thresholds(trials_df, ax=ax2, xaxis_label=xaxis_label)
+
+    ax2.set(
+        ylabel="Perf Threshold",
+        xlabel="",
+        title=title,
+        ylim=(0, 1),
+        yticks=[0, 0.5, 1],
+    )
+
+    return None
+
+
+## GIVE DELAY PLOTS
+
+
+def plot_give_delay_dur_days(
+    trials_df, ax=None, trial_subset="anti", title="", xaxis_label=False
+):
+    """
+    Plot the distribution of pre-give delay durations
+    across days.
+
+    params
+    ------
+
+    trials_df: pd.DataFrame
+        trials dataframe with columns `pro_anti_block_type`,
+        `date`, and `give_delay_dur` with trials as row index
+    ax : matplotlib.axes.Axes, de
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    if trial_subset:
+        data = trials_df.query("pro_anti_block_type == @trial_subset").copy()
+    else:
+        data = trials_df.copy()
+
+    sns.violinplot(
+        data=data,
+        x="date",
+        y="give_delay_dur",
+        ax=ax,
+        color="lightslategray",
+    )
+
+    # aesthetics
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.grid(alpha=0.5)
+    _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
+
+    return None
+
+
+def plot_give_use_rate_days(
+    trials_df, ax=None, trial_subset="anti", title="", xaxis_label=False
+):
+    if trial_subset:
+        data = trials_df.query("pro_anti_block_type == @trial_subset").copy()
+    else:
+        data = trials_df.copy()
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=data,
+        x="date",
+        y="give_use",
+        marker="o",
+        color="gold",
+        ax=ax,
+    )
+
+    # aesthetics
+    pu.set_date_x_ticks(ax, xaxis_label)
+    ax.grid(alpha=0.5)
+    _ = ax.set(title=title, xlabel="", ylabel="Give Use Frac")
 
     return None

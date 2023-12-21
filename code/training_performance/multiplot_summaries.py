@@ -117,6 +117,16 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
     # pu.identify_axes(ax_dict)  # prints the letter for id
 
+    # check to make sure animal isn't in pro only mode (no anti trials)
+    # and skip the anti specific plots if so
+    if (
+        "anti" in trials_df["pro_anti_block_type"].unique()
+        and trials_df.give_delay_dur.nunique() > 2
+    ):
+        mode = "make_give_dur_plots"
+    else:
+        mode = "skip_give_dur_plots"
+
     ## ROW 1
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
@@ -140,7 +150,7 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
 
     ## ROW 4
-    plot_pro_anti_perf_rates(trials_df, ax=ax_dict["M"])
+    plot_rolling_hit_rate_by_pro_anti(trials_df, ax=ax_dict["M"])
     try:
         plot_stim_grid_performance(trials_df, ax=ax_dict["N"], mode="hits")
         plot_stim_grid_performance(trials_df, ax=ax_dict["O"], mode="violations")
@@ -158,8 +168,9 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
 
     ## ROW 6
     plot_antibias_r_probs(trials_df, ax=ax_dict["W"])
-    plot_anti_hit_rate_by_give_use(trials_df, ax=ax_dict["X"])
-    plot_anti_hit_counts_by_give_use(trials_df, ax=ax_dict["Y"], legend=False)
+    if mode == "make_give_dur_plots":
+        plot_anti_hit_rate_by_give_use(trials_df, ax=ax_dict["X"])
+        plot_anti_hit_counts_by_give_use(trials_df, ax=ax_dict["Y"], legend=False)
 
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")
@@ -578,6 +589,18 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
 
 
 def multiplot_multi_day_summary(animal_id, days_df, trials_df):
+    for animal_id, animal_days_df in days_df.groupby("animal_id"):
+        animal_trials_df = trials_df.query("animal_id == @animal_id")
+
+        current_stage = animal_trials_df.stage.iloc[-1]
+
+        if current_stage < 12:
+            multi_day_summary_pre_pro_anti(animal_id, animal_days_df, animal_trials_df)
+        else:
+            multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df)
+
+
+def multi_day_summary_pre_pro_anti(animal_id, animal_days_df, animal_trials_df):
     """
     params
     ------
@@ -602,8 +625,9 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
     plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
 
-    animal_days_df = days_df.query("animal_id == @animal_id").copy()
-    animal_trials_df = trials_df.query("animal_id == @animal_id").copy()
+    # determine training stage info
+    current_stage = animal_trials_df.stage.iloc[-1]
+    current_sma = animal_trials_df.SMA_set.iloc[-1]
 
     ## ROW 1
     plot_trials(
@@ -638,17 +662,13 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     )
 
     ## ROW 4
-    if animal_trials_df.stage.iloc[-1] == 9:
+    if current_stage == 9:
         plot_sounds_info(
             animal_trials_df, ax_dict["J"], title="Sounds", xaxis_label=False
         )
-    elif animal_trials_df.stage.iloc[-1] == 10 or animal_trials_df.stage.iloc[-1] == 11:
+    elif current_stage == 10 or current_stage == 11:
         plot_non_give_stim_performance(
             animal_trials_df, ax_dict["J"], title="Non-Give Perf", xaxis_label=False
-        )
-    elif animal_trials_df.stage.iloc[-1] > 11:
-        plot_stim_performance(
-            animal_trials_df, ax_dict["J"], title="Stim Perf", xaxis_label=False
         )
     else:
         plot_time_to_spoke(
@@ -660,7 +680,7 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
     # m becomes give metric or pro/anti perf
     # n is multi cpokes or pro/anti
     # o is rig/tech
-    if animal_trials_df.SMA_set.iloc[-1] == "cpoke":
+    if current_sma == "cpoke":
         plot_cpoke_dur_timings_pregnp(
             animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
         )
@@ -669,32 +689,14 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
         )
 
     ## ROW 5
-    if animal_trials_df.SMA_set.iloc[-1] == "cpoke":
-        if (
-            animal_trials_df.stage.iloc[-1] == 10
-            or animal_trials_df.stage.iloc[-1] == 11
-        ):
+    if current_sma == "cpoke":
+        if current_stage == 10 or current_stage == 11:
             plot_performance_by_give(
                 animal_trials_df, ax_dict["M"], title="Give Metrics", xaxis_label=True
             )
 
             plot_n_cpokes_and_multirate(
                 animal_trials_df, ax_dict["N"], title="Multi Cpokes", xaxis_label=True
-            )
-
-        elif animal_trials_df.stage.iloc[-1] > 11:
-            plot_stim_performance_by_pro_anti(
-                animal_trials_df,
-                ax_dict["M"],
-                title=f"Pro: {animal_trials_df.pro_stim_set.dropna().unique()[0]},Anti: {animal_trials_df.anti_stim_set.dropna().unique()[0]}",
-                xaxis_label=True,
-            )
-
-            plot_n_pro_anti_blocks_days(
-                animal_trials_df,
-                ax_dict["N"],
-                title="Pro Anti Blocks",
-                xaxis_label=True,
             )
         else:
             plot_give_info_days(
@@ -709,6 +711,138 @@ def multiplot_multi_day_summary(animal_id, days_df, trials_df):
             )
 
     plot_rig_tech(animal_days_df, ax_dict["O"], title="Rig Tech", xaxis_label=True)
+
+    return None
+
+
+def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
+    """
+    params
+    ------
+    animal_id : str
+        animal id to plot, e.g. "R610"
+    days_df : pd.DataFrame
+        days dataframe created by create_days_df_from_dj() with
+        day as row index
+    trials_df : pd.DataFrame
+        trials dataframe created by create_trials_df_from_dj() with
+        trial as row index
+
+    """
+    layout = """
+        AAABBBCCC
+        DDDEEEFFF
+        GGGHHHIII
+        JJJKKKLLL
+        MMMNNNOOO
+        PPPQQQRRR
+        SSSTTTUUU
+    """
+    fig = plt.figure(constrained_layout=True, figsize=(30, 25))
+    ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
+    plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
+
+    # determine training stage info
+    current_stage = animal_trials_df.stage.iloc[-1]
+    current_sma = animal_trials_df.SMA_set.iloc[-1]
+
+    if animal_trials_df.give_delay_dur.nunique() > 2:
+        plot_give_del_info = True
+    else:
+        plot_give_del_info = False
+
+    if current_stage == 13:
+        plot_temp_error_info = True
+    else:
+        plot_temp_error_info = False
+
+    ## ROW 1
+    plot_trials(
+        animal_days_df, ax_dict["A"], title="Trials", legend=True, xaxis_label=False
+    )
+    plot_mass(animal_days_df, ax_dict["B"], title="Mass", xaxis_label=False)
+    plot_water_restriction(
+        animal_days_df, ax_dict["C"], title="Water", legend=False, xaxis_label=False
+    )
+
+    ## ROW 2
+    plot_performance(
+        animal_days_df, ax_dict["D"], title="Performance", xaxis_label=False
+    )
+    plot_performance_bars(
+        animal_trials_df, ax_dict["E"], title="Performance", xaxis_label=False
+    )
+    plot_stage(
+        animal_trials_df,
+        ax_dict["F"],
+        title="Stage",
+        xaxis_label=False,
+    )
+
+    ## ROW 3
+    plot_side_bias(animal_days_df, ax_dict["G"], title="Side Bias", xaxis_label=False)
+    plot_antibias_probs(
+        animal_trials_df, ax_dict["H"], title="Antibias", xaxis_label=False
+    )
+    plot_sidebias_params(
+        animal_trials_df, ax_dict["I"], title="Side Bias Params", xaxis_label=False
+    )
+
+    ## ROW 4
+    plot_stim_performance(
+        animal_trials_df, ax_dict["J"], title="Stim Perf", xaxis_label=False
+    )
+    plot_cpoke_dur_timings_pregnp(
+        animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
+    )
+    plot_trial_structure(
+        animal_trials_df, ax_dict["L"], title="Trial Structure", xaxis_label=False
+    )
+
+    ## ROW 5- MNO
+    plot_stim_performance_by_pro_anti(
+        animal_trials_df,
+        ax_dict["M"],
+        title=f"Pro: {animal_trials_df.pro_stim_set.dropna().unique()[0]},Anti: {animal_trials_df.anti_stim_set.dropna().unique()[0]}",
+        xaxis_label=False,
+    )
+
+    plot_n_pro_anti_blocks_days(
+        animal_trials_df,
+        ax_dict["N"],
+        title="N Pro Anti Blocks",
+        xaxis_label=False,
+    )
+
+    ## ROW 6- PQR
+
+    if plot_give_del_info:
+        plot_give_delay_dur_days(
+            animal_trials_df,
+            ax=ax_dict["P"],
+            title="Anti Give Delay Dur",
+            xaxis_label=False,
+        )
+    elif plot_temp_error_info:
+        pass
+    else:
+        pass
+
+    plot_block_switch_params(
+        animal_trials_df, ax_dict["Q"], title="Block Switch Params", xaxis_label=False
+    )
+
+    ## ROW 7- STU
+    plot_give_use_rate_days(
+        animal_trials_df, ax_dict["S"], title="Anti Give Use Rate", xaxis_label=True
+    )
+    plot_give_type_and_block_switch_days(
+        animal_trials_df,
+        ax_dict["T"],
+        title="Block Switch & Give Type",
+        xaxis_label=True,
+    )
+    plot_rig_tech(animal_days_df, ax_dict["U"], title="Rig Tech", xaxis_label=True)
 
     return None
 

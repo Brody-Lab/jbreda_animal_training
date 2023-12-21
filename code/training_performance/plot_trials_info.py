@@ -1376,7 +1376,7 @@ def plot_violations_by_period(trials_df, ax, title="", legend=False):
 ### PRO ANTI
 
 
-def plot_pro_anti_perf_rates(trials_df, ax):
+def plot_pro_anti_cumulative_perf_rates(trials_df, ax):
     """
     Plot cumulative performance rates for pro and anti trials
     across trials
@@ -1428,6 +1428,68 @@ def plot_pro_anti_perf_rates(trials_df, ax):
     return None
 
 
+def rolling_avg(group, window_size, column="hits"):
+    """
+    helper function for rolling window to be applied to a group
+    """
+    group[f"{column}_rolling_avg_{window_size}"] = (
+        group[column].rolling(window=window_size, min_periods=1).mean()
+    )
+    return group
+
+
+def plot_rolling_hit_rate_by_pro_anti(trials_df, ax=None):
+    """
+    plot rolling hit rate by pro or anti
+
+    params
+    -----
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `pro_anti_block_type`,
+        `hits` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    """
+    if ax is None:
+        _, ax = pu.make_fig("s")
+
+    window_size = max(int(trials_df.block_size.min()), 10)
+
+    data = (
+        trials_df.groupby("pro_anti_block_type")
+        .apply(rolling_avg, window_size=window_size)
+        .reset_index(drop=True)
+    )
+
+    sns.lineplot(
+        data=data,
+        x="trial",
+        y=f"hits_rolling_avg_{window_size}",
+        hue="pro_anti_block_type",
+        hue_order=["pro", "anti"],
+        palette="husl",
+        ax=ax,
+        marker=".",
+    )
+
+    block_switch = trials_df["n_blocks"].diff().fillna(0).abs() > 0
+    for trial in trials_df[block_switch].trial:
+        ax.axvline(x=trial, color="black")
+
+    ax.grid(alpha=0.5)
+    ax.axhline(y=0.5, color="gray", linestyle="--")
+
+    _ = ax.set(
+        xlabel="Trial",
+        ylabel="Performance Rate",
+        title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}",
+        ylim=(0, 1),
+    )
+
+    ax.grid(alpha=0.5)
+    ax.legend(loc="lower left")
+
+
 def plot_pro_anti_count_summary(trials_df, ax=None):
     """
     plot the count of pro or anti trials for a given day
@@ -1468,7 +1530,7 @@ def plot_pro_anti_count_summary(trials_df, ax=None):
 
 def plot_hit_rate_by_pro_anti(trials_df, ax=None):
     """
-    plot hti rate by pro or anti
+    plot hit rate by pro or anti
 
     params
     -----
@@ -1555,6 +1617,17 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
 
     # Create df of only anti trials and calculate cumulative give_use_rate
     anti_trials_df = calc_anti_give_use_rate(trials_df)
+    window_size = max(int(anti_trials_df.block_size.min()), 10)
+    anti_trials_df = (
+        anti_trials_df.groupby("pro_anti_block_type")
+        .apply(rolling_avg, window_size=window_size)
+        .reset_index(drop=True)
+    )
+    anti_trials_df = (
+        anti_trials_df.groupby("pro_anti_block_type")
+        .apply(rolling_avg, window_size=window_size, column="give_use")
+        .reset_index(drop=True)
+    )
 
     sns.lineplot(
         data=anti_trials_df,
@@ -1570,24 +1643,29 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
     sns.lineplot(
         data=anti_trials_df,
         x="trial",
-        y="anti_hit_rate",
+        y=f"hits_rolling_avg_{window_size}",
         marker="o",
-        color="lightblue",
-        label="Anti Hit Rate",
+        color=sns.color_palette("husl", 2)[1],
+        label="Anti Rolling Hit",
         ax=ax2,
     )
 
     sns.lineplot(
         data=anti_trials_df,
         x="trial",
-        y="give_use_rate",
+        y=f"give_use_rolling_avg_{window_size}",
         marker="o",
         color="gold",
-        label="Anti Give Use Rate",
+        label="Anti Rolling Give Use",
         ax=ax2,
     )
 
-    ax.set(ylabel="Give Delay [s]", xlabel="Trial", title=title, xlim=(-10, None))
+    ax.set(
+        ylabel="Give Delay [s]",
+        xlabel="Trial",
+        title=title + f"window size: {window_size}",
+        xlim=(-10, None),
+    )
     ax2.set(ylabel="Proportion")
     ax2.grid()
     ax.grid()

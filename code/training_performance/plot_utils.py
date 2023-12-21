@@ -283,3 +283,14 @@ def create_palette_given_sounds(df):
     for sp in sound_pairs:
         palette.append(sound_pair_colormap[sp])
     return palette
+
+
+## GIVE & BLOCK SWITCH utilities ###
+
+
+def get_block_switch_and_give_order():
+    return ["sampled", "static", "none", "light", "water", "light_and_water"]
+
+
+def get_block_switch_and_give_colors():
+    return ["salmon", "brown", "green", "gold", "cyan", "cornflowerblue"]
