@@ -161,7 +161,10 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     plot_npokes_summary(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-    plot_anti_give_del_metrics(trials_df, ax=ax_dict["S"])
+    try:
+        plot_anti_give_del_metrics(trials_df, ax=ax_dict["S"])
+    except:
+        print("skipping anti give del metrics")
     plot_pro_anti_count_summary(trials_df, ax=ax_dict["T"])
     plot_hit_rate_by_pro_anti(trials_df, ax=ax_dict["U"])
     plot_trial_dur(trials_df, ax=ax_dict["V"])

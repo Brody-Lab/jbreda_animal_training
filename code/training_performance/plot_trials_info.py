@@ -1453,7 +1453,7 @@ def plot_rolling_hit_rate_by_pro_anti(trials_df, ax=None):
     if ax is None:
         _, ax = pu.make_fig("s")
 
-    window_size = max(int(trials_df.block_size.min()), 10)
+    window_size = min(int(trials_df.block_size.min()), 20)
 
     data = (
         trials_df.groupby("pro_anti_block_type")
@@ -1482,7 +1482,7 @@ def plot_rolling_hit_rate_by_pro_anti(trials_df, ax=None):
     _ = ax.set(
         xlabel="Trial",
         ylabel="Performance Rate",
-        title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}",
+        title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}, Window Size: {window_size}",
         ylim=(0, 1),
     )
 
