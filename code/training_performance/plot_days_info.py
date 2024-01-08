@@ -934,7 +934,7 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
 
 
 def plot_non_give_stim_performance(
-    trials_df, ax, group="date", title="", xaxis_label=True
+    trials_df, ax, group="date", title="", xaxis_label=True, aesthetics=True
 ):
     """
     Plot performance by sa, sb pair on non-give
@@ -952,6 +952,10 @@ def plot_non_give_stim_performance(
     xaxis_label : bool (optional, default = True)
         whether to include the xaxis label or not, this is useful when
         plotting multiple plots on the same figure
+    aesthetics : bool (optional, default = True)
+        used to toggle xaxis label when subplotting
+
+
     """
 
     # when hits remains in pyarrow format, the groupby
@@ -974,7 +978,8 @@ def plot_non_give_stim_performance(
     ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
     ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
     ax.legend(loc="lower left")
 
     return None
