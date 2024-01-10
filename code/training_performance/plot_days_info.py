@@ -934,7 +934,13 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
 
 
 def plot_non_give_stim_performance(
-    trials_df, ax, group="date", title="", xaxis_label=True, aesthetics=True
+    trials_df,
+    ax,
+    group="date",
+    title="",
+    xaxis_label=True,
+    aesthetics=True,
+    variance=False,
 ):
     """
     Plot performance by sa, sb pair on non-give
@@ -954,8 +960,8 @@ def plot_non_give_stim_performance(
         plotting multiple plots on the same figure
     aesthetics : bool (optional, default = True)
         used to toggle xaxis label when subplotting
-
-
+    variance : bool (optional, default = False)
+        whether or not to plot the variance of the data (95% ci) or not
     """
 
     # when hits remains in pyarrow format, the groupby
@@ -963,14 +969,17 @@ def plot_non_give_stim_performance(
     sub_df = trials_df.query("give_type_imp == 'none'").copy()
     sub_df["hits"] = sub_df["hits"].astype("float64")
 
-    no_give_stim_perf = sub_df.groupby([group, "sound_pair"]).hits.mean().reset_index()
+    if variance:
+        plot_df = sub_df.copy()
+    else:
+        plot_df = sub_df.groupby([group, "sound_pair"]).hits.mean().reset_index()
 
     sns.lineplot(
-        data=no_give_stim_perf,
+        data=plot_df,
         x=group,
         y="hits",
         hue="sound_pair",
-        palette=pu.create_palette_given_sounds(no_give_stim_perf),
+        palette=pu.create_palette_given_sounds(plot_df),
         marker="o",
         ax=ax,
     )
