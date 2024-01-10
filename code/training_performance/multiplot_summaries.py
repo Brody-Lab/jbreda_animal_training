@@ -791,12 +791,16 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
         animal_trials_df, ax_dict["I"], title="Side Bias Params", xaxis_label=False
     )
 
-    ## ROW 4
+    ## ROW 4- JKL
     plot_stim_performance(
         animal_trials_df, ax_dict["J"], title="Stim Perf", xaxis_label=False
     )
-    plot_cpoke_dur_timings_pregnp(
-        animal_trials_df, ax_dict["K"], title="Cpoke Dur", xaxis_label=False
+    plot_non_give_stim_performance(
+        animal_trials_df,
+        ax_dict["K"],
+        title="Non-Give Stim Perf",
+        xaxis_label=False,
+        variance=True,
     )
     plot_trial_structure(
         animal_trials_df, ax_dict["L"], title="Trial Structure", xaxis_label=False
@@ -815,6 +819,9 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
         ax_dict["N"],
         title="N Pro Anti Blocks",
         xaxis_label=False,
+    )
+    plot_cpoke_dur_timings_pregnp(
+        animal_trials_df, ax_dict["O"], title="Cpoke Dur", xaxis_label=False
     )
 
     ## ROW 6- PQR
@@ -900,7 +907,11 @@ def mutliplot_rule_learning(animal_id, days_df, trials_df):
     )
 
     plot_non_give_stim_performance(
-        animal_trials_df, ax_dict["F"], title="Non-Give Perf", xaxis_label=True
+        animal_trials_df,
+        ax_dict["F"],
+        title="Non-Give Perf",
+        xaxis_label=True,
+        variance=True,
     )
 
     return None
