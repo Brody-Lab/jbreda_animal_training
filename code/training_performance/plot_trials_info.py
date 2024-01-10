@@ -1451,7 +1451,7 @@ def plot_rolling_hit_rate_by_pro_anti(trials_df, ax=None):
         axes to plot to, if None, create new axes
     """
     if ax is None:
-        _, ax = pu.make_fig("s")
+        _, ax = pu.make_fig()
 
     window_size = min(int(trials_df.block_size.min()), 20)
 
