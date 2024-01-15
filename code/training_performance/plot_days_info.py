@@ -639,15 +639,18 @@ def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
         color="lightgreen",
         label="Valid",
     )
-    sns.lineplot(
-        data=trials_df.query("violations == 1"),
-        x="date",
-        y="cpoke_dur",
-        marker="o",
-        ax=ax,
-        color="orangered",
-        label="Viol",
-    )
+    try:
+        sns.lineplot(
+            data=trials_df.query("violations == 1"),
+            x="date",
+            y="cpoke_dur",
+            marker="o",
+            ax=ax,
+            color="orangered",
+            label="Viol",
+        )
+    except:  # not enough data to plot
+        pass
 
     ax.set(ylabel="Duration [s]", xlabel="", title=title)
     ax.grid()
