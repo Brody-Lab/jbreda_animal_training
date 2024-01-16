@@ -2,8 +2,8 @@
 
 % Define the parent directory and folder names
 parentDirectory = 'X:\RATTER\SoloData\Settings\JessB';
-startNumber = 20; % Start number
-stopNumber = 29;  % Stop number
+startNumber = 30; % Start number
+stopNumber = 39;  % Stop number
 
 % Create the folders
 for i = startNumber:stopNumber
