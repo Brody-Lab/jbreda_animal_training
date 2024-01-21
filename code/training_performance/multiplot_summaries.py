@@ -43,6 +43,7 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
             ## Early spoke only stages
             if sub_df.SMA_set.iloc[0] == "spoke":
                 # TODO add give plot to this
+                print(animal_id, date, "spoke only stage")
                 multiplot_spoke_lg(sub_df, save_out=save_out, save_path=full_path)
 
             ## Later cpoke stages
@@ -83,6 +84,10 @@ def multiplot_single_day_summaries(df, figures_path, save_out=True, overwrite=Fa
                         save_out=save_out,
                         save_path=full_path,
                     )
+                else:
+                    print("in cpoke stage but doesn't fit plot logic!")
+            else:
+                print("not in spoke or cpoke stage!")
 
 
 #### CURRICULA / STAGE SPECIFIC PLOTS ####
