@@ -6,6 +6,7 @@ Description: General python utilities that are not specific to datajoint or plot
 
 from pathlib import Path
 import platform
+import os
 
 
 ### create directories ###
@@ -29,13 +30,15 @@ def make_dirs(base_path, dir_names):
 
 ### Paths ###
 if platform.system() == "Windows":
+
+    username = os.getlogin()
     ANIMAL_TABLE_PATH = Path(
-        "C:\\Users\\JB\\github\\jbreda_animal_training\\data\\animals.xlsx"
+        f"C:\\Users\\{username}\\github\\jbreda_animal_training\\data\\animals.xlsx"
     )
-    DATA_PATH = Path("C:\\Users\\JB\\github\\jbreda_animal_training\\data\\days_dfs")
+    DATA_PATH = Path(f"C:\\Users\\{username}\\github\\jbreda_animal_training\\data\\days_dfs")
 
     FIGURES_BASE_PATH = Path(
-        "C:\\Users\\JB\\github\\jbreda_animal_training\\figures"
+        f"C:\\Users\\{username}\\github\\jbreda_animal_training\\figures"
     )
 
 else:
