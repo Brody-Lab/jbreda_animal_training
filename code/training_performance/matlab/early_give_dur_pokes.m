@@ -73,7 +73,7 @@ for i = 1:length(files)
     end
 end
 
-% Convert struct array to table
+%  Convert struct array to table
 all_sessions_data = struct2table(all_sessions_data);
 
 % Save table as CSV
