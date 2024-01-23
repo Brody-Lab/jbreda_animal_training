@@ -45,7 +45,8 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
                 peh = saved_history.ProtocolsSection_parsed_events;
                 
                 if isempty(peh)
-                    disp(['Skipping ' files(i).name, ' because n trials == 0'])
+                    disp(['Skipping ' files(i).name, ' because n trials == 0']);
+                    continue
                 end
                 
                 if isfield(peh{1}.states, 'sideled_on')
@@ -99,8 +100,10 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
                 all_vars = {
                     's', 'AthenaDelayComp_hit_history';
                     's', 'AthenaDelayComp_violation_history';
+                    's', 'AthenaDelayComp_timeout_history';
                     'sh', 'StimulusSection_A1_sigma';
                     'sh', 'StimulusSection_Rule';
+                    'sh', 'SideSection_ThisTrial';
                     'sh', 'SideSection_violation_iti';
                     'sh', 'SideSection_error_iti';
                     'sh', 'SideSection_secondhit_delay';
@@ -110,10 +113,12 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
                     'sh', 'SideSection_A2_time';
                     'sh', 'SideSection_time_bet_aud2_gocue';
                     'sh', 'SideSection_time_go_cue';
-                    'sh', 'SideSection_CP_duration'
+                    'sh', 'SideSection_CP_duration';
+                    'sh', 'SideSection_CenterLed_duration';
                     'sh', 'WaterValvesSection_Left_volume';
                     'sh', 'WaterValvesSection_Right_volume';
                     'sh', 'AntibiasSectionAthena_Beta';
+                    'sh', 'AntibiasSectionAthena_RtProb';
                     'sh', 'StimulusSection_psych_pairs';
                 };
                 
