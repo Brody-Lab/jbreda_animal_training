@@ -1,5 +1,7 @@
 function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
 
+    d=datetime(now, 'ConvertFrom', 'datenum')
+
     % stage 1: % data_@AthenaDelayComp_Athena_W075_150716a.mat
     % stage 4: % data_@AthenaDelayComp_Athena_W075_151113a.mat
 
@@ -153,7 +155,17 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
                     % Populate the data
                     % eg. ratdata.hit_history(end+1:end+n_trials) =
                     % saved.AthenaDelayComp_hit_history(1:n_trials)
-                     ratdata.(dest_field)(end+1:end+n_trials) = data_source.(src_var)(1:n_trials);
+                    
+                    if ~isfield(data_source, src_var)
+                        % If the field does not exist, create it and fill with NaNs
+                        nanCell = repmat({nan}, 1, n_trials);
+                        ratdata.(dest_field)(end+1:end+n_trials) = nanCell;
+%                         ratdata.(dest_field)(end+1:end+n_trials) = nan(1, n_trials);
+                        fprintf('     Packing "%s" with NaNs since field doesnt exist\n', dest_field);
+                    else
+                        % If the field exists, fill the new struct with it
+                        ratdata.(dest_field)(end+1:end+n_trials) = data_source.(src_var)(1:n_trials);
+                    end
                 end
               
                 % Write to CSV (gets overwritten & extended each session)
@@ -165,6 +177,8 @@ function ratdata = extract_AthenaDelayComp_data(ratname, varargin)
             end
         end
     end
+    
+    d=datetime(now, 'ConvertFrom', 'datenum')
     
 end
 
