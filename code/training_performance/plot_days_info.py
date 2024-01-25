@@ -835,7 +835,9 @@ def plot_performance_by_give(
     return None
 
 
-def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False):
+def plot_give_info_days(
+    trials_df, ax, title="", aesthetics=True, xaxis_label=True, legend=False
+):
     """
     Plot the give information across days.
 
@@ -848,6 +850,8 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
         axes to plot on
     title : str, (default = "")
         title of plot
+    aesthetics : bool (optional, default = True)
+        used to toggle xaxis label when subplotting
     xaxis_label : bool (optional, default = True)
         whether to include the xaxis label or not, this is useful when
         plotting multiple plots on the same figure
@@ -877,8 +881,9 @@ def plot_give_info_days(trials_df, ax, title="", xaxis_label=True, legend=False)
 
     # aesthetics
     _ = ax.set(title=title, ylabel="", xlabel="")
-    pu.set_legend(ax, legend)
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if aesthetics:
+        pu.set_legend(ax, legend)
+        pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
