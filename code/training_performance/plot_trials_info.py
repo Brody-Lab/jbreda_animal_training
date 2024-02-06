@@ -1666,7 +1666,7 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
         title=title + f"window size: {window_size}",
         xlim=(-10, None),
     )
-    ax2.set(ylabel="Proportion")
+    ax2.set(ylabel="Proportion", ylim=(0, 1))
     ax2.grid()
     ax.grid()
 
@@ -1695,13 +1695,19 @@ def plot_anti_hit_rate_by_give_use(trials_df, ax=None, title="", legend=True):
     if ax is None:
         fig, ax = pu.make_fig("s")
 
+    plot_data = trials_df.dropna(subset=["hits"]).query("pro_anti_block_type=='anti'")
+    unique_hues = plot_data["give_use"].unique()
+    hue_order = (
+        [True, False] if all(x in unique_hues for x in [True, False]) else unique_hues
+    )
+
     barplot = sns.barplot(
-        data=trials_df.dropna(subset=["hits"]).query("pro_anti_block_type=='anti'"),
+        data=plot_data,
         x="pro_anti_block_type",
         y="hits",
         hue="give_use",
-        hue_order=[True, False],
-        palette=["gold", "green"],
+        hue_order=hue_order,
+        palette=["gold", "green"] if len(hue_order) > 1 else ["gold"],
         ax=ax,
     )
 
@@ -1759,6 +1765,11 @@ def plot_anti_give_use_counts(trials_df, ax=None, title="", legend=True):
         .reset_index(name="count")
     )
 
+    unique_hues = count_data["give_use"].unique()
+    hue_order = (
+        [True, False] if all(x in unique_hues for x in [True, False]) else unique_hues
+    )
+
     if ax is None:
         fig, ax = pu.make_fig("s")
 
@@ -1767,7 +1778,7 @@ def plot_anti_give_use_counts(trials_df, ax=None, title="", legend=True):
         x="pro_anti_block_type",
         y="count",
         hue="give_use",
-        hue_order=[True, False],
+        hue_order=hue_order,
         palette=["gold", "green"],
         ax=ax,
     )
