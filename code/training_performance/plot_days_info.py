@@ -1486,6 +1486,6 @@ def plot_give_use_rate_days(
     # aesthetics
     pu.set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
-    _ = ax.set(title=title, xlabel="", ylabel="Give Use Frac")
+    _ = ax.set(title=title, xlabel="", ylabel="Give Use Frac", ylim=(0, 1))
 
     return None
