@@ -1475,7 +1475,7 @@ def plot_give_use_rate_days(
         _, ax = pu.make_fig()
 
     sns.lineplot(
-        data=data,
+        data=data.query("violations != 1"),
         x="date",
         y="give_use",
         marker="o",

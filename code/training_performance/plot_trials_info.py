@@ -1580,7 +1580,9 @@ def calc_anti_give_use_rate(trials_df):
     """
 
     # Filter the DataFrame for rows where 'pro_anti_block_type' is 'anti'
-    anti_trials_df = trials_df.query('pro_anti_block_type == "anti"').copy()
+    anti_trials_df = trials_df.query(
+        'pro_anti_block_type == "anti" and violations != 1'
+    ).copy()
 
     # Calculate cumulative sum of 'give_use' for 'anti' trials
     anti_trials_df["give_use_rate"] = anti_trials_df["give_use"].astype(
@@ -1619,12 +1621,14 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
     anti_trials_df = calc_anti_give_use_rate(trials_df)
     window_size = max(int(anti_trials_df.block_size.min()), 10)
     anti_trials_df = (
-        anti_trials_df.groupby("pro_anti_block_type")
+        anti_trials_df.query("violations != 1")
+        .groupby("pro_anti_block_type")
         .apply(rolling_avg, window_size=window_size)
         .reset_index(drop=True)
     )
     anti_trials_df = (
-        anti_trials_df.groupby("pro_anti_block_type")
+        anti_trials_df.query("violations != 1")
+        .groupby("pro_anti_block_type")
         .apply(rolling_avg, window_size=window_size, column="give_use")
         .reset_index(drop=True)
     )
@@ -1668,7 +1672,6 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
     )
     ax2.set(ylabel="Proportion", ylim=(0, 1))
     ax2.grid()
-    ax.grid()
 
     return None
 
