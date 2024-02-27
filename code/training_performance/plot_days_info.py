@@ -1418,7 +1418,12 @@ def plot_block_switch_params(trials_df, ax=None, title="", xaxis_label=False):
 
 
 def plot_give_delay_dur_days(
-    trials_df, ax=None, trial_subset="anti", title="", xaxis_label=False
+    trials_df,
+    ax=None,
+    trial_subset="anti",
+    title="",
+    xaxis_label=False,
+    aesthetics=True,
 ):
     """
     Plot the distribution of pre-give delay durations
@@ -1456,7 +1461,62 @@ def plot_give_delay_dur_days(
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
+    ax.grid(alpha=0.5)
+    _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
+
+    return None
+
+
+def plot_give_delay_dur_days_line(
+    trials_df,
+    ax=None,
+    trial_subset="anti",
+    title="",
+    xaxis_label=False,
+    aesthetics=True,
+):
+    """
+    Plot the distribution of pre-give delay durations
+    across days.
+
+    params
+    ------
+
+    trials_df: pd.DataFrame
+        trials dataframe with columns `pro_anti_block_type`,
+        `date`, and `give_delay_dur` with trials as row index
+    ax : matplotlib.axes.Axes, de
+        axes to plot on
+    title : str, (default=None)
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    if trial_subset:
+        data = trials_df.query("pro_anti_block_type == @trial_subset").copy()
+    else:
+        data = trials_df.copy()
+
+    sns.lineplot(
+        data=data,
+        x="date",
+        y="give_delay_dur",
+        ax=ax,
+        marker="o",
+        color="lightslategray",
+    )
+
+    # aesthetics
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
+        _ = ax.set(ylim=(0, None))
     ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
 
@@ -1464,7 +1524,12 @@ def plot_give_delay_dur_days(
 
 
 def plot_give_use_rate_days(
-    trials_df, ax=None, trial_subset="anti", title="", xaxis_label=False
+    trials_df,
+    ax=None,
+    trial_subset="anti",
+    title="",
+    xaxis_label=False,
+    aesthetics=True,
 ):
     if trial_subset:
         data = trials_df.query("pro_anti_block_type == @trial_subset").copy()
@@ -1484,7 +1549,8 @@ def plot_give_use_rate_days(
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
     ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Use Frac", ylim=(0, 1))
 
