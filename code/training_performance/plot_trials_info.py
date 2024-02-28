@@ -1598,7 +1598,7 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
     the pre-give delay is growing for an animal on anti trials that
     are light guided.
 
-    Specific metrics: give delay duration, anti hit rate, give use rate
+    Specific metrics: give delay duration, anti hit rate, give delivery rate
 
     params
     ------
@@ -1660,7 +1660,7 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
         y=f"give_use_rolling_avg_{window_size}",
         marker="o",
         color="gold",
-        label="Anti Rolling Give Use",
+        label="Anti Rolling Give Deliv.",
         ax=ax2,
     )
 
@@ -1838,7 +1838,7 @@ def plot_anti_hit_counts_by_give_use(trials_df, ax=None, title="", legend=True):
     ax.set(ylabel="Count", xlabel="Correct", title=title)
 
     if legend:
-        ax.legend(title="give use", loc="upper left", frameon=False)
+        ax.legend(title="give delivery", loc="upper left", frameon=False)
     else:
         ax.get_legend().remove()
 
