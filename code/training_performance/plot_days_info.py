@@ -1548,6 +1548,17 @@ def plot_give_use_rate_days(
         ax=ax,
     )
 
+    # plot alpha minus (used for adaptive threshold)
+    sns.lineplot(
+        data=data,
+        x="date",
+        y="give_del_adagrow_alpha_minus",
+        marker="x",
+        color="k",
+        ax=ax,
+        label="Alpha Minus",
+    )
+
     # aesthetics
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)

@@ -1665,7 +1665,7 @@ def plot_anti_give_del_metrics(trials_df, ax=None, title="", legend=True):
     )
 
     ax2.axhline(
-        anti_trials_df.give_del_adagrow_threshold.min(), linestyle="-", color="k"
+        anti_trials_df.give_del_adagrow_alpha_minus.min(), linestyle="-", color="k"
     )
 
     ax.set(
