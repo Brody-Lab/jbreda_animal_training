@@ -974,7 +974,7 @@ def plot_non_give_stim_performance(
 
     # when hits remains in pyarrow format, the groupby
     # doesn't work properly for some edge cases
-    sub_df = trials_df.query("give_type_imp == 'none'").copy()
+    sub_df = trials_df.query("give_use == 0").copy()
     sub_df["hits"] = sub_df["hits"].astype("float64")
 
     if variance:
