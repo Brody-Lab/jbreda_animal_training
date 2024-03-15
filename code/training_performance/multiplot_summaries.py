@@ -849,7 +849,10 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
 
     ## ROW 7- STU
     plot_give_use_rate_days(
-        animal_trials_df, ax_dict["S"], title="Anti Give Use Rate", xaxis_label=True
+        animal_trials_df,
+        ax_dict["S"],
+        title=f"Anti Give Use Rate, $\\alpha_-$= {animal_trials_df.give_del_adagrow_alpha_minus.iloc[-1]}",
+        xaxis_label=True,
     )
     plot_give_type_and_block_switch_days(
         animal_trials_df,
