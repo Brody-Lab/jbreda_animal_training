@@ -1092,6 +1092,7 @@ def plot_stim_performance_by_pro_anti(
         x=x_var,
         y="hits",
         hue="pro_anti_block_type",
+        hue_order=["pro", "anti"],
         palette="husl",
         marker="o",
         ax=ax,
