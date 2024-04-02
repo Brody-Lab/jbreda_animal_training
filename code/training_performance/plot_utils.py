@@ -153,9 +153,9 @@ def get_side_order(side_column):
     """
     return sorted(
         side_column.unique(),
-        key=lambda x: SIDE_MAP["order"].index(x)
-        if x in SIDE_MAP["order"]
-        else float("inf"),
+        key=lambda x: (
+            SIDE_MAP["order"].index(x) if x in SIDE_MAP["order"] else float("inf")
+        ),
     )
 
 
@@ -190,9 +190,11 @@ def get_period_order(trial_period_column):
     """
     return sorted(
         trial_period_column.unique(),
-        key=lambda x: TRIAL_PERIOD_MAP["order"].index(x)
-        if x in TRIAL_PERIOD_MAP["order"]
-        else float("inf"),
+        key=lambda x: (
+            TRIAL_PERIOD_MAP["order"].index(x)
+            if x in TRIAL_PERIOD_MAP["order"]
+            else float("inf")
+        ),
     )
 
 
@@ -241,9 +243,9 @@ def get_give_order(trial_give_column):
     """
     return sorted(
         trial_give_column.unique(),
-        key=lambda x: GIVE_MAP["order"].index(x)
-        if x in GIVE_MAP["order"]
-        else float("inf"),
+        key=lambda x: (
+            GIVE_MAP["order"].index(x) if x in GIVE_MAP["order"] else float("inf")
+        ),
     )
 
 
