@@ -941,6 +941,97 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
     return None
 
 
+def plot_performance_by_stim_over_days(
+    trials_df,
+    without_give,
+    ax=None,
+    confidence_intervals=True,
+    x_var="date",
+    title="",
+    xaxis_label=True,
+    aesthetics=True,
+):
+    """
+    Plot performance by sa, sb pair over days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_use` and `hits` with trials as row index
+    without_give : bool
+        whether to plot the performance of trials without give
+        or not
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    confidence_intervals : bool (optional, default = True)
+        whether to plot the 95% confidence intervals or not
+    x_var : str (default='date')
+        variable to plot on x axis
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    aesthetics : bool (optional, default = True)
+        used to toggle xaxis label when subplotting
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    if without_give:
+        df = trials_df.query("give_use == 0").copy()
+    else:
+        df = trials_df.copy()
+    df["hits"] = df["hits"].astype("float64")
+
+    # Calculate mean and confidence interval (95% CI as example)
+    perf_mean = df.pivot_table(
+        index=x_var, columns="sound_pair", values="hits", aggfunc="mean"
+    )
+    if confidence_intervals:
+        perf_sem = df.pivot_table(
+            index=x_var, columns="sound_pair", values="hits", aggfunc="sem"
+        )  # Standard Error of the Mean
+        confidence = 1.96 * perf_sem  # Approx. for 95% CI, assuming normal distribution
+
+    colors = {
+        "3.0, 3.0": "skyblue",
+        "12.0, 12.0": "steelblue",
+        "3.0, 12.0": "thistle",
+        "12.0, 3.0": "mediumorchid",
+    }
+
+    # Plot lines and fill confidence intervals
+    for sound_pair in perf_mean.columns:
+        ax.plot(
+            perf_mean.index,
+            perf_mean[sound_pair],
+            label=sound_pair,
+            color=colors[sound_pair],
+            linestyle="-",
+            marker=".",
+        )
+        if confidence_intervals:
+            ax.fill_between(
+                perf_mean.index,
+                perf_mean[sound_pair] - confidence[sound_pair],
+                perf_mean[sound_pair] + confidence[sound_pair],
+                color=colors[sound_pair],
+                alpha=0.2,
+            )
+
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.legend(loc="lower left")
+    ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
 def plot_non_give_stim_performance(
     trials_df,
     ax,
@@ -951,6 +1042,7 @@ def plot_non_give_stim_performance(
     variance=False,
 ):
     """
+    !NOT CURRENTLY IN USE see plot_performance_by_stim_over_days()
     Plot performance by sa, sb pair on non-give
     trials across days
 
@@ -1002,9 +1094,6 @@ def plot_non_give_stim_performance(
     return None
 
 
-## PRO ANTI ##
-
-
 def plot_stim_performance(
     trials_df,
     ax,
@@ -1016,6 +1105,7 @@ def plot_stim_performance(
     **kwargs,
 ):
     """
+    !NOT CURRENTLY IN USE see plot_performance_by_stim_over_days()
     Plot performance by sa, sb pair on all trials
     trials across days
 
@@ -1058,10 +1148,111 @@ def plot_stim_performance(
     return None
 
 
+## PRO ANTI ##
+def plot_performance_by_pro_anti_over_days(
+    trials_df,
+    without_give,
+    ax=None,
+    confidence_intervals=True,
+    x_var="date",
+    title="",
+    xaxis_label=True,
+    aesthetics=True,
+):
+    """
+    Plot performance by pro-anti over days
+
+    params
+    ------
+    trials_df : pandas.DataFrame
+        trials dataframe with columns `date`, `sound_pair`,
+        `give_use`, `pro_anti_block_type` and `hits` with trials
+        as row index
+    without_give : bool
+        whether to plot the performance of trials without give
+        or not
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    confidence_intervals : bool (optional, default = True)
+        whether to plot the 95% confidence intervals or not
+    x_var : str (default='date')
+        variable to plot on x axis
+    title : str, (default = "")
+        title of plot
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    aesthetics : bool (optional, default = True)
+        used to toggle xaxis label when subplotting
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    # Filter and prepare data
+    if without_give:
+        df = trials_df.query("give_use == 0").copy()
+    else:
+        df = trials_df.copy()
+    df["hits"] = df["hits"].astype("float64")
+
+    plot_data = (
+        df.query("pro_anti_block_type != 'NA'")
+        .dropna(subset=["pro_anti_block_type"])
+        .copy()
+    )
+
+    # Calculate mean and standard error for the confidence interval
+    perf_mean = plot_data.pivot_table(
+        index=x_var, columns="pro_anti_block_type", values="hits", aggfunc="mean"
+    )
+    confidence_intervals = plot_data.pivot_table(
+        index=x_var, columns="pro_anti_block_type", values="hits", aggfunc="sem"
+    )
+    confidence = 1.96 * confidence_intervals  # Assuming 95% CI
+
+    # Define colors
+    colors = sns.color_palette("husl", 2)
+    color_map = {"pro": colors[0], "anti": colors[1]}
+
+    # Plot lines with pandas plot, iterating to add 95% CIs
+    for column in perf_mean.columns:
+        ax.plot(
+            perf_mean.index,
+            perf_mean[column],
+            label=column,
+            color=color_map[column],
+            marker=".",
+        )
+        ax.fill_between(
+            perf_mean.index,
+            perf_mean[column] - confidence[column],
+            perf_mean[column] + confidence[column],
+            color=color_map[column],
+            alpha=0.2,
+        )
+
+    # Aesthetics
+    ax.grid()
+    ax.axhline(0.6, color="k", linestyle="--")
+    ax.legend(loc="lower left", title="Block Type")
+    ax.set(
+        title=title,
+        xlabel="" if not xaxis_label else x_var,
+        ylabel="Hit Rate",
+        ylim=(0, 1),
+    )
+    if aesthetics:
+        pu.set_date_x_ticks(ax, xaxis_label)
+
+    return None
+
+
 def plot_stim_performance_by_pro_anti(
     trials_df, ax, x_var="date", title="", xaxis_label=True, aesthetics=True
 ):
     """
+    !NOT IN USE see plot_performance_by_pro_anti_over_days()
     Plot performance by pro or anti trials across days
 
     params

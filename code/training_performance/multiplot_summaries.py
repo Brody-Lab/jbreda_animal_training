@@ -675,8 +675,12 @@ def multi_day_summary_pre_pro_anti(animal_id, animal_days_df, animal_trials_df):
             animal_trials_df, ax_dict["J"], title="Sounds", xaxis_label=False
         )
     elif current_stage == 10 or current_stage == 11:
-        plot_non_give_stim_performance(
-            animal_trials_df, ax_dict["J"], title="Non-Give Perf", xaxis_label=False
+        plot_performance_by_stim_over_days(
+            animal_trials_df,
+            without_give=True,
+            ax=ax_dict["J"],
+            title="Non-Give Perf",
+            xaxis_label=False,
         )
     else:
         plot_time_to_spoke(
@@ -753,16 +757,12 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
     # determine training stage info
     current_stage = animal_trials_df.stage.iloc[-1]
     current_sma = animal_trials_df.SMA_set.iloc[-1]
+    latest_date = animal_trials_df.date.iloc[-1]
 
-    if animal_trials_df.give_delay_dur.nunique() > 2:
+    if animal_trials_df.query("date == @latest_date").give_delay_dur.nunique() > 2:
         plot_give_del_info = True
     else:
         plot_give_del_info = False
-
-    if current_stage == 13:
-        plot_temp_error_info = True
-    else:
-        plot_temp_error_info = False
 
     ## ROW 1
     plot_trials(
@@ -797,28 +797,35 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
     )
 
     ## ROW 4- JKL
-    plot_stim_performance(
-        animal_trials_df, ax_dict["J"], title="Stim Perf", xaxis_label=False
-    )
-    plot_non_give_stim_performance(
+    plot_performance_by_stim_over_days(
         animal_trials_df,
-        ax_dict["K"],
+        without_give=False,
+        ax=ax_dict["J"],
+        title="Stim Perf",
+        xaxis_label=False,
+        confidence_intervals=False,
+    )
+    plot_performance_by_stim_over_days(
+        animal_trials_df,
+        without_give=True,
+        ax=ax_dict["K"],
         title="Non-Give Stim Perf",
         xaxis_label=False,
-        variance=True,
     )
     plot_trial_structure(
         animal_trials_df, ax_dict["L"], title="Trial Structure", xaxis_label=False
     )
 
     ## ROW 5- MNO
-    plot_stim_performance_by_pro_anti(
+    plot_performance_by_pro_anti_over_days(
         animal_trials_df,
-        ax_dict["M"],
+        without_give=False,
+        ax=ax_dict["M"],
         title=f"Pro: {animal_trials_df.pro_stim_set.dropna().unique()[0]},Anti: {animal_trials_df.anti_stim_set.dropna().unique()[0]}",
-        xaxis_label=False,
+        xaxis_label=not (plot_give_del_info),
     )
 
+    # TODO logic here for if switching is happning over days or sessions
     plot_n_pro_anti_blocks_days(
         animal_trials_df,
         ax_dict["N"],
@@ -838,22 +845,19 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
             title="Anti Give Delay Dur",
             xaxis_label=False,
         )
-    elif plot_temp_error_info:
-        pass
-    else:
-        pass
 
     plot_block_switch_params(
         animal_trials_df, ax_dict["Q"], title="Block Switch Params", xaxis_label=False
     )
 
     ## ROW 7- STU
-    plot_give_use_rate_days(
-        animal_trials_df,
-        ax_dict["S"],
-        title=f"Anti Give Use Rate, $\\alpha_-$= {animal_trials_df.give_del_adagrow_alpha_minus.iloc[-1]}",
-        xaxis_label=True,
-    )
+    if plot_give_del_info:
+        plot_give_use_rate_days(
+            animal_trials_df,
+            ax_dict["S"],
+            title=f"Anti Give Use Rate, $\\alpha_-$= {animal_trials_df.give_del_adagrow_alpha_minus.iloc[-1]}",
+            xaxis_label=True,
+        )
     plot_give_type_and_block_switch_days(
         animal_trials_df,
         ax_dict["T"],
@@ -914,12 +918,12 @@ def mutliplot_rule_learning(animal_id, days_df, trials_df):
         animal_trials_df, ax_dict["E"], title="Give Metrics", xaxis_label=True
     )
 
-    plot_non_give_stim_performance(
+    plot_performance_by_stim_over_days(
         animal_trials_df,
-        ax_dict["F"],
+        without_give=True,
+        ax=ax_dict["F"],
         title="Non-Give Perf",
         xaxis_label=True,
-        variance=True,
     )
 
     return None
