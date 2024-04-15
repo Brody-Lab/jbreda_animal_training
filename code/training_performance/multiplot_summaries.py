@@ -141,22 +141,25 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
     plot_stage_info(trials_df, ax=ax_dict["E"])
-    plot_side_bias_summary(trials_df, ax=ax_dict["F"])
-    plot_side_count_summary(trials_df, ax=ax_dict["G"])
     try:
+        plot_side_bias_summary(trials_df, ax=ax_dict["F"])
+        plot_side_count_summary(trials_df, ax=ax_dict["G"])
         plot_violations_by_period(trials_df, ax=ax_dict["H"])
     except:
         print("skipping violations by period due to hist error")
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["I"])
-    plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["J"])
-    plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["K"])
-    plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
+    try:
+        plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["J"])
+        plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["K"])
+        plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
+    except:
+        ("Skipping due to high violation rates")
 
     ## ROW 4
-    plot_rolling_hit_rate_by_pro_anti(trials_df, ax=ax_dict["M"])
     try:
+        plot_rolling_hit_rate_by_pro_anti(trials_df, ax=ax_dict["M"])
         plot_stim_grid_performance(trials_df, ax=ax_dict["N"], mode="hits")
         plot_stim_grid_performance(trials_df, ax=ax_dict["O"], mode="violations")
         plot_hit_rate_by_give(trials_df, ax=ax_dict["Q"])  # todo swich to pa
