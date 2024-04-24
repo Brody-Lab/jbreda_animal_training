@@ -1558,6 +1558,59 @@ def plot_hit_rate_by_pro_anti(trials_df, ax=None):
     return None
 
 
+def plot_rolling_hit_rate_by_stim(trials_df, ax=None):
+    """
+    plot rolling hit rate by stim pair
+
+    params
+    -----
+    trials_df: pd.DataFrame
+        trials dataframe with columns: `sound_pair`,
+        `hits` with trials as row index
+    ax: matplotlib.axes.Axes (default = None)
+        axes to plot to, if None, create new axes
+    """
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    window_size = min(int(trials_df.block_size.min()), 20)
+
+    data = (
+        trials_df.groupby("sound_pair")
+        .apply(rolling_avg, window_size=window_size)
+        .reset_index(drop=True)
+    )
+
+    sns.lineplot(
+        data=data,
+        x="trial",
+        y=f"hits_rolling_avg_{window_size}",
+        hue="sound_pair",
+        palette=pu.create_palette_given_sounds(data),
+        ax=ax,
+        marker=".",
+    )
+
+    block_switch = trials_df["n_blocks"].diff().fillna(0).abs() > 0
+    for trial in trials_df[block_switch].trial:
+        ax.axvline(x=trial, color="black")
+
+    ax.grid(alpha=0.5)
+    ax.axhline(y=0.5, color="gray", linestyle="--")
+
+    _ = ax.set(
+        xlabel="Trial",
+        ylabel="Performance Rate",
+        title=f"Pro: {trials_df.pro_stim_set.unique()[0]}, Anti: {trials_df.anti_stim_set.unique()[0]}, Window Size: {window_size}",
+        ylim=(-0.1, 1.1),
+    )
+
+    ax.grid(alpha=0.5)
+    ax.legend().remove()
+
+    return None
+
+
 ### PRO & ANTI + Give Delay ###
 
 
