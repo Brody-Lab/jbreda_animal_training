@@ -132,16 +132,16 @@ def plot_stage(
 
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)
-        ax.gird(alpha=0.5)
+        ax.grid(alpha=0.5)
     else:
-        ax.grid(alpha=0.5, axis="y")
-        if ylim:
-            ylim = ylim
-            yticks = range(ylim[0], ylim[1] + 1)
-        else:
-            max_stage = int(trials_df.stage.max())
-            ylim = (0, max_stage + 1)
-            yticks = range(max_stage + 1)
+        ax.grid(alpha=0.5)
+    if ylim:
+        ylim = ylim
+        yticks = range(ylim[0], ylim[1] + 1)
+    else:
+        max_stage = int(trials_df.stage.max())
+        ylim = (0, max_stage + 1)
+        yticks = range(max_stage + 1)
 
         ax.set(
             ylabel="Stage #",
@@ -1250,7 +1250,7 @@ def plot_performance_by_pro_anti_over_days(
         )
 
     # Aesthetics
-    # ax.grid()
+    ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
     ax.legend(loc="lower left", title="Block Type")
     ax.set(
