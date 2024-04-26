@@ -108,7 +108,14 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
 
 ### STAGE ###
 def plot_stage(
-    trials_df, ax, title="", group="date", xaxis_label=True, aesthetics=True, **kwargs
+    trials_df,
+    ax,
+    title="",
+    group="date",
+    xaxis_label=True,
+    aesthetics=True,
+    ylim=None,
+    **kwargs,
 ):
     """
     Having the group variable allows you to group by other
@@ -122,15 +129,25 @@ def plot_stage(
         marker="o",
         **kwargs,
     )
+
     if aesthetics:
-        max_stage = int(trials_df.stage.max())
         pu.set_date_x_ticks(ax, xaxis_label)
-        ax.grid(alpha=0.5)
+        ax.gird(alpha=0.5)
+    else:
+        ax.grid(alpha=0.5, axis="y")
+        if ylim:
+            ylim = ylim
+            yticks = range(ylim[0], ylim[1] + 1)
+        else:
+            max_stage = int(trials_df.stage.max())
+            ylim = (0, max_stage + 1)
+            yticks = range(max_stage + 1)
+
         ax.set(
             ylabel="Stage #",
             title=title,
-            ylim=(0, max_stage + 1),
-            yticks=range(max_stage + 1),
+            ylim=ylim,
+            yticks=yticks,
         )
 
 
@@ -881,8 +898,8 @@ def plot_give_info_days(
 
     # aesthetics
     _ = ax.set(title=title, ylabel="", xlabel="")
+    pu.set_legend(ax, legend)
     if aesthetics:
-        pu.set_legend(ax, legend)
         pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
@@ -1022,12 +1039,12 @@ def plot_performance_by_stim_over_days(
                 alpha=0.2,
             )
 
-    ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
     ax.legend(loc="lower left")
     ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)
+        ax.grid()
 
     return None
 
@@ -1233,7 +1250,7 @@ def plot_performance_by_pro_anti_over_days(
         )
 
     # Aesthetics
-    ax.grid()
+    # ax.grid()
     ax.axhline(0.6, color="k", linestyle="--")
     ax.legend(loc="lower left", title="Block Type")
     ax.set(
@@ -1356,7 +1373,7 @@ def plot_n_pro_anti_blocks_days(
         pu.set_date_x_ticks(ax, xaxis_label)
     else:
         ax.set(ylim=(0, trials_df.n_blocks.max() + 1))
-    ax.grid(alpha=0.5)
+    # ax.grid(alpha=0.5")
 
     return None
 
@@ -1655,7 +1672,7 @@ def plot_give_delay_dur_days(
     # aesthetics
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)
-    ax.grid(alpha=0.5)
+        ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
 
     return None
@@ -1709,7 +1726,7 @@ def plot_give_delay_dur_days_line(
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)
         _ = ax.set(ylim=(0, None))
-    ax.grid(alpha=0.5)
+        ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
 
     return None
@@ -1754,7 +1771,7 @@ def plot_give_use_rate_days(
     # aesthetics
     if aesthetics:
         pu.set_date_x_ticks(ax, xaxis_label)
-    ax.grid(alpha=0.5)
+        ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Delivered Frac", ylim=(0, 1))
 
     return None
