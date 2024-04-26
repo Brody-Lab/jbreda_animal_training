@@ -854,6 +854,10 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
         animal_trials_df, ax_dict["Q"], title="Block Switch Params", xaxis_label=False
     )
 
+    plot_performance_by_give(
+        animal_trials_df, ax_dict["R"], title="Perf by Give", xaxis_label=False
+    )
+
     ## ROW 7- STU
     if plot_give_del_info:
         plot_give_use_rate_days(
