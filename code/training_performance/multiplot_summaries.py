@@ -809,13 +809,24 @@ def multi_day_summary_pro_anti(animal_id, animal_days_df, animal_trials_df):
         xaxis_label=False,
         confidence_intervals=False,
     )
-    plot_performance_by_stim_over_days(
-        animal_trials_df,
-        without_give=True,
-        ax=ax_dict["K"],
-        title="Non-Give Stim Perf",
-        xaxis_label=False,
-    )
+    try:
+        plot_performance_by_stim_over_days(
+            animal_trials_df,
+            without_give=True,
+            ax=ax_dict["K"],
+            title="Non-Give Stim Perf",
+            xaxis_label=False,
+        )
+    except:
+        plot_performance_by_stim_over_days(
+            animal_trials_df,
+            without_give=True,
+            ax=ax_dict["K"],
+            title="Non-Give Stim Perf",
+            xaxis_label=False,
+            confidence_intervals=False,
+        )
+
     plot_trial_structure(
         animal_trials_df, ax_dict["L"], title="Trial Structure", xaxis_label=False
     )
