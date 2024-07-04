@@ -310,9 +310,12 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
     # if date is datetime convert to date only
     if days_df.date.dtype == "datetime64[ns]":
         days_df["date_only"] = days_df["date"].dt.date
-    columns_to_plot = ["date_only", "rig_volume", "pub_volume"]
+        date_col = "date_only"
+    else:
+        date_col = "date"
+    columns_to_plot = [date_col, "rig_volume", "pub_volume"]
     days_df[columns_to_plot].plot(
-        x="date_only",
+        x=date_col,
         kind="bar",
         stacked=True,
         color=["blue", "cyan"],

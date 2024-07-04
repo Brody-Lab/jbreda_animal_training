@@ -11,9 +11,7 @@ import plot_utils as pu
 import numpy as np
 import matplotlib.pyplot as plt
 
-from create_days_df import fetch_and_format_single_day_water
-
-# TODO move plots from `DMS_utils` to here
+from create_days_df import create_days_df_from_dj  # for water plotting
 
 
 #### RESPONSE INFO ####
@@ -1136,9 +1134,9 @@ def plot_hit_rate_by_give(trials_df, ax=None, title=""):
 
 
 #### WATER ####
-# TODO update to take into account mouse/rate new code for the
-# TODO threshold bar
-def plot_watering_amounts(trials_df, ax, title="", legend=False):
+def plot_watering_amounts(
+    trials_df: pd.DataFrame, ax=None, title: str = "", legend: bool = False
+) -> None:
     """
     plot the water drunk in the rig and pub for a day with
     restriction volume indicated. note the trials_df is only
@@ -1157,21 +1155,23 @@ def plot_watering_amounts(trials_df, ax, title="", legend=False):
     legend : bool, (default = True)
         whether to include legend or not
     """
-
     assert (
         len(trials_df.animal_id.unique()) == 1 and len(trials_df.date.unique()) == 1
     ), print("trials_df must have only one unique animal_id and date")
 
     animal_id = trials_df.animal_id.iloc[0]
-    date = trials_df.date.iloc[0]
+    date = str(trials_df.date.iloc[0])
+    df = create_days_df_from_dj(animal_ids=[animal_id], date_min=date, date_max=date)
 
-    # this makes a call to the create_days functions since they were
-    # already well written to query the ratinfo database
-    df, volume_target = fetch_and_format_single_day_water(animal_id, date)
+    if ax is None:
+        fig, ax = pu.make_fig("s")
 
-    # plot stacked bar
-    df.set_index("date").plot(kind="bar", stacked=True, color=["blue", "cyan"], ax=ax)
-    # plot the target threshold
+    bar_plot_cols = ["date", "rig_volume", "pub_volume"]
+    df[bar_plot_cols].set_index("date").plot(
+        kind="bar", stacked=True, color=["blue", "cyan"], ax=ax
+    )
+
+    volume_target = df["volume_target"].iloc[0]
     ax.axhline(y=volume_target, xmin=0.2, xmax=0.8, color="black")
     # label the amounts
     ax.text(x=-0.45, y=volume_target, s=str(volume_target), fontsize=12)
@@ -1180,7 +1180,6 @@ def plot_watering_amounts(trials_df, ax, title="", legend=False):
             cont, fontsize=12, fmt="%.2f", label_type="center", color="white"
         )
 
-    # aesthetics
     ax.set_xticks([])
     _ = ax.set(xlabel="", ylabel="volume (mL)", title=title)
     pu.set_legend(ax, legend=legend)
