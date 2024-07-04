@@ -1,7 +1,10 @@
 import numpy as np
 import datajoint as dj
 import pandas as pd
+import datetime
 
+ratinfo = dj.create_virtual_module("intfo", "ratinfo")
+bdata = dj.create_virtual_module("bdata", "bdata")
 
 ###################
 ###  FUNCTIONS  ###
@@ -217,3 +220,255 @@ def _mymblob_to_dict2(np_array, as_int=True):
                 out_dict[fields[idx]] = a
 
     return out_dict
+
+
+########################
+###   SessAggDate    ###
+########################
+
+
+def aggregate_todays_data(animal_ids: list = None) -> pd.DataFrame:
+    """
+    Utility function used to aggregate today's date for a list of animal_ids
+    from the Sessions, Mass, Water, and Rigwater tables in the DataJoint database.
+    With an identical structure to the SessAggDate table.
+
+    This is necessary because the SessAggDate table is not updated in real-time
+    and is only updated once a day. This function allows us to get the most up-to-date
+    information for today's date.
+
+    """
+
+    sessions_df = aggregate_todays_sessions(animal_ids)
+    mass_df = aggregate_todays_mass(animal_ids)
+    water_df = aggregate_todays_water(animal_ids)
+    rigwater_df = aggregate_todays_rigwater(animal_ids)
+
+    todays_df = merge_tables(sessions_df, mass_df, water_df, rigwater_df)
+
+    return todays_df
+
+
+def merge_tables(df_sessions, df_mass, df_water, df_rigwater):
+    """
+    Given the dataframes from the aggregate_todays_sessions, aggregate_todays_mass,
+    aggregate_todays_water, and aggregate_todays_rigwater functions, this function
+    merges them together to create a single dataframe with all the information for
+    today's date.
+    """
+
+    df_session_mass = pd.merge(df_sessions, df_mass, how="left", on="ratname")
+    df_session_mass = df_session_mass.drop(columns="date")
+
+    df_session_mass_water = pd.merge(
+        df_session_mass, df_water, how="left", left_on="ratname", right_on="rat"
+    )
+    df_session_mass_water = df_session_mass_water.drop(columns="date")
+    df_session_mass_water["num_water"] = df_session_mass_water["num_water"].fillna(0)
+
+    df_session_mass_water_rigwater = pd.merge(
+        df_session_mass_water, df_rigwater, how="left", on="ratname"
+    )
+    df_session_mass_water_rigwater = df_session_mass_water_rigwater.drop(
+        columns="dateval"
+    )
+    df_session_mass_water_rigwater = df_session_mass_water_rigwater.drop(columns="rat")
+    df_session_mass_water_rigwater["num_rigwater"] = df_session_mass_water_rigwater[
+        "num_rigwater"
+    ].fillna(0)
+
+    return df_session_mass_water_rigwater
+
+
+def aggregate_todays_sessions(animal_ids: list = None) -> pd.DataFrame:
+
+    # Create Query Keys
+    todays_date = datetime.datetime.today().strftime("%Y-%m-%d")
+    todays_session_query = {"sessiondate": todays_date}
+
+    if animal_ids is not None:
+        todays_session_query = [
+            {"ratname": x, "sessiondate": todays_date} for x in animal_ids
+        ]
+
+    columns_query = [
+        "ratname",
+        "sessiondate",
+        "n_done_trials",
+        "starttime",
+        "endtime",
+        "hostname",
+        "total_correct",
+        "percent_violations",
+        "right_correct",
+        "left_correct",
+    ]
+
+    # Query the data
+    todays_sessions = pd.DataFrame(
+        (bdata.Sessions & todays_session_query).fetch(*columns_query, as_dict=True)
+    )
+
+    # If there are no sessions for today, return an empty dataframe, otherwise process the data
+    if todays_sessions.shape[0] > 0:
+        todays_sessions["sessiondate"] = pd.to_datetime(
+            todays_sessions["sessiondate"], format="%Y-%m-%d"
+        )
+        # todays_sessions["starttime"] = todays_sessions["starttime"].apply(
+        #     lambda x: (datetime.datetime.min + x.to_pytimedelta()).time()
+        # )
+        # todays_sessions["endtime"] = todays_sessions["endtime"].apply(
+        #     lambda x: (datetime.datetime.min + x.to_pytimedelta()).time()
+        # )
+        todays_sessions["total_correct_n"] = (
+            todays_sessions["total_correct"] * todays_sessions["n_done_trials"]
+        )
+        todays_sessions["percent_violations_n"] = (
+            todays_sessions["percent_violations"] * todays_sessions["n_done_trials"]
+        )
+        todays_sessions["right_correct_n"] = (
+            todays_sessions["right_correct"] * todays_sessions["n_done_trials"]
+        )
+        todays_sessions["left_correct_n"] = (
+            todays_sessions["left_correct"] * todays_sessions["n_done_trials"]
+        )
+
+        # There can be multiple entries for the same date- now we aggregate them
+        # to account for that
+        todays_sessions_agg1 = todays_sessions.groupby("ratname").agg(
+            {
+                "sessiondate": [("sessiondate", "min")],
+                "n_done_trials": [("num_sessions", "count"), ("n_done_trials", "sum")],
+                "hostname": [("hostname", "min")],
+                "starttime": [("starttime", "min")],
+                "endtime": [("endtime", "max")],
+                "total_correct_n": [("total_correct", "sum")],
+                "percent_violations_n": [("percent_violations", "sum")],
+                "right_correct_n": [("right_correct", "sum")],
+                "left_correct_n": [("left_correct", "sum")],
+            }
+        )
+
+        todays_sessions_agg1.columns = todays_sessions_agg1.columns.droplevel()
+
+        todays_sessions_agg1["total_correct"] = (
+            todays_sessions_agg1["total_correct"]
+            / todays_sessions_agg1["n_done_trials"]
+        )
+        todays_sessions_agg1["percent_violations"] = (
+            todays_sessions_agg1["percent_violations"]
+            / todays_sessions_agg1["n_done_trials"]
+        )
+        todays_sessions_agg1["right_correct"] = (
+            todays_sessions_agg1["right_correct"]
+            / todays_sessions_agg1["n_done_trials"]
+        )
+        todays_sessions_agg1["left_correct"] = (
+            todays_sessions_agg1["left_correct"] / todays_sessions_agg1["n_done_trials"]
+        )
+
+        todays_sessions_agg1 = todays_sessions_agg1.reset_index()
+    else:
+        todays_sessions_agg1 = pd.DataFrame(columns=columns_query)
+
+    return todays_sessions_agg1
+
+
+def aggregate_todays_mass(animal_ids: list = None) -> pd.DataFrame:
+
+    # Create Query Keys
+    todays_date = datetime.datetime.today().strftime("%Y-%m-%d")
+    todays_session_query = {"date": todays_date}
+
+    columns_query = ["ratname", "date", "mass", "tech"]
+
+    if animal_ids is not None:
+        todays_session_query = [{"ratname": x, "date": todays_date} for x in animal_ids]
+
+    # Query the data
+    todays_mass = pd.DataFrame(
+        (ratinfo.Mass & todays_session_query).fetch(*columns_query, as_dict=True)
+    )
+
+    # There is only every 1 mass entry per day, so we can just return the dataframe
+    if todays_mass.shape[0] > 0:
+        todays_mass["date"] = pd.to_datetime(todays_date, format="%Y-%m-%d")
+    else:
+        todays_mass = pd.DataFrame(columns=columns_query)
+
+    return todays_mass
+
+
+def aggregate_todays_water(animal_ids: list = None) -> pd.DataFrame:
+
+    # Query Keys
+    todays_date = datetime.datetime.today().strftime("%Y-%m-%d")
+    todays_session_query = {"date": todays_date}
+
+    columns_query = ["rat", "date", "percent_target", "volume"]
+
+    if animal_ids is not None:
+        todays_session_query = [{"rat": x, "date": todays_date} for x in animal_ids]
+
+    # Query the data
+    todays_water = pd.DataFrame(
+        (ratinfo.Water & todays_session_query).fetch(*columns_query, as_dict=True)
+    )
+
+    # There can be multiple entries for the same date- now we aggregate them
+    if todays_water.shape[0] > 0:
+
+        todays_water["date"] = pd.to_datetime(todays_water["date"], format="%Y-%m-%d")
+        todays_water_agg1 = todays_water.groupby("rat").agg(
+            {
+                "date": [("date", "min")],
+                "percent_target": [("percent_target", "max")],
+                "volume": [("volume", "max"), ("num_water", "count")],
+            }
+        )
+
+        todays_water_agg1.columns = todays_water_agg1.columns.droplevel()
+        todays_water_agg1 = todays_water_agg1.reset_index()
+    else:
+        todays_water_agg1 = pd.DataFrame(columns=columns_query + ["num_water"])
+
+    return todays_water_agg1
+
+
+def aggregate_todays_rigwater(animal_ids: list = None) -> pd.DataFrame:
+
+    # Query Keys
+    todays_date = datetime.datetime.today().strftime("%Y-%m-%d")
+    todays_session_query = {"dateval": todays_date}
+
+    columns_query = ["ratname", "dateval", "totalvol"]
+
+    if animal_ids is not None:
+        todays_session_query = [
+            {"ratname": x, "dateval": todays_date} for x in animal_ids
+        ]
+
+    # Query the data
+    todays_rigwater = pd.DataFrame(
+        (ratinfo.Rigwater & todays_session_query).fetch(*columns_query, as_dict=True)
+    )
+
+    # There can be multiple entries for the same date- now we aggregate them
+    if todays_rigwater.shape[0] > 0:
+
+        todays_rigwater["dateval"] = pd.to_datetime(
+            todays_rigwater["dateval"], format="%Y-%m-%d"
+        )
+        todays_rigwater_agg1 = todays_rigwater.groupby("ratname").agg(
+            {
+                "dateval": [("dateval", "min")],
+                "totalvol": [("totalvol", "max"), ("num_rigwater", "count")],
+            }
+        )
+
+        todays_rigwater_agg1.columns = todays_rigwater_agg1.columns.droplevel()
+        todays_rigwater_agg1 = todays_rigwater_agg1.reset_index()
+    else:
+        todays_rigwater_agg1 = pd.DataFrame(columns=columns_query + ["num_rigwater"])
+
+    return todays_rigwater_agg1

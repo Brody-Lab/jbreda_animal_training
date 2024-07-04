@@ -307,9 +307,15 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
     """
 
     # stacked bar chart only works with df.plot (not seaborn)
-    columns_to_plot = ["date", "rig_volume", "pub_volume"]
+    # if date is datetime convert to date only
+    if days_df.date.dtype == "datetime64[ns]":
+        days_df["date_only"] = days_df["date"].dt.date
+        date_col = "date_only"
+    else:
+        date_col = "date"
+    columns_to_plot = [date_col, "rig_volume", "pub_volume"]
     days_df[columns_to_plot].plot(
-        x="date",
+        x=date_col,
         kind="bar",
         stacked=True,
         color=["blue", "cyan"],
@@ -324,6 +330,67 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
     pu.set_date_x_ticks(ax, xaxis_label)
     pu.set_legend(ax, legend)
     ax.set(title=title, xlabel="", ylabel="Volume [mL]")
+
+    return None
+
+
+### RUN TIME ###
+
+
+def plot_run_time(days_df, ax=None, title="", legend=False, xaxis_label=True):
+    """
+    Plot the run period for hours of the day over date range in days_df
+
+    params
+    ------
+    days_df : pd.DataFrame
+        days dataframe with columns `date`, `starttime_hrs` and
+        `endtime_hrs` with dates as row index
+
+    ax : matplotlib.axes.Axes, optional
+        axes to plot on, if None, a new figure is created
+    title : str, optional
+    legend : bool (optional, default = False)
+        whether to include the legend or not
+    xaxis_label : bool (optional, default = True)
+        whether to include the xaxis label or not, this is useful when
+        plotting multiple plots on the same figure
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    if "endtime_hrs" not in days_df.columns:
+        return None
+
+    for _, row in days_df.iterrows():
+        duration = row["endtime_hrs"] - row["starttime_hrs"]
+        ax.bar(
+            row["date"],
+            duration,
+            bottom=row["starttime_hrs"],
+            width=0.8,
+            align="center",
+            color="azure",
+            edgecolor="black",
+            hatch="//",
+        )
+        ax.text(
+            row["date"],
+            row["starttime_hrs"] - 0.1,  # position the text slightly above the bar
+            f"{duration:.2f}",
+            ha="center",  # horizontal alignment
+            va="bottom",  # vertical alignment
+            fontsize=10,  # font size
+            color="black",  # text color
+        )
+
+    # aesthetics
+    pu.set_date_x_ticks(ax, xaxis_label)
+    _ = ax.set(ylabel="Time of Day (Hrs)", xlabel="", title=title)
+    ax.set_ylim(days_df.starttime_hrs.min() - 1, days_df.endtime_hrs.max() + 1)
+    ax.set_ylim(days_df.starttime_hrs.min() - 1, days_df.endtime_hrs.max() + 1)
+    ax.invert_yaxis()
 
     return None
 
