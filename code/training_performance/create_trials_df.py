@@ -5,6 +5,7 @@ Description: Functions for creating a trial-level dataframe
 from the DataJoint Sessions.protocol_data blob to be used
 in plotting and analysis of animal training performance. 
 """
+
 import datajoint as dj
 import numpy as np
 import pandas as pd
@@ -69,14 +70,20 @@ def create_trials_df_from_dj(
             continue
 
         # n session long items are fetched together
-        sess_ids, dates, trials = (
+        sess_ids, dates, trials, protocols = (
             bdata.Sessions & subject_session_key & date_min_key & date_max_key
-        ).fetch("sessid", "sessiondate", "n_done_trials")
+        ).fetch("sessid", "sessiondate", "n_done_trials", "protocol")
 
         ## Format
         animals_trials_df.append(
             create_animals_trials_df(
-                animal_id, protocol_blobs, sess_ids, dates, trials, verbose=verbose
+                animal_id,
+                protocol_blobs,
+                sess_ids,
+                dates,
+                trials,
+                protocols,
+                verbose=verbose,
             )
         )
 
@@ -86,11 +93,11 @@ def create_trials_df_from_dj(
 
 
 def create_animals_trials_df(
-    animal_id, protocol_blobs, sess_ids, dates, trials, verbose=True
+    animal_id, protocol_blobs, sess_ids, dates, trials, protocols, verbose=True
 ):
     """
     Create a trial-level dataframe from the DataJoint Sessions.protocol_data blob
-    given additional Session information (ids, dates, trials).
+    given additional Session information (ids, dates, trials, protocol name).
 
     This function is a wraper for the following functions:
         - drop_empty_sessions
@@ -111,6 +118,8 @@ def create_animals_trials_df(
         list of session dates for each session in protocol_blobs
     trials : list of ints
         list of number of trials for each session in protocol_blobs
+    protocols : list of strs
+        list of the protocol being actively run
     verbose : bool (optional, default = True)
         whether to print out load number and date range
         for each animal
@@ -129,7 +138,9 @@ def create_animals_trials_df(
 
     protocol_dfs = convert_to_dfs(protocol_dicts, sess_ids)
 
-    append_and_clean_protocol_dfs(protocol_dfs, animal_id, sess_ids, dates, trials)
+    append_and_clean_protocol_dfs(
+        protocol_dfs, animal_id, sess_ids, dates, trials, protocols
+    )
 
     animals_trials_df = pd.concat(protocol_dfs, ignore_index=True)
 
@@ -210,7 +221,7 @@ def convert_to_dfs(dicts, sess_ids):
     return dfs
 
 
-def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
+def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, protocols):
     """
     Function that takes a protocol_df for a session and cleans
     it to correct for data types and format per JRBs preferences
@@ -224,7 +235,11 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
     sess_id : str
         id from bdata corresponding to session
     date : datetime object or str
-        date corresponding to session
+        date corresponding to
+    trials : int
+        number of trials in the session
+    protocol : str
+        protocol name for the session
 
     modifies
     -------
@@ -232,10 +247,12 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         (1) crashed trials removed
         (2) animal, date, session id columns added
         (3) sa/sb converted from Hz to kHz
-        (4) certain columns converted to ints & categories
+        (4) certain columns converted to ints & categories [no longer updated Jul 2024]
 
     """
-    for df, sess_id, date, n_done_trials in zip(dfs, sess_ids, dates, trials):
+    for df, sess_id, date, n_done_trials, protocol in zip(
+        dfs, sess_ids, dates, trials, protocols
+    ):
         # sometimes lengths can get one off depending on when the
         # session ends in the PNT cycle, clipping the last row if needed
         if len(df) == n_done_trials + 1:
@@ -251,6 +268,7 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         df.insert(1, "animal_id", [animal_id] * n_done_trials)
         df.insert(2, "date", [date] * n_done_trials)
         df.insert(3, "sess_id", [sess_id] * n_done_trials)
+        df.insert(4, "protocol", [protocol] * n_done_trials)
 
         # create a unique pair column indicating sa,sb (eg. "12-3")
         df["sound_pair"] = df.apply(
@@ -265,6 +283,11 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         # so no longer needed after this
         df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
 
+        # !Note have stopped updating this code after DMS2 due to the read
+        # !in and plots having no issues. If a plot needs a different dtype,
+        # !then I take care of it within the plotting function. This allows
+        # !the code to be more flexible for multiple protocols.
+
         # convert data types (matlab makes everything a float) and utilize
         # pyarrow backend
         string_columns = ["animal_id", "first_spoke", "go_type"]
@@ -274,11 +297,8 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         df[int_columns] = df[int_columns].astype("uint64[pyarrow]")
 
         bool_columns = [
-            "valid_early_spoke",
-            "is_match",
             "stimuli_on",
             "give_use",
-            "replay_on",
             "give_water_not_drunk",
             "crash_hist",
         ]
@@ -287,8 +307,6 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials):
         category_columns = [
             "sess_id",
             "sound_pair",
-            # "first_spoke",
-            # "sides",
             "SMA_set",
             "go_type",
             "give_type_set",
