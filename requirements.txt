@@ -1,0 +1,14 @@
+globus-cli
+scipy
+python-dotenv
+element-calcium-imaging
+scanreader @ git+https://github.com/atlab/scanreader.git
+pandas
+numpy
+astropy
+bitstring
+datajoint
+seaborn
+matplotlib
+pyarrow
+openpyxl

@@ -12,7 +12,7 @@ dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 from create_trials_df import create_trials_df_from_dj
 from create_days_df import create_days_df_from_dj, lazy_load_days_summary_df
 
-from multiplot_summaries import *
+from code.training_performance.summary_plots import *
 
 import plot_utils as pu
 import dj_utils as dju

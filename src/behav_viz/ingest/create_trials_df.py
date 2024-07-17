@@ -10,7 +10,7 @@ import datajoint as dj
 import numpy as np
 import pandas as pd
 
-import dj_utils as dju
+import behav_viz.ingest.dj_utils as dju
 
 dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 
@@ -293,8 +293,10 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
         string_columns = ["animal_id", "first_spoke", "go_type"]
         df[string_columns] = df[string_columns].astype("string[pyarrow]")
 
-        int_columns = ["trial", "sess_id", "result", "hits", "violations", "temperror"]
+        int_columns = ["trial", "sess_id", "hits", "violations", "temperror"]
         df[int_columns] = df[int_columns].astype("uint64[pyarrow]")
+
+        df["result"] = df["result"].astype("int")
 
         bool_columns = [
             "stimuli_on",
@@ -309,7 +311,7 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
             "sound_pair",
             "SMA_set",
             "go_type",
-            "give_type_set",
-            "give_type_imp",
+            # "give_type_set",
+            # "give_type_imp",
         ]
         df[category_columns] = df[category_columns].astype("category")

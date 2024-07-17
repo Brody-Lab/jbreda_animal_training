@@ -7,11 +7,11 @@ performance within a day across trials
 
 import pandas as pd
 import seaborn as sns
-import plot_utils as pu
 import numpy as np
 import matplotlib.pyplot as plt
 
-from create_days_df import create_days_df_from_dj  # for water plotting
+from behav_viz.visualize import plot_utils as pu
+from behav_viz.ingest.create_days_df import create_days_df_from_dj  # for water plot
 
 
 #### RESPONSE INFO ####
@@ -463,7 +463,8 @@ def plot_npokes_summary(trials_df, ax, title=""):
     )
 
     # aesthetics
-    ax.set_xticklabels(sides)
+    ax.set_xticks([0, 1, 2])  # Set the positions of the ticks
+    ax.set_xticklabels(sides)  # Set the tick labels
     ax.set(ylabel="N pokes", xlabel="", title=title)
 
     return None
@@ -1120,6 +1121,7 @@ def plot_hit_rate_by_give(trials_df, ax=None, title=""):
     hit_rate_by_give = trials_df.groupby("give_type_imp").hits.mean().reset_index()
     sns.barplot(
         x="give_type_imp",
+        hue="give_type_imp",
         y="hits",
         data=hit_rate_by_give,
         ax=ax,
@@ -1513,6 +1515,7 @@ def plot_pro_anti_count_summary(trials_df, ax=None):
         x="pro_anti_block_type",
         y="count",
         dodge=False,
+        hue="pro_anti_block_type",
         palette="husl",
         order=["pro", "anti"],
         ax=ax,
@@ -1545,6 +1548,7 @@ def plot_hit_rate_by_pro_anti(trials_df, ax=None):
     sns.barplot(
         data=trials_df.dropna(subset=["hits"]),  # need to drop nan for barplot
         x="pro_anti_block_type",
+        hue="pro_anti_block_type",
         y="hits",
         palette="husl",
         order=["pro", "anti"],
