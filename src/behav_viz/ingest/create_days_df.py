@@ -52,10 +52,12 @@ def create_days_df_from_dj(
     """
 
     # create keys
-    SessAgg_df = fetch_session_agg_date_data(animal_ids, date_min, date_max)
+    SessAgg_df = fetch_session_agg_date_data(
+        animal_ids, date_min, date_max, verbose=verbose
+    )
 
     updated_df = create_and_merge_todays_data_if_needed(
-        SessAgg_df, animal_ids, date_max, verbose=False
+        SessAgg_df, animal_ids, date_max, verbose=verbose
     )
 
     if not len(updated_df) == 0:
@@ -79,6 +81,7 @@ def fetch_session_agg_date_data(
     animal_ids: list,
     date_min: str = "2000-01-01",
     date_max: str = "2030-01-01",
+    verbose: bool = False,
 ) -> pd.DataFrame:
     """
     Function to fetch day level summary data from SessionAggDate table
@@ -96,6 +99,8 @@ def fetch_session_agg_date_data(
         minimum date to query in YYYY-MM-DD format, e.g. "2022-01-04"
     date_max : str (optional, default = "2030-01-01")
         maximum date to query in YYYY-MM-DD format, e.g. "2022-01-04"
+    verbose : bool (optional, default = False)
+        whether to print out verbose statements with fetching stats
     """
 
     # create keys
@@ -111,9 +116,10 @@ def fetch_session_agg_date_data(
             f"No data found on SessionAggDate for {animal_ids} between {date_min} and {date_max}"
         )
     else:
-        print(
-            f"Fetched data from SessionAggDate table from {SessAgg_df.sessiondate.min()} to {SessAgg_df.sessiondate.max()}  "
-        )
+        if verbose:
+            print(
+                f"Fetched data from SessionAggDate table from {SessAgg_df.sessiondate.min()} to {SessAgg_df.sessiondate.max()}  "
+            )
     return SessAgg_df
 
 
@@ -161,10 +167,7 @@ def create_and_merge_todays_data_if_needed(
     elif today > SessAgg_df.sessiondate.max() and today <= max_date_queried:
         if verbose:
             print(
-                f"""
-                Last date on the database is {SessAgg_df.sessiondate.max()} but user is querying data
-                for {today}. Attempting to manually aggregate today's data
-                """
+                f"\tLast date on the database is {SessAgg_df.sessiondate.max()} but user is querying data \n\tfor {today}. Attempting to manually aggregate today's data."
             )
 
         todays_df = dju.aggregate_todays_data(animal_ids)
@@ -176,11 +179,13 @@ def create_and_merge_todays_data_if_needed(
 
     # Add today's data to the database if it exists
     if not len(todays_df) == 0:
-        print(f"Today's, {today}, data exits and has been added to SessionAggDate.")
+        if verbose:
+            print(f"Today's, {today}, data exits and has been added to SessionAggDate.")
         aggregated_df = pd.concat([SessAgg_df, todays_df], axis=0, ignore_index=True)
         return aggregated_df
     else:
-        print(f"No new data from today, {today} to add to SessionAggDate.")
+        if verbose:
+            print(f"No new data from today, {today} to add to SessionAggDate.")
         return SessAgg_df
 
 
