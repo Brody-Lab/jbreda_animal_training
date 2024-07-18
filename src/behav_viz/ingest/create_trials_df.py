@@ -145,7 +145,7 @@ def create_animals_trials_df(
     animals_trials_df = pd.concat(protocol_dfs, ignore_index=True)
 
     print(
-        f"fetched {len(dates)} sessions for {animal_id} between {min(dates)} and {max(dates)}"
+        f"Fetched {len(dates)} dates from Sessions table from {min(dates)} to {max(dates)} for {animal_id}\n"
     )
 
     return animals_trials_df
@@ -253,6 +253,7 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
     for df, sess_id, date, n_done_trials, protocol in zip(
         dfs, sess_ids, dates, trials, protocols
     ):
+        # print(f"Working on session {sess_id} for {animal_id} on {date}")
         # sometimes lengths can get one off depending on when the
         # session ends in the PNT cycle, clipping the last row if needed
         if len(df) == n_done_trials + 1:
