@@ -302,6 +302,7 @@ def aggregate_todays_sessions(animal_ids: list = None) -> pd.DataFrame:
         "percent_violations",
         "right_correct",
         "left_correct",
+        "foodpuck",
     ]
 
     # Query the data
@@ -314,12 +315,6 @@ def aggregate_todays_sessions(animal_ids: list = None) -> pd.DataFrame:
         todays_sessions["sessiondate"] = pd.to_datetime(
             todays_sessions["sessiondate"], format="%Y-%m-%d"
         )
-        # todays_sessions["starttime"] = todays_sessions["starttime"].apply(
-        #     lambda x: (datetime.datetime.min + x.to_pytimedelta()).time()
-        # )
-        # todays_sessions["endtime"] = todays_sessions["endtime"].apply(
-        #     lambda x: (datetime.datetime.min + x.to_pytimedelta()).time()
-        # )
         todays_sessions["total_correct_n"] = (
             todays_sessions["total_correct"] * todays_sessions["n_done_trials"]
         )
@@ -346,6 +341,7 @@ def aggregate_todays_sessions(animal_ids: list = None) -> pd.DataFrame:
                 "percent_violations_n": [("percent_violations", "sum")],
                 "right_correct_n": [("right_correct", "sum")],
                 "left_correct_n": [("left_correct", "sum")],
+                "foodpuck": [("foodpuck", "mean")],
             }
         )
 
