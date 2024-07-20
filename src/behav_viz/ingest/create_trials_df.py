@@ -10,7 +10,7 @@ import datajoint as dj
 import numpy as np
 import pandas as pd
 
-import behav_viz.ingest.dj_utils as dju
+import behav_viz.utils.dj_utils as dju
 
 dj.blob.use_32bit_dims = True  # necessary for pd.blob read
 

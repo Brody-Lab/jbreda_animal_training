@@ -10,7 +10,7 @@ import datajoint as dj
 import numpy as np
 import pandas as pd
 import datetime
-import behav_viz.ingest.dj_utils as dju
+import behav_viz.utils.dj_utils as dju
 from pathlib import Path
 import os
 

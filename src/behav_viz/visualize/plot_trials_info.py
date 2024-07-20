@@ -10,7 +10,7 @@ import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
 
-from behav_viz.visualize import plot_utils as pu
+from behav_viz.utils import plot_utils as pu
 from behav_viz.ingest.create_days_df import create_days_df_from_dj  # for water plot
 
 

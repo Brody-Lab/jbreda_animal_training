@@ -10,7 +10,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-from behav_viz.visualize import plot_utils as pu
+from behav_viz.utils import plot_utils as pu
 
 # TODO change to import plot_utils as pu and add into below
 #  TODO move plots from `DMS_multiday_plots` to here and update df to be trials_df
@@ -193,7 +193,7 @@ def get_baseline_mass(days_df):
         days dataframe with `animal_id` column
     """
 
-    from behav_viz.ingest.dir_utils import ANIMAL_TABLE_PATH
+    from behav_viz.utils.dir_utils import ANIMAL_TABLE_PATH
 
     animal_id = days_df.animal_id.unique()[0]
     animal_table = pd.read_excel(ANIMAL_TABLE_PATH)
