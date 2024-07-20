@@ -256,6 +256,13 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
         # print(f"Working on session {sess_id} for {animal_id} on {date}")
         # sometimes lengths can get one off depending on when the
         # session ends in the PNT cycle, clipping the last row if needed
+        if (
+            sess_id == 963427
+        ):  # For R010, session 963427 is from the homepod and causes issues
+            continue
+
+        print(sess_id)
+
         if len(df) == n_done_trials + 1:
             df.drop(df.tail(1).index, inplace=True)
 
@@ -282,6 +289,7 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
 
         # any negative cpokes should be nans (matlab code updated Aug 2024)
         # so no longer needed after this
+        df["cpoke_dur"] = df["cpoke_dur"].astype("Float64")
         df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
 
         # !Note have stopped updating this code after DMS2 due to the read
