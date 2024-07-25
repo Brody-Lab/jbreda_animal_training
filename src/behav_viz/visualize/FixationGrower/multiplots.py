@@ -37,8 +37,7 @@ def over_days_summary(animal_id, animal_days_df, animal_trials_df):
         JJJKKKLLL
         MMMNNNOOO
         """
-    letters = list(set(layout.replace("\n", "").replace(" ", "")))
-    letters.sort()
+    letters = sorted(list(set(layout.replace("\n", "").replace(" ", ""))))
     bar_plots = list("CEIL")  # manual input axes with bar plots
     bottom_row = letters[-3:]
 
@@ -49,10 +48,6 @@ def over_days_summary(animal_id, animal_days_df, animal_trials_df):
     # determine training stage info
     current_stage = animal_trials_df.stage.iloc[-1]
     current_sma = animal_trials_df.SMA_set.iloc[-1]
-
-    letters = list(set(layout.replace("\n", "").replace(" ", "")))
-    bar_plots = list("CEIL")  # manual input axes with bar plots
-    bottom_row = letters[-3:]
 
     ## ROW 1
     plot_trials(animal_days_df, ax_dict["A"], title="Trials", legend=True)
