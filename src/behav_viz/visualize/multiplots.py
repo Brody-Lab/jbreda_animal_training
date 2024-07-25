@@ -1,7 +1,8 @@
 """
 Author: Jess Breda
 Date: July 17, 2024
-Description: shared multi-plots across protocols.
+Description: functions to make multiplots that
+can be shared across protocols.
 """
 
 from behav_viz.visualize.plot_days_info import *

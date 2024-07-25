@@ -11,6 +11,7 @@ from behav_viz.visualize.plot_days_info import *
 from behav_viz.visualize.plot_trials_info import *
 
 from behav_viz.visualize import DMS2
+from behav_viz.visualize import FixationGrower
 
 
 ######################
@@ -36,11 +37,13 @@ def single_day_summaries(trials_df, figures_path, save_out=True, overwrite=False
         is_fixation_protocol = "Fixation" in trials_df.protocol.iloc[-1]
 
         if is_dms_protocol:
-            DMS2.single_day_multiplots.single_day_summary(
+            DMS2.multiplots.single_day_summary(
                 sub_df, figures_path, save_out=save_out, overwrite=overwrite
             )
         elif is_fixation_protocol:
-            pass
+            DMS2.multiplots.single_day_summary(
+                sub_df, figures_path, save_out=save_out, overwrite=overwrite
+            )
         else:
             raise ValueError("Protocol not recognized")
 
@@ -59,17 +62,17 @@ def over_days_summaries(animal_id, days_df, trials_df):
         is_fixation_protocol = "Fixation" in trials_df.protocol.iloc[-1]
 
         if is_dms_protocol:
-            if current_stage > 12:
-                DMS2.over_days_multiplots.over_days_summary_pre_pro_anti(
+            if current_stage < 12:
+                DMS2.multiplots.over_days_summary_pre_pro_anti(
                     animal_id, animal_days_df, animal_trials_df
                 )
             else:
-                DMS2.over_days_multiplots.over_days_summary_pro_anti(
+                DMS2.multiplots.over_days_summary_pro_anti(
                     animal_id, animal_days_df, animal_trials_df
                 )
 
         if is_fixation_protocol:
             # TODO implement logic here! this is just a placeholder
-            DMS2.over_days_multiplots.over_days_summary_pre_pro_anti(
+            FixationGrower.multiplots.over_days_summary(
                 animal_id, animal_days_df, animal_trials_df
             )
