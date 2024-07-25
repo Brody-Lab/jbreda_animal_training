@@ -8,6 +8,10 @@ can be shared across protocols.
 from behav_viz.visualize.plot_days_info import *
 from behav_viz.visualize.plot_trials_info import *
 
+######################################################################################
+#########                        SINGLE DAY PLOTS                            #########
+######################################################################################
+
 
 def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
     """
@@ -31,6 +35,7 @@ def multiplot_spoke_lg(trials_df, save_out=False, save_path=None):
         JJJKL
         MMMNN
     """
+
     fig = plt.figure(constrained_layout=True, figsize=(20, 20))
 
     plt.suptitle(
