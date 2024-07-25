@@ -6,6 +6,9 @@ Description: Plotting utilities for training performance
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+import pandas as pd
+import matplotlib.axes
+from typing import Dict, List
 
 
 def make_fig(dims=None):
@@ -44,15 +47,68 @@ def identify_axes(ax_dict, fontsize=48):
 ### Axis utilities ###
 
 
+def adjust_mosaic_axes(
+    ax_dict: Dict[str, matplotlib.axes.Axes],
+    letters: List[str],
+    bar_plots: List[str],
+    bottom_row: List[str],
+    animal_days_df: pd.DataFrame,
+) -> None:
+    """
+    Adjusts the axes of a mosaic plot based on the provided parameters.
+    Such that the x-axis is aligned for all plots and the bottom row
+    has date labels rotated 45 degrees.
+
+    This is written because sharex=True does not work well when you have
+    pandas bar plots with date labels (like categories) paired with other
+    plots.
+
+    params
+    ------
+    ax_dict (Dict[str, matplotlib.axes.Axes]):
+        Dictionary mapping axis labels to matplotlib Axes objects.
+    letters (List[str]):
+        List of axis labels to adjust.
+    bar_plots (List[str]):
+        List of axis labels that correspond to bar plots.
+    bottom_row (List[str]):
+        List of axis labels that are in the bottom row of the plot.
+    animal_days_df (pd.DataFrame):
+        DataFrame containing date information for the x-axis adjustments.
+
+    !note have tried to make bar plots have range of all dates from min
+    !to max, but they do not properly fill the date. better to only plot the
+    !use that are present in the data for the xlim.
+    """
+
+    for ax in letters:
+        if ax in bar_plots:
+            date_labels = animal_days_df["date"].unique()
+            ax_dict[ax].set_xticks(range(len(date_labels)))
+
+            if ax in bottom_row:
+                ax_dict[ax].set_xticklabels(
+                    [d.strftime("%Y-%m-%d") for d in date_labels], rotation=45
+                )
+        else:
+            min_date = animal_days_df["date"].min() - pd.Timedelta(days=1)
+            max_date = animal_days_df["date"].max() + pd.Timedelta(days=1)
+
+            ax_dict[ax].set_xlim(min_date, max_date)
+            if ax in bottom_row:
+                ax_dict[ax].tick_params(axis="x", rotation=45)
+
+        if ax not in bottom_row:
+            ax_dict[ax].set_xticklabels([])
+
+
 def set_date_x_ticks(ax, xaxis_label):
     "Quick fx for rotating xticks on date axis using ax object (not plt.)"
 
     if xaxis_label:
-        ticks = ax.get_xticks()
-        ax.set_xticks(ticks)
-        ax.set_xticklabels(ax.get_xticklabels(), ha="right", rotation=45)
+        ax.tick_params(axis="x", rotation=45)
     else:  # turn off the labels
-        ax.set_xticklabels([])
+        ax.tick_params(axis="x", labelbottom=False)
 
 
 def set_legend(ax, legend):
