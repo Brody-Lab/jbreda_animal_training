@@ -46,16 +46,14 @@ def plot_multiday_summary(animal_id, days_df):
 
     ## Plot
     # left column
-    plot_trials(animal_df, ax_dict["A"], title="Trials", legend=True, xaxis_label=False)
-    plot_performance(animal_df, ax_dict["C"], title="Performance", xaxis_label=False)
-    plot_side_bias(animal_df, ax_dict["E"], title="Side Bias", xaxis_label=True)
+    plot_trials(animal_df, ax_dict["A"], title="Trials", legend=True)
+    plot_performance(animal_df, ax_dict["C"], title="Performance")
+    plot_side_bias(animal_df, ax_dict["E"], title="Side Bias")
 
     # right column
-    plot_mass(animal_df, ax_dict["B"], title="Mass", xaxis_label=False)
-    plot_water_restriction(
-        animal_df, ax_dict["D"], title="Water", legend=False, xaxis_label=False
-    )
-    plot_rig_tech(animal_df, ax_dict["F"], title="Rig/Tech", xaxis_label=True)
+    plot_mass(animal_df, ax_dict["B"], title="Mass")
+    plot_water_restriction(animal_df, ax_dict["D"], title="Water", legend=False)
+    plot_rig_tech(animal_df, ax_dict["F"], title="Rig/Tech")
 
     return None
 
@@ -66,7 +64,7 @@ def plot_multiday_summary(animal_id, days_df):
 
 
 ### TRIALS ###
-def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
+def plot_trials(days_df, ax=None, title="", legend=False, rotate_x_labels=False):
     """
     Plot the number of trials completed and trial rate over
     date range in d_days_df
@@ -77,12 +75,17 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
         days dataframe with columns `date`, `n_done_trials`, `trial_rate` with
         dates as row index
     ax : matplotlib.axes.Axes
-        axes to plot on
+        axes to plot on (optional, default = None)
     title : str (optional, default = "")
         title for the plot
     legend : bool (optional, default = False)
         whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     trial_melt = days_df.melt(
         id_vars=["date"],
         value_name="trial_var",
@@ -97,8 +100,9 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
         ax=ax,
     )
 
-    # aethetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+
     pu.set_legend(ax, legend)
     _ = ax.set(ylabel="Count || Per Hr", xlabel="", title=title)
     ax.set_ylim(bottom=0)
@@ -110,19 +114,38 @@ def plot_trials(days_df, ax, title="", legend=False, xaxis_label=True):
 ### STAGE ###
 def plot_stage(
     trials_df,
-    ax,
+    ax=None,
     title="",
     group="date",
-    xaxis_label=True,
-    aesthetics=True,
     ylim=None,
+    rotate_x_labels=False,
     **kwargs,
 ):
     """
+    Plot stage over group variable.
+
     Having the group variable allows you to group by other
     things like "start_date" if you want to try and make a plot
     with multiple animals that started at different times.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `stage` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    group : str (optional, default = "date")
+        column to group by for x axis (e.g. "date", "start_date")
+    ylim : tuple (optional, default = None)
+        y-axis limits
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=trials_df.groupby(group).stage.mean(),
         drawstyle="steps-post",
@@ -131,11 +154,10 @@ def plot_stage(
         **kwargs,
     )
 
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
-        ax.grid(alpha=0.5)
-    else:
-        ax.grid(alpha=0.5)
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+
     if ylim:
         ylim = ylim
         yticks = range(ylim[0], ylim[1] + 1)
@@ -144,16 +166,17 @@ def plot_stage(
         ylim = (0, max_stage + 1)
         yticks = range(max_stage + 1)
 
-        ax.set(
-            ylabel="Stage #",
-            title=title,
-            ylim=ylim,
-            yticks=yticks,
-        )
+    ax.set(
+        ylabel="Stage #",
+        title=title,
+        ylim=ylim,
+        yticks=yticks,
+    )
+    ax.grid()
 
 
 ### MASS ###
-def plot_mass(days_df, ax, title="", xaxis_label=True):
+def plot_mass(days_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the mass of the animal over date range in days_df. If it's a mouse,
     will also plot mass relative to baseline as a percent.
@@ -162,19 +185,24 @@ def plot_mass(days_df, ax, title="", xaxis_label=True):
     ------
     days_df : pd.DataFrame
         days dataframe with columns `date`, `mass` with dates as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str (optional, default = "")
         title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     baseline_mass = get_baseline_mass(days_df)
 
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     if baseline_mass is np.nan:
-        plot_raw_mass(days_df, ax, title=title, xaxis_label=xaxis_label)
+        plot_raw_mass(days_df, ax, title=title, rotate_x_labels=rotate_x_labels)
     else:
         plot_raw_and_relative_mass(
-            days_df, baseline_mass, ax, title=title, xaxis_label=xaxis_label
+            days_df, baseline_mass, ax, title=title, rotate_x_labels=rotate_x_labels
         )
 
     return None
@@ -182,7 +210,7 @@ def plot_mass(days_df, ax, title="", xaxis_label=True):
 
 def get_baseline_mass(days_df):
     """
-    Deterrmine if animal is a mouse or rat, so baseline mass plot
+    Determine if animal is a mouse or rat, so baseline mass plot
     can be determined. This assumes you have an "ANIMALS_TABLE",
     which is located in the data directory. I manually enter high-level
     animal info here that's not easy to access/store on datajoint.
@@ -197,19 +225,19 @@ def get_baseline_mass(days_df):
 
     animal_id = days_df.animal_id.unique()[0]
     animal_table = pd.read_excel(ANIMAL_TABLE_PATH)
-    species = animal_table.query("animal_id == @animal_id").species.iloc[0]
+    # species = animal_table.query("animal_id == @animal_id").species.iloc[0]
 
-    if species == "mouse":
-        baseline_mass = animal_table.query(
-            "animal_id == @animal_id"
-        ).baseline_mass.iloc[0]
-    else:
-        baseline_mass = np.nan
+    # if species == "mouse":
+    #     baseline_mass = animal_table.query(
+    #         "animal_id == @animal_id"
+    #     ).baseline_mass.iloc[0]
+    # else:
+    baseline_mass = np.nan
 
     return baseline_mass
 
 
-def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
+def plot_raw_mass(days_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the raw mass in grams over date range in days_df.
 
@@ -221,18 +249,25 @@ def plot_raw_mass(days_df, ax, title="", xaxis_label=True):
         axes to plot on
     title : str (optional, default = "")
         title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(data=days_df, x="date", y="mass", marker="o", color="k", ax=ax)
 
-    # aethetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.grid(alpha=0.5)
     ax.set(ylabel="Mass [g]", xlabel="", title=title)
 
     return None
 
 
-def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label=True):
+def plot_raw_and_relative_mass(
+    days_df, baseline_mass, ax=None, title="", rotate_x_labels=False
+):
     """
     Plot the raw & relative mass of an animal over the
     date range in days_df. The axes are locked to each other
@@ -245,10 +280,12 @@ def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label
     baseline_mass : float
         baseline mass of the mouse in grams, calculated however
         you like bust most easily by get_baseline_mass()
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str (optional, default = "")
         title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     def _mass_to_relative(mass, baseline_mass):
@@ -266,6 +303,9 @@ def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label
         )
         ax_r.figure.canvas.draw()
 
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     # make the baseline mass on the right y-axis always match
     # the raw mass on the left y-axis
     ax_r = ax.twinx()
@@ -278,15 +318,23 @@ def plot_raw_and_relative_mass(days_df, baseline_mass, ax, title="", xaxis_label
         ylim=(baseline_mass * 0.75, baseline_mass),
         ylabel="Mass [g]",
     )
-    ax_r.set(ylabel="Relative Mass [%]")
+    ax_r.set(ylabel="Relative Mass [%]", title=title)
+
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.grid()
-    pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
 
 ### WATER ###
-def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True):
+def plot_water_restriction(
+    days_df,
+    ax=None,
+    title="",
+    legend=True,
+    rotate_x_labels=False,
+):
     """
     Plot the rig, pub and restriction target volume over date
     range in days_df
@@ -297,14 +345,13 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
         days dataframe with columns `date`, `rig_volume`, `pub_volume`
         and `volume_target` with dates as row index
     ax : matplotlib.axes.Axes
-        axes to plot on
+        axes to plot on (optional, default = None)
     title : str (optional, default = "")
         title for the plot
     legend : bool (optional, default = True)
         whether to include the legend or not
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     # stacked bar chart only works with df.plot (not seaborn)
@@ -315,6 +362,7 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
     else:
         date_col = "date"
     columns_to_plot = [date_col, "rig_volume", "pub_volume"]
+
     days_df[columns_to_plot].plot(
         x=date_col,
         kind="bar",
@@ -323,14 +371,16 @@ def plot_water_restriction(days_df, ax, title="", legend=True, xaxis_label=True)
         ax=ax,
     )
 
+    if ax is None:
+        fig, ax = pu.make_fig()
     # iterate over dates to plot volume target black line
     for i, row in days_df.reset_index().iterrows():
         ax.hlines(y=row["volume_target"], xmin=i - 0.35, xmax=i + 0.35, color="black")
-
-    # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
     pu.set_legend(ax, legend)
     ax.set(title=title, xlabel="", ylabel="Volume [mL]")
+
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     return None
 
@@ -397,7 +447,7 @@ def plot_run_time(days_df, ax=None, title="", legend=False, xaxis_label=True):
 
 
 ### RIG/TECH ###
-def plot_rig_tech(days_df, ax, title="", legend=False, xaxis_label=True):
+def plot_rig_tech(days_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the tech and rig id over date range in days_df
 
@@ -406,20 +456,23 @@ def plot_rig_tech(days_df, ax, title="", legend=False, xaxis_label=True):
     days_df : pd.DataFrame
         days dataframe with columns `date`, `rigid` and `tech` with
         dates as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str (optional, default = "")
         title for the plot
-    legend : bool (optional, default = False)
-        whether to include the legend or not
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(data=days_df, x="date", y="rigid", marker="o", color="gray", ax=ax)
     sns.lineplot(data=days_df, x="date", y="tech", marker="o", color="purple", ax=ax)
 
-    pu.set_date_x_ticks(ax, xaxis_label)
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     _ = ax.set(ylabel="Tech || Rig", xlabel="", title=title)
     ax.grid()
 
@@ -427,7 +480,7 @@ def plot_rig_tech(days_df, ax, title="", legend=False, xaxis_label=True):
 
 
 ### PERFORMANCE ###
-def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
+def plot_performance(days_df, ax=None, title="", legend=True, rotate_x_labels=False):
     """
     Plot the hit and violation rate over date range in days_df
 
@@ -436,16 +489,18 @@ def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
     days_df : pd.DataFrame
         days dataframe with columns `date`, `hit_rate` and `viol_rate` with
         dates as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str (optional, default = "")
         title for the plot
     legend : bool (optional, default = True)
         whether to include the legend or not
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=days_df,
         x="date",
@@ -466,7 +521,8 @@ def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     pu.set_legend(ax, legend)
     ax.grid(alpha=0.5)
     ax.set(ylim=(0, 1), ylabel="Perf Rate", xlabel="", title=title)
@@ -475,7 +531,12 @@ def plot_performance(days_df, ax, title="", legend=True, xaxis_label=True):
 
 
 def plot_performance_bars(
-    trials_df, ax, plot_type="counts", title="", legend=False, xaxis_label=True
+    trials_df,
+    ax=None,
+    plot_type="counts",
+    title="",
+    legend=False,
+    rotate_x_labels=False,
 ):
     """
     Plot the count or rate of results in a stacked bar over date
@@ -486,16 +547,20 @@ def plot_performance_bars(
     trials_df : pandas.DataFrame
         trials dataframe with columns `date` and `result`
         with trials as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
+    plot_type : str, (default = "counts")
+        whether to plot counts or rates
     title : str, (default = "")
         title of plot
     legend : bool, (default = True)
         whether to include legend or not
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool, (default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     if plot_type == "counts":
         perf_df = trials_df.groupby(["date"]).result.value_counts().unstack()
     elif plot_type == "rates":
@@ -508,29 +573,43 @@ def plot_performance_bars(
         kind="bar", stacked=True, ax=ax, color=pu.get_result_colors(perf_df.columns)
     )
 
-    pu.set_date_x_ticks(ax, xaxis_label)
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     pu.set_legend(ax, legend)
     ax.set(title=title, xlabel="", ylabel=f"Perf {plot_type}")
 
     return None
 
 
-def plot_performance_w_error(trials_df, ax, title="", legend=False, xaxis_label=True):
+def plot_performance_w_error(
+    trials_df, ax=None, title="", legend=False, rotate_x_labels=False
+):
     """
-    Plot hit, error and violation rate over date range in trials df
+    Plot the hit violation and error rate over date range in days_df
 
     params
     ------
-    trials_df :
-
-    TODO
-
+    days_df : pd.DataFrame
+        days dataframe with columns `date`, `hit_rate` `error_rate` and
+        `viol_rate` with dates as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     perf_rates_df = pd.melt(
         trials_df,
         id_vars=["date"],
         value_vars=["violation_rate", "error_rate", "hit_rate"],
     )
+
+    if ax is None:
+        fig, ax = pu.make_fig()
 
     sns.lineplot(
         data=perf_rates_df,
@@ -544,17 +623,17 @@ def plot_performance_w_error(trials_df, ax, title="", legend=False, xaxis_label=
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     pu.set_legend(ax, legend)
     ax.grid(alpha=0.5)
-    _ = ax.set(ylabel="Perf Rate", xlabel="", title=title)
-    ax.set(ylim=(0, 1))
+    _ = ax.set(ylabel="Perf Rate", xlabel="", title=title, ylim=(0, 1))
 
     return None
 
 
 ### SIDE BIAS ###
-def plot_side_bias(days_df, ax, title="", xaxis_label=True):
+def plot_side_bias(days_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the side bias over date range in days_df
 
@@ -563,14 +642,16 @@ def plot_side_bias(days_df, ax, title="", xaxis_label=True):
     days_df : pd.DataFrame
         days dataframe with columns `date` and `side_bias` with
         dates as row index, positive values = right bias
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str (optional, default = "")
         title for the plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=days_df,
         x="date",
@@ -582,20 +663,41 @@ def plot_side_bias(days_df, ax, title="", xaxis_label=True):
     ax.axhline(0, color="k", linestyle="--", zorder=1)
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.grid(alpha=0.5)
     ax.set(ylim=(-1, 1), ylabel="< - Left | Right ->", xlabel="", title=title)
 
     return None
 
 
-def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
+def plot_antibias_probs(
+    trials_df, ax=None, title="", legend=True, rotate_x_labels=False
+):
     """
-    TODO
+    Plot the left and right antibias probabilities over date range in trials_df
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `ab_l_prob` and `ab_r_prob`
+        with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+
     """
     ab_melt = trials_df.melt(
         id_vars=["date"], value_vars=["ab_l_prob", "ab_r_prob"], value_name="antibias"
     )
+
+    if ax is None:
+        fig, ax = pu.make_fig()
 
     sns.lineplot(
         data=ab_melt,
@@ -609,16 +711,36 @@ def plot_antibias_probs(trials_df, ax, title="", legend=True, xaxis_label=True):
     ax.axhline(0.5, color="k", linestyle="--", zorder=1)
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.set(title=title, xlabel="", ylabel="Prob", ylim=(0, 1))
     ax.legend(frameon=False, borderaxespad=0)
 
     return None
 
 
-def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True):
+def plot_sidebias_params(
+    trials_df, ax=None, title="", legend=False, rotate_x_labels=False
+):
     """
-    TODO
+    Plot the side bias parameters over date range in trials_df. The parameters
+    are the left and right water volumes and the antibias beta. The antibias beta
+    will have std error if beta warm up is on which means over tau trials (usually
+    defaults to 30) the beta goes from 0 to the set value.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `l_water_vol`, `r_water_vol` and
+        `ab_beta` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = False)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     sidebias_melt = trials_df.melt(
@@ -626,6 +748,10 @@ def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True
         value_name="sb_vars",
         value_vars=["l_water_vol", "r_water_vol", "ab_beta"],
     )
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.barplot(
         data=sidebias_melt,
         x="date",
@@ -637,7 +763,8 @@ def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     pu.set_legend(ax, legend)
     ax.grid(axis="y")
     _ = ax.set(title=title, xlabel="", ylabel="Value")
@@ -646,7 +773,31 @@ def plot_sidebias_params(trials_df, ax, title="", legend=False, xaxis_label=True
 
 
 ### SIDE POKE ###
-def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
+def plot_time_to_spoke(
+    trials_df, ax=None, title="", legend=True, rotate_x_labels=False
+):
+    """
+    Plot the time to the first L and R poke for each trial over
+    date range in trials_df
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `min_time_to_spoke` and `first_spoke`
+        with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=trials_df,
         x="date",
@@ -659,7 +810,8 @@ def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     pu.set_legend(ax, legend)
     ax.set(ylabel="time to spoke [s]", xlabel="", title=title, ylim=(0))
     ax.grid(alpha=0.5)
@@ -670,10 +822,26 @@ def plot_time_to_spoke(trials_df, ax, title="", legend=True, xaxis_label=True):
 ### CPOKE ###
 
 
-def plot_n_cpokes_and_multirate(trials_df, ax, title="", xaxis_label=True):
+def plot_n_cpokes_and_multirate(trials_df, ax=None, title="", rotate_x_labels=False):
     """
-    TODO
+    Plot the number of center pokes and the multi cpoke rate over
+    date range in trials_df. Not this is specific to DMS2 where
+    violation penalties aren't on.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `n_settling_ins` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=trials_df,
         x="date",
@@ -695,16 +863,36 @@ def plot_n_cpokes_and_multirate(trials_df, ax, title="", xaxis_label=True):
     )
     # aesthetics for right axis
     ax2.set(ylim=(-0.1, 1), ylabel="Multi Cpoke Rate", xlabel="")
-    pu.set_date_x_ticks(ax, xaxis_label=xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.grid()
 
     return None
 
 
-def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
+def plot_cpoke_dur_timings_pregnp(trials_df, ax=None, title="", rotate_x_labels=False):
     """
-    TODO
+    Plot the duration of the center poke and the timings of the
+    the valid and non valid center pokes over date range in trials_df
+    This is specific to the DMS2 task. For each day this will plot, the
+    average settling in duration, the average valid center poke duration
+    and the average non valid center poke duration (violation).
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `avg_settling_in`, `cpoke_dur`
+        and `violations` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=trials_df,
         x="date",
@@ -737,9 +925,11 @@ def plot_cpoke_dur_timings_pregnp(trials_df, ax, title="", xaxis_label=True):
     except:  # not enough data to plot
         pass
 
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     ax.set(ylabel="Duration [s]", xlabel="", title=title)
     ax.grid()
-    pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
@@ -796,10 +986,27 @@ def plot_avg_delay(trials_df, ax, title="", xaxis_label=True):
 
 
 def plot_trial_structure(
-    trials_df, ax, kind="bar", title="", legend=True, xaxis_label=True
+    trials_df, ax=None, kind="bar", title="", legend=True, rotate_x_labels=False
 ):
     """
-    TODO
+    Plot the trial structure over date range in trials_df. Note that this
+    assumes that the stimuli are on and playing.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `settling_in_dur`, `adj_pre_dur`,
+        `stimulus_dur`, `delay_dur`, `post_dur` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    kind : str (optional, default = "bar")
+        kind of plot to make
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     columns_to_plot = [
         "date",
@@ -814,6 +1021,10 @@ def plot_trial_structure(
     day_avgs.insert(5, "s_b", day_avgs["stimulus_dur"])
     day_avgs.rename(columns={"stimulus_dur": "s_a"}, inplace=True)
     day_avgs.columns = day_avgs.columns.str.replace("_dur", "")
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     day_avgs.plot(
         x="date",
         kind=kind,
@@ -824,7 +1035,8 @@ def plot_trial_structure(
     )
 
     # aesthetics
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
     ax.set_ylim(bottom=0)
     ax.grid(alpha=0.5, axis="y")
@@ -857,12 +1069,11 @@ def plot_trial_end_timing(
 
 def plot_performance_by_give(
     trials_df,
-    ax,
+    ax=None,
     title="",
     group="date",
-    xaxis_label=True,
     legend=True,
-    aesthetics=True,
+    rotate_x_labels=False,
 ):
     """
     generate a plot of hit rate for non-give trials
@@ -872,10 +1083,16 @@ def plot_performance_by_give(
     trials_df : pandas.DataFrame
         trials dataframe with columns `hits` and
         `give_type_imp` with trials as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str, (default = "")
         title of plot
+    group : str, (default = "date")
+        column to group by for x axis
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+
+
     """
 
     sns.lineplot(
@@ -896,6 +1113,9 @@ def plot_performance_by_give(
         .reset_index()
     )
 
+    if ax is None:
+        fig, ax = pu.make_fig()
+
     sns.lineplot(
         data=give_proportions.query("give_type_imp != 'none'"),
         x=group,
@@ -907,21 +1127,17 @@ def plot_performance_by_give(
     ax.axhline(0.6, color="gray", linestyle="--")
 
     # aethetics
-    if aesthetics:
-        _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
-        if legend:
-            ax.legend(loc="lower left")
-        else:
-            ax.legend().remove()
-        pu.set_date_x_ticks(ax, xaxis_label)
-    else:
-        _ = ax.set(title=title, ylabel="Performance", xlabel="Days in Stage 10")
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(ylabel="Proportion", xlabel="", title=title, ylim=(0, 1))
+    pu.set_legend(ax, legend)
     ax.grid(alpha=0.5)
+
     return None
 
 
 def plot_give_info_days(
-    trials_df, ax, title="", aesthetics=True, xaxis_label=True, legend=False
+    trials_df, ax=None, title="", legend=False, rotate_x_labels=False
 ):
     """
     Plot the give information across days.
@@ -931,22 +1147,21 @@ def plot_give_info_days(
     trials_df : pandas.DataFrame
         trials dataframe with columns `date` and
         `give_type_imp` with trials as row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str, (default = "")
         title of plot
-    aesthetics : bool (optional, default = True)
-        used to toggle xaxis label when subplotting
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
     legend : bool (optional, default = True)
         whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
     """
     # make the names shorter for plotting
     data = trials_df[["date", "give_type_imp"]].copy()
     mapping = {"water_and_light": "w + l", "water": "w", "light": "l", "none": "n"}
     data.give_type_imp = data.give_type_imp.replace(mapping)
+
+    if ax is None:
+        fig, ax = pu.make_fig()
 
     sns.scatterplot(
         data=data,
@@ -965,10 +1180,10 @@ def plot_give_info_days(
     )
 
     # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     _ = ax.set(title=title, ylabel="", xlabel="")
     pu.set_legend(ax, legend)
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
 
     return None
 
@@ -976,7 +1191,7 @@ def plot_give_info_days(
 ### SOUNDS ###
 
 
-def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
+def plot_sounds_info(trials_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the sound volume and duration info across days
 
@@ -986,13 +1201,12 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
         trials dataframe with columns `date` and
         `volume_multiplier` `stimulus_dur` with trials as
         row index
-    ax : matplotlib.axes.Axes
+    ax : matplotlib.axes.Axes (optional, default = None)
         axes to plot on
     title : str, (default = "")
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     # find minimum volume and stimulus dur for each day
     plot_df = (
@@ -1007,6 +1221,8 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
         .reset_index()
     )
 
+    if ax is None:
+        fig, ax = pu.make_fig()
     # plot
     sns.lineplot(
         data=plot_df,
@@ -1019,8 +1235,9 @@ def plot_sounds_info(trials_df, ax, title="", xaxis_label=True):
     )
 
     # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
     _ = ax.set(title=title, ylabel="Sound Variable Value", xlabel="")
-    pu.set_date_x_ticks(ax, True)
     ax.legend(loc="center left")
 
     return None
@@ -1033,8 +1250,7 @@ def plot_performance_by_stim_over_days(
     confidence_intervals=True,
     x_var="date",
     title="",
-    xaxis_label=True,
-    aesthetics=True,
+    rotate_x_labels=False,
 ):
     """
     Plot performance by sa, sb pair over days
@@ -1055,11 +1271,8 @@ def plot_performance_by_stim_over_days(
         variable to plot on x axis
     title : str, (default = "")
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
-    aesthetics : bool (optional, default = True)
-        used to toggle xaxis label when subplotting
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     if ax is None:
@@ -1110,9 +1323,9 @@ def plot_performance_by_stim_over_days(
     ax.axhline(0.6, color="k", linestyle="--")
     ax.legend(loc="lower left")
     ax.set(title=title, xlabel="", ylabel="Hit Rate", ylim=(0, 1))
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
-        ax.grid()
+    ax.grid()
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     return None
 
@@ -1241,8 +1454,7 @@ def plot_performance_by_pro_anti_over_days(
     confidence_intervals=True,
     x_var="date",
     title="",
-    xaxis_label=True,
-    aesthetics=True,
+    rotate_x_labels=True,
 ):
     """
     Plot performance by pro-anti over days
@@ -1264,11 +1476,8 @@ def plot_performance_by_pro_anti_over_days(
         variable to plot on x axis
     title : str, (default = "")
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
-    aesthetics : bool (optional, default = True)
-        used to toggle xaxis label when subplotting
+    rotate_x_labels : bool (optional, default = True)
+        whether to rotate the x-axis labels or not
     """
 
     if ax is None:
@@ -1323,12 +1532,12 @@ def plot_performance_by_pro_anti_over_days(
     ax.legend(loc="lower left", title="Block Type")
     ax.set(
         title=title,
-        xlabel="" if not xaxis_label else x_var,
+        xlabel="" if not rotate_x_labels else x_var,
         ylabel="Hit Rate",
         ylim=(0, 1),
     )
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     return None
 
@@ -1385,7 +1594,7 @@ def plot_stim_performance_by_pro_anti(
 
 
 def plot_n_pro_anti_blocks_days(
-    trials_df, ax=None, x_var="date", title="", xaxis_label=True, aesthetics=True
+    trials_df, ax=None, x_var="date", title="", rotate_x_labels=False
 ):
     """
     Plot the number of pro-anti blocks per day
@@ -1401,9 +1610,8 @@ def plot_n_pro_anti_blocks_days(
         variable to plot on x axis
     title : str (default='')
         title for the plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     if ax is None:
         _, ax = pu.make_fig()
@@ -1431,22 +1639,20 @@ def plot_n_pro_anti_blocks_days(
         )
 
     # aethetics
-    if aesthetics:
-        _ = ax.set(
-            ylabel="N Blocks",
-            xlabel="",
-            title=title,
-            ylim=(0, trials_df.n_blocks.max() + 1),
-        )
-        pu.set_date_x_ticks(ax, xaxis_label)
-    else:
-        ax.set(ylim=(0, trials_df.n_blocks.max() + 1))
-    # ax.grid(alpha=0.5")
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+
+    _ = ax.set(
+        ylabel="N Blocks",
+        xlabel="",
+        title=title,
+        ylim=(0, trials_df.n_blocks.max() + 1),
+    )
 
     return None
 
 
-def plot_block_switch_thresholds(trials_df, ax=None, title="", xaxis_label=True):
+def plot_block_switch_thresholds(trials_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot threshold used for switching blocks
     across days (typically for pro-anti stages)
@@ -1461,11 +1667,8 @@ def plot_block_switch_thresholds(trials_df, ax=None, title="", xaxis_label=True)
         axes to plot on
     title : str, (default=None)
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
-    legend : bool (optional, default = True)
-        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
 
 
     """
@@ -1494,7 +1697,8 @@ def plot_block_switch_thresholds(trials_df, ax=None, title="", xaxis_label=True)
     ax.grid()
     ax.legend(loc="lower left")
     _ = ax.set(title=title, xlabel="", ylabel="Switch Threshold", ylim=(0, 1))
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     return None
 
@@ -1545,7 +1749,7 @@ def plot_block_switch_days(
 
 
 def plot_min_block_size(
-    trials_df, ax=None, x_var="date", title="", xaxis_label=True, aesthetics=True
+    trials_df, ax=None, x_var="date", title="", rotate_x_labels=False
 ):
     """
     Plot the block_size parameter that is used to
@@ -1563,9 +1767,8 @@ def plot_min_block_size(
         variable to plot on x axis
     title : str (default='')
         title for the plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     if ax is None:
         _, ax = pu.make_fig()
@@ -1581,23 +1784,21 @@ def plot_min_block_size(
     )
 
     # aethetics
-    if aesthetics:
-        _ = ax.set(
-            ylabel="Min. Block Size",
-            xlabel="",
-            title=title,
-            ylim=(0, trials_df.block_size.max() + 1),
-        )
-        pu.set_date_x_ticks(ax, xaxis_label)
-    else:
-        ax.set(ylim=(0, trials_df.block_size.max() + 1))
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(
+        ylabel="Min. Block Size",
+        xlabel="",
+        title=title,
+        ylim=(0, trials_df.block_size.max() + 1),
+    )
     ax.grid(alpha=0.5)
 
     return None
 
 
 def plot_give_type_and_block_switch_days(
-    trials_df, ax=None, title="", xaxis_label=True, legend=False
+    trials_df, ax=None, title="", legend=False, rotate_x_labels=False
 ):
     """
     Plot the type of block switch and give type being used
@@ -1613,11 +1814,10 @@ def plot_give_type_and_block_switch_days(
         axes to plot on
     title : str, (default=None)
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
     legend : bool (optional, default = True)
         whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
     # make the names shorter for plotting
     data = trials_df[["date", "block_switch_type", "give_type_imp"]].copy()
@@ -1647,14 +1847,15 @@ def plot_give_type_and_block_switch_days(
     # aesthetics
     _ = ax.set(title=title, ylabel="Block Switch or Give Type", xlabel="")
     pu.set_legend(ax, legend)
-    pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     return None
 
 
-def plot_block_switch_params(trials_df, ax=None, title="", xaxis_label=False):
+def plot_block_switch_params(trials_df, ax=None, title="", rotate_x_labels=False):
     """
-    TODO
+    Plot the block switch parameters across days
 
     params
     ------
@@ -1666,19 +1867,18 @@ def plot_block_switch_params(trials_df, ax=None, title="", xaxis_label=False):
         axes to plot on
     title : str, (default=None)
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
 
     """
     if ax is None:
         _, ax = pu.make_fig()
 
-    plot_min_block_size(trials_df, ax=ax, xaxis_label=xaxis_label)
+    plot_min_block_size(trials_df, ax=ax, rotate_x_labels=rotate_x_labels)
     ax.set_label("Min Block Size")
     ax.legend(loc="upper left")
     ax2 = ax.twinx()
-    plot_block_switch_thresholds(trials_df, ax=ax2, xaxis_label=xaxis_label)
+    plot_block_switch_thresholds(trials_df, ax=ax2, rotate_x_labels=rotate_x_labels)
 
     ax2.set(
         ylabel="Perf Threshold",
@@ -1699,8 +1899,7 @@ def plot_give_delay_dur_days(
     ax=None,
     trial_subset="anti",
     title="",
-    xaxis_label=False,
-    aesthetics=True,
+    rotate_x_labels=False,
 ):
     """
     Plot the distribution of pre-give delay durations
@@ -1716,9 +1915,8 @@ def plot_give_delay_dur_days(
         axes to plot on
     title : str, (default=None)
         title of plot
-    xaxis_label : bool (optional, default = True)
-        whether to include the xaxis label or not, this is useful when
-        plotting multiple plots on the same figure
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
     """
 
     if ax is None:
@@ -1738,9 +1936,9 @@ def plot_give_delay_dur_days(
     )
 
     # aesthetics
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
-        ax.grid(alpha=0.5)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Del Dur [s]")
 
     return None
@@ -1805,9 +2003,27 @@ def plot_give_use_rate_days(
     ax=None,
     trial_subset="anti",
     title="",
-    xaxis_label=False,
-    aesthetics=True,
+    rotate_x_labels=False,
 ):
+    """
+    Function to plot the give use rate across days as measured by the
+    fraction of trials in which the give was delivered (ie no answer in the
+    give delay period).
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `pro_anti_block_type`,
+        `date`, and `give_use` with trials as row index
+    ax : matplotlib.axes.Axes, de
+        axes to plot on
+    trial_subset : str (default='anti')
+        whether to plot the pro or anti trials
+    title : str, (default=None)
+        title of plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
     if trial_subset:
         data = trials_df.query("pro_anti_block_type == @trial_subset").copy()
     else:
@@ -1837,9 +2053,9 @@ def plot_give_use_rate_days(
     )
 
     # aesthetics
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
-        ax.grid(alpha=0.5)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    ax.grid(alpha=0.5)
     _ = ax.set(title=title, xlabel="", ylabel="Give Delivered Frac", ylim=(0, 1))
 
     return None
