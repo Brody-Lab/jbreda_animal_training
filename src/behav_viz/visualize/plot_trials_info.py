@@ -666,8 +666,13 @@ def plot_cpoke_distributions(trials_df, ax, mode="settling_in", legend=False):
         ax.axvline(0, color="k")
 
         ax.axvline(0, color="k")
-        ax.axvline(data.violated_trials.mean(), color=pal[1], lw=3)
-        ax.axvline(data.valid_trials.mean(), color=pal[2], lw=3)
+
+        # below will break if valid or violated trials are all nan
+        try:
+            ax.axvline(data.violated_trials.mean(), color=pal[1], lw=3)
+            ax.axvline(data.valid_trials.mean(), color=pal[2], lw=3)
+        except:
+            pass
 
         multi_cpokes = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
         viol_rate = np.sum(trials_df.violations) / len(trials_df)
