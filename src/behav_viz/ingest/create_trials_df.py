@@ -261,8 +261,6 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
         ):  # For R010, session 963427 is from the homepod and causes issues
             continue
 
-        print(sess_id)
-
         if len(df) == n_done_trials + 1:
             df.drop(df.tail(1).index, inplace=True)
 
@@ -290,7 +288,8 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
         # any negative cpokes should be nans (matlab code updated Aug 2024)
         # so no longer needed after this
         df["cpoke_dur"] = df["cpoke_dur"].astype("Float64")
-        df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
+
+        # df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
 
         # !Note have stopped updating this code after DMS2 due to the read
         # !in and plots having no issues. If a plot needs a different dtype,
