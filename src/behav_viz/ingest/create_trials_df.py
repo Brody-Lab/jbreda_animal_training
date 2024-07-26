@@ -244,9 +244,9 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
     modifies
     -------
     protocol_df : data frame
-        (1) crashed trials removed
-        (2) animal, date, session id columns added
-        (3) sa/sb converted from Hz to kHz
+        (1) animal, date, session id, protocol columns added
+        (2) sa/sb converted from Hz to kHz
+        (3) min time to spoke computed
         (4) certain columns converted to ints & categories [no longer updated Jul 2024]
 
     """
@@ -319,7 +319,5 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
             "sound_pair",
             "SMA_set",
             "go_type",
-            # "give_type_set",
-            # "give_type_imp",
         ]
         df[category_columns] = df[category_columns].astype("category")
