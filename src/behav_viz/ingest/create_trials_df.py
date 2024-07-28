@@ -53,16 +53,29 @@ def create_trials_df_from_dj(
     animals_trials_df = []
 
     for animal_id in animal_ids:
+
+        print("animal_id", animal_id)
         ## Fetch
         subject_session_key = {"ratname": animal_id}
         date_min_key = f"sessiondate >= '{date_min}'"
         date_max_key = f"sessiondate <= '{date_max}'"
 
-        # TODO filter out empty sessions here to avoid having to do it later on
-        protocol_blobs = (
-            bdata.Sessions & subject_session_key & date_min_key & date_max_key
-        ).fetch("protocol_data", as_dict=True)
+        # bug on 2024-07-27 let to incorrect crash cleanup
+        # see commit 493b36d in Protocols
+        bad_sessions = [964578, 964576, 964552, 964551]
+        exclusion_key = f"sessid NOT IN ({', '.join(map(str, bad_sessions))})"
 
+        # TODO filter out empty sessions here to avoid having to do it later on
+        try:
+            protocol_blobs = (
+                bdata.Sessions
+                & subject_session_key
+                & date_min_key
+                & date_max_key
+                & exclusion_key
+            ).fetch("protocol_data", as_dict=True)
+        except:
+            print("!")
         if not len(protocol_blobs):
             print(
                 f"no sessions found for {animal_id} between {date_min} and {date_max}"
