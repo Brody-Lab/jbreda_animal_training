@@ -66,16 +66,15 @@ def create_trials_df_from_dj(
         exclusion_key = f"sessid NOT IN ({', '.join(map(str, bad_sessions))})"
 
         # TODO filter out empty sessions here to avoid having to do it later on
-        try:
-            protocol_blobs = (
-                bdata.Sessions
-                & subject_session_key
-                & date_min_key
-                & date_max_key
-                & exclusion_key
-            ).fetch("protocol_data", as_dict=True)
-        except:
-            print("!")
+
+        protocol_blobs = (
+            bdata.Sessions
+            & subject_session_key
+            & date_min_key
+            & date_max_key
+            & exclusion_key
+        ).fetch("protocol_data", as_dict=True)
+
         if not len(protocol_blobs):
             print(
                 f"no sessions found for {animal_id} between {date_min} and {date_max}"
@@ -84,7 +83,11 @@ def create_trials_df_from_dj(
 
         # n session long items are fetched together
         sess_ids, dates, trials, protocols = (
-            bdata.Sessions & subject_session_key & date_min_key & date_max_key
+            bdata.Sessions
+            & subject_session_key
+            & date_min_key
+            & date_max_key
+            & exclusion_key
         ).fetch("sessid", "sessiondate", "n_done_trials", "protocol")
 
         ## Format
