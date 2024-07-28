@@ -19,6 +19,17 @@ Each day, these Python notebooks automatically process new data from the lab's S
 Usage
 
 ## Usage
+To import after cloning 
+```
+git clone https://github.com/Brody-Lab/jbreda_animal_training
+conda create -n behav_viz python==3.10
+conda activate behav_viz  
+cd jbreda_animal_training/src
+pip install -e . 
+conda install -c conda-forge jupyterlab
+conda install -c anaconda ipykernel 
+python -m ipykernel install --user --name=behav_viz
+```
 
 For guidance on querying the Bdata SQL tables, refer to the tutorial [here](https://github.com/jess-breda/DataJoint-SQL-Tutorial).
 
