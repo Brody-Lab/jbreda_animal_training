@@ -136,3 +136,6 @@ code/training_performance/days_df.csv
 code/training_performance/matlab/update_delay_dur.asv
 code/training_performance/matlab/update_settings_file.asv
 data/meetings/2024_04_29_JC_meeting.csv
+matlab/2023_12_24_R029_give_del_pokes.csv
+notebooks/meetings/stage_10_days_df.csv
+data/analyses/fixation_experimentprocessed_df.csv
