@@ -72,7 +72,13 @@ def over_days_summaries(animal_id, days_df, trials_df):
                 )
 
         if is_fixation_protocol:
-            # TODO implement logic here! this is just a placeholder
-            FixationGrower.multiplots.over_days_summary(
-                animal_id, animal_days_df, animal_trials_df
-            )
+            if current_stage < 5:
+                FixationGrower.multiplots.over_days_summary_spoke(
+                    animal_id, animal_days_df, animal_trials_df
+                )
+            elif current_stage <= 8:
+                FixationGrower.multiplots.over_days_summary_cpoke_learning(
+                    animal_id, animal_days_df, animal_trials_df
+                )
+            else:
+                print(f"Stage is {current_stage}, multiplot not implemented yet!")
