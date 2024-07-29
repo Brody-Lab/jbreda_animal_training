@@ -116,9 +116,7 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
         trial as row index
 
     # TODO
-    1. add food puck to tech/rig plot
     2. Run Time plot
-    3. Curriculum/Experiment Condition, Give Type
     4. Inter Trial Stats
     5. Trial Structure for FG
     6. Cpoke Failure Rates
@@ -139,12 +137,17 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     SSSTTTUUU
     """
     letters = sorted(list(set(layout.replace("\n", "").replace(" ", ""))))
-    bar_plots = list("CEHLO")  # manual input axes with bar plots
+    bar_plots = list("CFILO")  # manual input axes with bar plots
     bottom_row = letters[-3:]
+
+    exp_condition = animal_trials_df.fix_experiment.iloc[-1]
 
     fig = plt.figure(constrained_layout=True, figsize=(30, 25))
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
-    plt.suptitle(f"{animal_id} Daily Summary Plot", fontweight="semibold")
+    plt.suptitle(
+        f"{exp_condition} Condition | {animal_id} Daily Summary Plot",
+        fontweight="semibold",
+    )
 
     ## ROW 1- rig/techsession/foodpuck -- mass -- water
     plot_stage(animal_trials_df, ax_dict["A"], title="Stage")
@@ -157,7 +160,9 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     # TODO plot_run_time(animal_days_df, ax_dict["F"], title="Run Time")
 
     ## ROW 3- perf -- perf bars -- ?
-    # TODO plot give/curriculum scatter
+    plot_curriculum_and_give_types(
+        animal_trials_df, ax_dict["G"], title="Curriculum & Give Types"
+    )
     plot_performance(animal_days_df, ax_dict["H"], title="Performance")
     plot_performance_bars(animal_trials_df, ax_dict["I"], title="Performance")
 
