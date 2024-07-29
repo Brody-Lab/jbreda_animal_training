@@ -143,9 +143,8 @@ def plot_cpoke_fix_stats_raw(
     trials_df,
     ax=None,
     title="Raw Fixation Stats",
-    xaxis_label=True,
+    rotate_x_labels=True,
     legend=True,
-    aesthetics=True,
 ):
     """
     Plot the raw fixation statistics over days. The dashed black
@@ -167,12 +166,10 @@ def plot_cpoke_fix_stats_raw(
         The axes to plot on.
     title : str, optional (default="Raw Fixation Stats")
         The title of the plot.
-    xaxis_label : bool, optional (default=True)
-        Whether to label the x-axis with dates & rotate the labels.
+    rotate_x_labels : bool, optional (default=True)
+        Whether to rotate the x-axis labels.
     legend : bool, optional (default=True)
         Whether to include the legend.
-    aesthetics : bool, optional (default=True)
-        Whether to modulate x-axis aesthetics at all (helpful for subplots).
 
     """
 
@@ -206,13 +203,12 @@ def plot_cpoke_fix_stats_raw(
         linestyle="--",
     )
 
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     pu.set_legend(ax, legend)  # ax.legend(["Valid", "Invalid", "Fix", "Init"])
     if legend:
         ax.legend(title="Was Valid")
-
     _ = ax.set(title=title, ylabel="Duration [s]", xlabel="")
 
     return None
@@ -222,9 +218,8 @@ def plot_cpoke_fix_stats_relative(
     trials_df,
     ax=None,
     title="Relative Fixation Stats",
-    xaxis_label=True,
+    rotate_x_labels=True,
     legend=True,
-    aesthetics=True,
 ):
     """
     Plot the relative fixation statistics over days. Relative
@@ -247,12 +242,10 @@ def plot_cpoke_fix_stats_relative(
         The axes to plot on.
     title : str, optional (default="Raw Fixation Stats")
         The title of the plot.
-    xaxis_label : bool, optional (default=True)
-        Whether to label the x-axis with dates & rotate the labels.
+    rotate_x_labels : bool, optional (default=True)
+        Whether to rotate the x-axis labels.
     legend : bool, optional (default=True)
         Whether to include the legend.
-    aesthetics : bool, optional (default=True)
-        Whether to modulate x-axis aesthetics at all (helpful for subplots).
 
     """
 
@@ -281,8 +274,8 @@ def plot_cpoke_fix_stats_relative(
         ax=ax,
     )
 
-    if aesthetics:
-        pu.set_date_x_ticks(ax, xaxis_label)
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
 
     pu.set_legend(ax, legend)  # ax.legend(["Valid", "Invalid", "Fix", "Init"])
     if legend:
