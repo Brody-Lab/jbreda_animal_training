@@ -12,6 +12,27 @@ from matplotlib import pyplot as plt
 from behav_viz.utils import plot_utils as pu
 
 
+def determine_settling_in_mode(trials_df: pd.DataFrame):
+    """
+    Determine if the settling in mode is being used based on the
+    value of the settling_in_determines_fixation column in the trials_df
+
+    ! Note assumes last row in trials df is representative of the current state
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `settling_in_determines_fixation`
+        with trials as row index
+    returns
+    -------
+        : bool
+        whether the settling in determines fixation and violations are
+        effectively impossible
+    """
+    return bool(trials_df.settling_in_determines_fixation.iloc[-1])
+
+
 def make_long_cpoking_stats_df(trials_df: pd.DataFrame, relative: bool) -> pd.DataFrame:
     """
     Function to create a long dataframe of cpoking statistics for plotting
@@ -23,23 +44,24 @@ def make_long_cpoking_stats_df(trials_df: pd.DataFrame, relative: bool) -> pd.Da
 
     # Determine the settling_in_mode- this determines where the failed poking
     # information is stored
-    settling_in_mode = bool(trials_df.settling_in_determines_fixation.iloc[0])
+    settling_in_determines_fix = determine_settling_in_mode(trials_df)
 
     # Handle valid and non-valid cpoke durations based on the mode
-    if settling_in_mode:
+    if settling_in_determines_fix:
         non_valid_cpoke_durs = trials_df[["animal_id", "date", "trial"]].copy()
         non_valid_cpoke_durs["cpoke_dur"] = trials_df.avg_settling_in
         non_valid_cpoke_durs["was_valid"] = False
-
-        valid_cpoke_durs = trials_df.query("violations == 0")[
-            ["animal_id", "date", "trial", "cpoke_dur"]
-        ].copy()
-        valid_cpoke_durs["was_valid"] = True
     else:
         non_valid_cpoke_durs = trials_df.query("violations == 1")[
             ["animal_id", "date", "trial", "cpoke_dur"]
         ].copy()
         non_valid_cpoke_durs["was_valid"] = False
+
+    valid_cpoke_durs = trials_df.query("violations == 0")[
+        ["animal_id", "date", "trial", "cpoke_dur"]
+    ].copy()
+
+    valid_cpoke_durs["was_valid"] = True
 
     # Combine valid and non-valid cpoke durations into one long, dataframe
     combined_cpoke_durs = pd.concat(
