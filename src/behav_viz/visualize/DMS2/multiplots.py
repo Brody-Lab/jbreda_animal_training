@@ -13,6 +13,8 @@ from behav_viz.visualize.plot_trials_info import *
 
 from behav_viz.visualize.multiplots import multiplot_spoke_lg
 
+import behav_viz.visualize.DMS2.plots as DMS2
+
 from pathlib import Path
 
 
@@ -136,7 +138,7 @@ def multiplot_cpoke_pre_sounds(
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
     # plot_watering_amounts(trials_df, ax=ax_dict["C"])
-    plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode=mode)
+    DMS2.plot_cpoke_dur_distributions(trials_df, ax=ax_dict["D"], mode=mode)
 
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
@@ -166,7 +168,7 @@ def multiplot_cpoke_pre_sounds(
     plot_trial_dur(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-    plot_cpokes_over_trials(trials_df, ax=ax_dict["S"], mode=mode)
+    DMS2.plot_cpoke_dur_over_trials(trials_df, ax=ax_dict["S"], mode=mode)
     plot_ncpokes_over_trials(trials_df, ax=ax_dict["V"])
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")
@@ -214,7 +216,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
     plot_watering_amounts(trials_df, ax=ax_dict["C"])
-    plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode="violations")
+    DMS2.plot_cpoke_dur_distributions(trials_df, ax=ax_dict["D"], mode="violations")
 
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
@@ -239,7 +241,7 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     plot_stimulus_and_delay_durations(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-    plot_cpokes_over_trials(trials_df, ax=ax_dict["S"], mode="violations")
+    DMS2.plot_cpoke_dur_over_trials(trials_df, ax=ax_dict["S"], mode="violations")
     plot_stim_grid_performance(trials_df, ax=ax_dict["T"], mode="violations")
     plot_active_trial_dur_summary(trials_df, ax=ax_dict["U"])
     plot_trial_dur(trials_df, ax=ax_dict["V"])
@@ -290,7 +292,7 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
     plot_watering_amounts(trials_df, ax=ax_dict["C"])
-    plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode="violations")
+    DMS2.plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode="violations")
 
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
@@ -303,7 +305,7 @@ def mutliplot_cpoke_decrease_give(trials_df, save_out=False, save_path=None):
     plot_performance_rates(trials_df, ax=ax_dict["I"])
     plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["J"])
     plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["K"])
-    plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
+    DMS2.plot_cpoke_dur_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
 
     ## ROW 4
     plot_give_info(trials_df, ax=ax_dict["M"])
@@ -390,7 +392,7 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
     plot_watering_amounts(trials_df, ax=ax_dict["C"])
-    plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode="violations")
+    DMS2.plot_cpoke_distributions(trials_df, ax=ax_dict["D"], mode="violations")
 
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
@@ -407,7 +409,7 @@ def mutliplot_cpoke_pro_anti(trials_df, save_out=False, save_path=None):
     try:
         plot_first_spoke_summary_by_loc_and_result(trials_df, ax=ax_dict["J"])
         plot_first_spokes_summary_by_correct_side_and_loc(trials_df, ax=ax_dict["K"])
-        plot_cpokes_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
+        DMS2.plot_cpoke_dur_over_trials(trials_df, ax=ax_dict["L"], mode="violations")
     except:
         ("Skipping due to high violation rates")
 
