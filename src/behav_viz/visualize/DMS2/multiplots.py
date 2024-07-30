@@ -149,11 +149,11 @@ def multiplot_cpoke_pre_sounds(
         pass
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
     try:
-        plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
-        plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode=mode)
+        plot_n_settling_ins(trials_df, ax=ax_dict["H"])
+        DMS2.plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode=mode)
     except:
         print("skipping failed cpokes plots due to hist error")
-    plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"], mode=mode)
+    DMS2.plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"], mode=mode)
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["K"])
@@ -223,9 +223,9 @@ def mutliplot_cpoke_sounds_on(trials_df, save_out=False, save_path=None):
     plot_stage_info(trials_df, ax=ax_dict["E"])
     plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
-    plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
-    plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode="violations")
-    plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"], mode="violations")
+    plot_n_settling_ins(trials_df, ax=ax_dict["H"])
+    DMS2.plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode="violations")
+    DMS2.plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"], mode="violations")
 
     ## ROW 3
     plot_performance_rates(trials_df, ax=ax_dict["K"])

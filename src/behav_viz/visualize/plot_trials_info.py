@@ -473,9 +473,11 @@ def plot_npokes_summary(trials_df, ax, title=""):
 #### CENTER POKING ####
 
 
-def plot_n_failed_cpokes(trials_df, ax):
+def plot_n_settling_ins(trials_df, ax):
     """
-    plot histogram of the number of failed cpokes per trial
+    plot histogram of the number of settling ins
+    per trial
+
     params
     ------
     trials_df : DataFrame
@@ -493,104 +495,9 @@ def plot_n_failed_cpokes(trials_df, ax):
     sns.histplot(trials_df.n_settling_ins, binwidth=binwidth, ax=ax)
     ax.axvline(trials_df.n_settling_ins.mean(), color="k", linestyle="--", lw=3)
 
-    upper_lim = trials_df["n_settling_ins"].quantile(0.99)  # exclude outliers
-    ax.set_ylim(top=upper_lim)
     ax.set(
         xlabel="N failed / trial",
-        title=f"Mean N failed cpoke: {trials_df.n_settling_ins.mean():.2f}",
-    )
-
-    return None
-
-
-def plot_avg_failed_cpoke_dur(trials_df, ax, mode="settling_in"):
-    """
-    plot avg failed cpoke dur for per trial
-    params
-    ------
-    trials_df : DataFrame
-        trials dataframe with columns `avg_settling_in`
-        with trials as row index
-    ax : matplotlib.axes
-        axis to plot to
-    """
-
-    if mode == "settling_in":
-        sns.histplot(
-            trials_df.avg_settling_in,
-            color=pu.RESULT_MAP[3]["color"],
-            binwidth=0.025,
-            ax=ax,
-        )
-        ax.axvline(
-            trials_df.avg_settling_in.mean(),
-            color=pu.RESULT_MAP[3]["color"],
-            lw=3,
-        )
-
-        ax.set(
-            xlabel="Failed Cpoke Dur [s]",
-            title=f"Avg dur failed: {trials_df.avg_settling_in.mean():.2f}",
-        )
-    elif mode == "violations":
-        data = pd.DataFrame()
-
-        data["Settling"] = trials_df.avg_settling_in
-        data["Viol"] = trials_df.query("violations ==1").cpoke_dur
-
-        pal = ["blue", pu.RESULT_MAP[3]["color"]]
-
-        sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
-
-        avg_viol_cpoke = trials_df.query("violations == 1").cpoke_dur.mean()
-        ax.axvline(avg_viol_cpoke, color=pal[1], lw=3)
-        avg_settling_in = trials_df.avg_settling_in.mean()
-        ax.axvline(avg_settling_in, color=pal[0], lw=3)
-        ax.axvline(trials_df.pre_go_dur.mean(), color="k", lw=3)
-
-        ax.set(
-            xlabel="Failed Cpoke Dur [s]",
-            title="Avg dur Viol {:.2f}".format(avg_viol_cpoke),
-        )
-
-    return None
-
-
-def plot_avg_valid_cpoke_dur(trials_df, ax, mode="settling_in"):
-    """
-    plot avg valid cpoke dur for per trial
-
-    params
-    ------
-    trials_df : DataFrame
-        trials dataframe with columns `cpoke_dur`
-        with trials as row index
-    ax : matplotlib.axes
-        axis to plot to
-    """
-    if np.sum(trials_df.cpoke_dur) == 0:
-        print("No valid cpokes, make sure fixation is on!")
-        return None
-
-    sns.histplot(
-        trials_df.query("violations == 0").cpoke_dur,
-        color="lightgreen",
-        binwidth=0.025,
-        ax=ax,
-    )
-
-    avg_valid_cpoke = trials_df.query("violations == 0").cpoke_dur.mean()
-    ax.axvline(avg_valid_cpoke, color="lightgreen", lw=3)
-
-    if mode == "settling_in":
-        valid_time = trials_df.pre_go_dur.mean() + trials_df.settling_in_dur.mean()
-    elif mode == "violations":
-        valid_time = trials_df.pre_go_dur.mean()
-    ax.axvline(valid_time, color="k", lw=3)
-
-    ax.set(
-        xlabel="Valid Cpoke Dur [s]",
-        title=f"Avg dur valid: {avg_valid_cpoke:.2f}",
+        title=f"Mean N Settling: {trials_df.n_settling_ins.mean():.2f}",
     )
 
     return None

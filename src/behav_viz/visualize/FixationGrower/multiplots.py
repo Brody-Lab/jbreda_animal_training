@@ -64,16 +64,10 @@ def multiplot_cpoke_learning(trials_df, save_out=False, save_path=None):
     ## ROW 2
     plot_correct_side(trials_df, ax=ax_dict["E"])
     plot_stage_info(trials_df, ax=ax_dict["E"])
-    try:
-        plot_side_bias_summary(trials_df, ax=ax_dict["F"])
-    except:
-        pass
+    plot_side_bias_summary(trials_df, ax=ax_dict["F"])
     plot_side_count_summary(trials_df, ax=ax_dict["G"])
-    try:
-        plot_n_failed_cpokes(trials_df, ax=ax_dict["H"])
-        plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"], mode=mode)
-    except:
-        print("skipping failed cpokes plots due to hist error")
+    plot_n_settling_ins(trials_df, ax=ax_dict["H"])
+    FG.plot_avg_failed_cpoke_dur(trials_df, ax=ax_dict["I"])
     FG.plot_avg_valid_cpoke_dur(trials_df, ax=ax_dict["J"])
 
     ## ROW 3
@@ -89,8 +83,9 @@ def multiplot_cpoke_learning(trials_df, save_out=False, save_path=None):
     plot_trial_dur(trials_df, ax=ax_dict["R"])
 
     ## ROW 5
-
+    FG.plot_cpoke_dur_over_trials(trials_df, ax=ax_dict["S"])
     plot_ncpokes_over_trials(trials_df, ax=ax_dict["V"])
+
     if save_out:
         plt.savefig(save_path, bbox_inches="tight")
         plt.close("all")

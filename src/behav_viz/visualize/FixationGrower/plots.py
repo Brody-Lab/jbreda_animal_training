@@ -115,7 +115,7 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
     return None
 
 
-def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
+def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
     """
     plot avg failed cpoke dur for per trial
     params
@@ -131,12 +131,13 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
     if ax is None:
         _, ax = pu.make_fig("s")
 
-    settling_in_mode = bool(trials_df.settling_in_determines_fixation.iloc[0])
+    settling_in_determines_fix = determine_settling_in_mode(trials_df)
 
-    if settling_in_mode:  # Plot the failed settling in durs
+    if settling_in_determines_fix:
+        # Plot the avg failed cpoke which is the settling in dur
         sns.histplot(
             trials_df.avg_settling_in,
-            color=pu.RESULT_MAP[3]["color"],
+            color="blue",
             binwidth=0.025,
             ax=ax,
         )
@@ -148,7 +149,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
 
         ax.set(
             xlabel="Failed Cpoke Dur [s]",
-            title=f"Avg dur failed: {trials_df.avg_settling_in.mean():.2f}",
+            title=f"Avg dur Settling: {trials_df.avg_settling_in.mean():.2f}",
         )
     else:  # Plot the failed settling in durs (blue) and the failed cpoke, or violations (orange)
         data = pd.DataFrame()
@@ -156,15 +157,19 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
         data["Settling"] = trials_df.avg_settling_in
         data["Viol"] = trials_df.query("violations ==1").cpoke_dur
 
-        pal = ["blue", pu.RESULT_MAP[3]["color"]]
+        pal = ["blue", "orange"]
 
         sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
 
+        # Plot avg failed cpoke
         avg_viol_cpoke = trials_df.query("violations == 1").cpoke_dur.mean()
         ax.axvline(avg_viol_cpoke, color=pal[1], lw=3)
+
+        # Plot avg failed settling in
         avg_settling_in = trials_df.avg_settling_in.mean()
         ax.axvline(avg_settling_in, color=pal[0], lw=3)
-        ax.axvline(trials_df.pre_go_dur.mean(), color="k", lw=3)
+
+        ax.axvline(trials_df.fixation_dur.mean(), color="k", lw=3)
 
         ax.set(
             xlabel="Failed Cpoke Dur [s]",
@@ -191,10 +196,8 @@ def plot_avg_valid_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
     if ax is None:
         _, ax = pu.make_fig("s")
 
-    settling_in_mode = bool(trials_df.settling_in_determines_fixation.iloc[0])
-
     if np.sum(trials_df.cpoke_dur) == 0:
-        print("No valid cpokes, make sure fixation is on!")
+        print("No valid cpokes, skipping plot!")
         return None
 
     sns.histplot(
@@ -204,21 +207,16 @@ def plot_avg_valid_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
         ax=ax,
     )
 
+    # Plot the average valid time
     avg_valid_cpoke = trials_df.query("violations == 0").cpoke_dur.mean()
     ax.axvline(avg_valid_cpoke, color="lightgreen", lw=3)
 
-    # TODO! if settling in and growth type is overnight, then we can do this
-    # TODO! however, if growing each trial, this needs to be relative to go cue
-    # TODO! which would be cpoke_dur - fixation_dur for the poking on
-    # TODO! non violation trials and then 0 is the time of go cue
-
-    valid_time = trials_df.fixation_dur.mean() + trials_df.settling_in_dur.mean()
-
-    ax.axvline(valid_time, color="k", lw=3)
+    # Plot the required poke time
+    ax.axvline(trials_df.fixation_dur.mean(), color="k", lw=3)
 
     ax.set(
         xlabel="Valid Cpoke Dur [s]",
-        title=f"Avg dur valid: {avg_valid_cpoke:.2f}",
+        title=f"Avg dur Valid: {avg_valid_cpoke:.2f}",
     )
 
     return None
