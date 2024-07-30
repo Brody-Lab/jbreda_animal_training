@@ -343,7 +343,9 @@ def plot_stage_info(trials_df, ax):
     gray_palette = sns.color_palette("gray")
 
     # iterate over trials in each stage, make the hbar + plot
-    for i, s in enumerate(trials_df.stage.unique()):
+    # need to make sure this doesn't include crash trials
+    # which are marked as 5 and make stage = nan
+    for i, s in enumerate(trials_df.query("result != 5").stage.unique()):
         # calculate trial start and stop numbers for a given stage
         bounds = trials_df.query("stage == @s").agg({"trial": ["min", "max"]})
         ax.axvspan(
