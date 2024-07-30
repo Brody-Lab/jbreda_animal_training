@@ -83,7 +83,7 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
         pal = ["blue", "lightgreen"]
         failure_rate = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
     else:
-        pal = ["orange", "lightgreen"]
+        pal = ["orangered", "lightgreen"]
         failure_rate = trials_df.violations.mean()
 
     # Plot
@@ -157,7 +157,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
         data["Settling"] = trials_df.avg_settling_in
         data["Viol"] = trials_df.query("violations ==1").cpoke_dur
 
-        pal = ["blue", "orange"]
+        pal = ["blue", "orangered"]
 
         sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
 
