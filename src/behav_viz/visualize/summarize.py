@@ -22,7 +22,8 @@ from behav_viz.visualize import FixationGrower
 def single_day_summaries(trials_df, figures_path, save_out=True, overwrite=False):
     """
     function to plot summaries for each animal, day in a df of
-    trials data. will handle lf
+    trials data. This will handle the different protocols, figure
+    paths and choose the appropriate multiplot given the data.
 
     trials_dfs : pd.DataFrame
         df of trials data loaded in using `create_trials_df_from_dj`
@@ -41,7 +42,7 @@ def single_day_summaries(trials_df, figures_path, save_out=True, overwrite=False
                 sub_df, figures_path, save_out=save_out, overwrite=overwrite
             )
         elif is_fixation_protocol:
-            DMS2.multiplots.single_day_summary(
+            FixationGrower.multiplots.single_day_summary(
                 sub_df, figures_path, save_out=save_out, overwrite=overwrite
             )
         else:

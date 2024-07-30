@@ -11,7 +11,10 @@ from behav_viz.visualize.plot_days_info import *
 from behav_viz.visualize.plot_trials_info import *
 import behav_viz.visualize.FixationGrower.plots as FG
 from behav_viz.visualize.plots import *
+from behav_viz.visualize import multiplots
 
+
+from pathlib import Path
 
 # Next step - get a multi plot frame work in here as outlined in git and then
 # add the new raw/relative fix dur plot to the multiplot with other made plots
@@ -20,6 +23,42 @@ from behav_viz.visualize.plots import *
 ######################################################################################
 #########                        SINGLE DAY PLOTS                            #########
 ######################################################################################
+
+
+def single_day_summary(df, figures_path, save_out=True, overwrite=False):
+    """
+    function to plot summaries for each animal, day in a df of
+    trials data
+
+    df : pd.DataFrame
+        df of trials data loaded in using `create_trials_df_from_dj`
+    figures_path : Path object
+        path to save figures to
+    overwrite : bool (optional, default = False)
+        whether to overwrite existing figures with same name
+    """
+    for (date, animal_id), sub_df in df.groupby(["date", "animal_id"]):
+        # generate path & make plot if it doesn't exist or overwrite is on
+        # TODO update logic here if fig dir structure changes
+        fig_name = f"{animal_id}_{date}_day_summary.png"
+        full_path = figures_path / fig_name
+
+        if not Path.exists(full_path) or overwrite:
+            print(f"making {fig_name[:-4]}")
+
+            current_sma = sub_df.SMA_set.iloc[0]
+            current_stage = sub_df.stage.iloc[0]
+
+            if current_sma == "spoke":
+                multiplots.multiplot_spoke_lg(
+                    sub_df, save_out=save_out, save_path=full_path
+                )
+
+            elif current_sma == "cpoke":
+                if current_stage >= 5:
+                    multiplot_cpoke_learning(
+                        sub_df, save_out=save_out, save_path=full_path
+                    )
 
 
 def multiplot_cpoke_learning(trials_df, save_out=False, save_path=None):
