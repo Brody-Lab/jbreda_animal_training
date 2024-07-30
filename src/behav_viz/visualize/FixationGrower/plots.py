@@ -12,6 +12,7 @@ from matplotlib import pyplot as plt
 from behav_viz.utils import plot_utils as pu
 from behav_viz.visualize.FixationGrower.df_preperation import (
     make_long_cpoking_stats_df,
+    determine_settling_in_mode,
 )
 
 ######################################################################################
@@ -20,6 +21,98 @@ from behav_viz.visualize.FixationGrower.df_preperation import (
 
 
 ############################ CENTER POKING STATS ######################################
+
+
+def plot_cpoke_dur_over_trials(trials_df, ax=None, title=""):
+    """
+    Plot the animals time in the center port over trials with
+    the required fixation marked in red.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `cpoke_dur` and `fixation_dur`
+        with trials as row index
+    ax : matplotlib.axes, (optional, default = None)
+        axis to plot to
+    title : str, (optional, default = "")
+        title of plot
+    """
+
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.lineplot(x="trial", y="cpoke_dur", data=trials_df, ax=ax, color="k", marker=".")
+    sns.lineplot(
+        x="trial",
+        y="fixation_dur",
+        data=trials_df,
+        ax=ax,
+        color="red",
+        label="Required",
+    )
+
+    ax.set(xlabel="Trial", ylabel="Time in Cport [s]", title=title)
+    ax.grid()
+
+    return None
+
+
+def plot_cpoke_dur_distributions(trials_df, ax=None):
+    """
+    plot histogram of cpoke timing relative to the go cue for failed and valid
+    cpokes across trials. This plot accounts for the SMA logic being used
+    (e.g. settling_in_determines_fixation) to determine which cpokes are valid
+    and which are not.
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `avg_settling_in`, `cpoke_dur`,
+        `pre_go_dur`, `settling_in_dur` `n_settling_ins` with trials as row index
+    ax : matplotlib.axes (optional, default = None)
+        axis to plot to
+    """
+
+    # Prepare Data
+    plot_df = make_long_cpoking_stats_df(trials_df, relative=True)
+    settling_in_determines_fix = determine_settling_in_mode(trials_df)
+
+    # Settings
+    if settling_in_determines_fix:
+        pal = ["blue", "lightgreen"]
+        failure_rate = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+    else:
+        pal = ["orange", "lightgreen"]
+        failure_rate = trials_df.violations.mean()
+
+    # Plot
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    sns.histplot(
+        data=plot_df,
+        x="relative_cpoke_dur",
+        binwidth=0.025,
+        hue="was_valid",
+        palette=pal,
+    )
+
+    avg_cpoke_dur = plot_df.cpoke_dur.mean()
+    avg_failed_dur = plot_df.query("was_valid == False").relative_cpoke_dur.mean()
+    avg_valid_dur = plot_df.query("was_valid == True").relative_cpoke_dur.mean()
+
+    ax.axvline(0, color="k")
+    ax.axvline(avg_failed_dur, color=pal[0], lw=3)
+    ax.axvline(avg_valid_dur, color=pal[1], lw=3)
+
+    # aesthetics
+    _ = ax.set(
+        xlabel="Cpoke Dur Relative to Go [s]",
+        title=f"Failure_rate {failure_rate:.2f},  Avg Cpoke Dur: {avg_cpoke_dur:.2f}",
+    )
+
+    return None
 
 
 def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
