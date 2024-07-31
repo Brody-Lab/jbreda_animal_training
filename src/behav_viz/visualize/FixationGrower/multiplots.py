@@ -97,7 +97,7 @@ def multiplot_cpoke_learning(trials_df, save_out=False, save_path=None):
     ## ROW 1
     plot_results(trials_df, ax=ax_dict["A"])
     plot_result_summary(trials_df, ax=ax_dict["B"])
-    # plot_watering_amounts(trials_df, ax=ax_dict["C"])
+    plot_watering_amounts(trials_df, ax=ax_dict["C"])
     FG.plot_cpoke_dur_distributions(trials_df, ax=ax_dict["D"])
 
     ## ROW 2
