@@ -96,6 +96,7 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
         binwidth=0.025,
         hue="was_valid",
         palette=pal,
+        ax=ax,
     )
 
     avg_cpoke_dur = plot_df.cpoke_dur.mean()
