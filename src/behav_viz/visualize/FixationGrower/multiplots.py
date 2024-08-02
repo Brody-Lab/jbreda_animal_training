@@ -141,7 +141,7 @@ def multiplot_cpoke_learning(trials_df, save_out=False, save_path=None):
 
 def over_days_summary(animal_id, animal_days_df, animal_trials_df):
     """
-    TODO make this into a wrapper!
+    ! NOT CURRENTLY IN USE
 
     params
     ------
@@ -193,7 +193,7 @@ def over_days_summary(animal_id, animal_days_df, animal_trials_df):
     plot_time_to_spoke(animal_trials_df, ax_dict["J"], title="Time to Spoke")
     if current_sma == "cpoke":
         plot_cpoke_dur_timings_pregnp(animal_trials_df, ax_dict["K"], title="Cpoke Dur")
-        plot_trial_structure(animal_trials_df, ax_dict["L"], title="Trial Structure")
+        FG.plot_trial_structure(animal_trials_df, ax_dict["L"], title="Trial Structure")
 
     # ROW 5
     if current_sma == "cpoke":
@@ -357,7 +357,7 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     ## ROW 5 - inter trial stats -- time to spoke - give type/curriculum/condition
     # TODO plot_inter_trial_states(animal_trials_df, ax_dict["M"], title="Inter Trial Stats")
     plot_time_to_spoke(animal_trials_df, ax_dict["N"], title="Time to Spoke")
-    plot_trial_structure(animal_trials_df, ax_dict["O"], title="Trial Structure")
+    FG.plot_trial_structure(animal_trials_df, ax_dict["O"], title="Trial Structure")
 
     ## ROW 6 - failure rates -- n settling ins/trial -- min/max deltas
     plot_cpoke_dur_timings_pregnp(
