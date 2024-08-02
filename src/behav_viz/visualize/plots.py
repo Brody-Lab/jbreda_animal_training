@@ -11,7 +11,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from behav_viz.utils import plot_utils as pu
-from behav_viz.visualize.df_preperation import rename_give_types, rename_curricula
+from behav_viz.visualize.df_preperation import (
+    rename_give_types,
+    rename_curricula,
+    compute_failed_fixation_rate_penalty_off,
+)
 
 ######################################################################################
 #########                        SINGLE DAY PLOTS                            #########
@@ -163,6 +167,8 @@ def plot_give_type_days(
 
 
 ############################ RIG & TECH INFO ######################################
+
+
 def plot_rig_tech(days_df, ax=None, title="", rotate_x_labels=False):
     """
     Plot the tech and rig id over date range in days_df
@@ -232,4 +238,120 @@ def plot_rig_tech_foodpuck(days_df, ax=None, title="", rotate_x_labels=False):
     return None
 
 
-############################ CENTER POKING STATS ######################################
+############################ FAILED FIX (VIOLATIONS) ######################################
+
+
+def plot_failed_fixation_rate_penalty_off(
+    trials_df, only_trial_failures=False, ax=None, title="", rotate_x_labels=False
+):
+    """
+    Plot the failed fixation rates by trial and by poke across days
+    when the violation penalty is off
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date` and
+        `n_settling_ins` with trials as row index
+    only_trial_failures : bool (optional, default = False)
+        whether to only plot the failed fixation rate by trial
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    failed_fix_df = compute_failed_fixation_rate_penalty_off(trials_df)
+
+    if only_trial_failures:
+        failed_fix_df.drop(
+            failed_fix_df[failed_fix_df.type == "by_poke"].index, inplace=True
+        )
+
+    sns.lineplot(
+        data=failed_fix_df,
+        x="date",
+        y="failure_rate",
+        hue="type",
+        hue_order=["by_trial", "by_poke"],
+        palette=["salmon", "purple"],
+        marker="o",
+        ax=ax,
+    )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(ylabel="Failed Fixation Rate", xlabel="", title=title, ylim=(-0.1, 1.1))
+    ax.grid()
+
+    return None
+
+
+def plot_failed_fixation_rate_penalty_on(
+    trials_df, ax=None, title="", rotate_x_labels=False
+):
+    """
+    Plot the failed fixation rates by trial and by poke across days
+    when the violation penalty is on. In otherwords, this is just
+    the violation rate.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date` and
+        `n_settling_ins` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="violations",
+        color="orangered",
+        marker="o",
+        ax=ax,
+        errorbar=None,
+        label="by_viol",
+    )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(ylabel="Failed Fixation Rate", xlabel="", title=title, ylim=(-0.1, 1.1))
+    ax.grid()
+
+    return None
+
+
+def plot_n_settling_ins_days(trials_df, ax=None, title="", rotate_x_labels=False):
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=trials_df,
+        x="date",
+        y="n_settling_ins",
+        color="blue",
+        marker="o",
+        ax=ax,
+    )
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(ylabel="Avg N Settling Ins", xlabel="", title=title, ylim=(-0.1, None))
+    ax.grid()
+
+    return None

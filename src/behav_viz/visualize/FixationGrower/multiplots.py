@@ -360,13 +360,11 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     FG.plot_trial_structure(animal_trials_df, ax_dict["O"], title="Trial Structure")
 
     ## ROW 6 - failure rates -- n settling ins/trial -- min/max deltas
-    plot_cpoke_dur_timings_pregnp(
-        animal_trials_df, ax_dict["P"], title="Cpoke Dur"
-    )  # TODO remove
 
-    # plot_n_cpokes_and_multirate(
-    #     animal_trials_df, ax_dict["Q"], title="Multi Cpokes"
-    # )  # TODO remove
+    FG.plot_failed_fixation_rate(
+        animal_trials_df, ax_dict["P"], title="Failed Fixation Rate"
+    )
+    plot_n_settling_ins_days(animal_trials_df, ax_dict["Q"], title="N Settling Ins")
 
     # TODO plot_cpoke_failure_rates(animal_trials_df, ax_dict["P"], title="Failure Rates")
     # TODO plot_n_settling_ins(animal_trials_df, ax_dict["Q"], title="N Settling Ins")

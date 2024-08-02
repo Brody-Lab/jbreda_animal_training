@@ -15,6 +15,11 @@ from behav_viz.visualize.FixationGrower.df_preperation import (
     determine_settling_in_mode,
 )
 
+from behav_viz.visualize.plots import (
+    plot_failed_fixation_rate_penalty_off,
+    plot_failed_fixation_rate_penalty_on,
+)
+
 ######################################################################################
 #########                        SINGLE DAY PLOTS                            #########
 ######################################################################################
@@ -399,8 +404,57 @@ def plot_cpoke_fix_stats_relative(
     return None
 
 
-######################################################################################
-#########                        TRIAL STRUCTURE                             #########
+############################ FAILED FIX (VIOLATIONS) ######################################
+
+
+def plot_failed_fixation_rate(trials_df, ax=None, title="", rotate_x_labels=False):
+    """
+    Plot the failed fixation rate over days. This function determines
+    how the failed fixation rate is calculated based on the settling in
+    determines fixation mode. If on, then failed fixation rates are the
+    rate of trials with failed settling ins (by_trial). Or rate of pokes
+    with failed cpoke (by_poke). If off, this is simply the violation rate
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date` and `violations`
+        with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    settling_in_determines_fix = determine_settling_in_mode(trials_df)
+
+    if settling_in_determines_fix:
+        plot_failed_fixation_rate_penalty_off(
+            trials_df,
+            only_trial_failures=False,
+            ax=ax,
+            title=title,
+            rotate_x_labels=rotate_x_labels,
+        )
+    else:
+        plot_failed_fixation_rate_penalty_on(
+            trials_df, ax=ax, title=title, rotate_x_labels=rotate_x_labels
+        )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(ylabel="Failed Fixation Rate", xlabel="", title=title, ylim=(-0.1, 1.1))
+
+    return None
+
+
+############################ TRIAL STRUCTURE ######################################
 
 
 def plot_trial_structure(
