@@ -90,22 +90,31 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
     if ax is None:
         _, ax = pu.make_fig()
 
+    # to avoid binning issues
+    if len(plot_df) < 30:
+        binwidth = None
+    else:
+        binwidth = 0.025
+
     sns.histplot(
         data=plot_df,
         x="relative_cpoke_dur",
-        binwidth=0.025,
+        binwidth=binwidth,
         hue="was_valid",
         palette=pal,
+        hue_order=[False, True],
         ax=ax,
     )
 
-    avg_cpoke_dur = plot_df.cpoke_dur.mean()
-    avg_failed_dur = plot_df.query("was_valid == False").relative_cpoke_dur.mean()
-    avg_valid_dur = plot_df.query("was_valid == True").relative_cpoke_dur.mean()
+    if failure_rate != 0:
+        avg_failed_dur = plot_df.query("was_valid == False").relative_cpoke_dur.mean()
+        ax.axvline(avg_failed_dur, color=pal[0], lw=3, label="Avg Failed Duration")
+    elif failure_rate <= 0.99:
+        avg_valid_dur = plot_df.query("was_valid == True").relative_cpoke_dur.mean()
+        ax.axvline(avg_valid_dur, color=pal[1], lw=3, label="Avg Valid Duration")
 
+    avg_cpoke_dur = plot_df.cpoke_dur.mean()
     ax.axvline(0, color="k")
-    ax.axvline(avg_failed_dur, color=pal[0], lw=3)
-    ax.axvline(avg_valid_dur, color=pal[1], lw=3)
 
     # aesthetics
     _ = ax.set(
@@ -160,15 +169,23 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
 
         pal = ["blue", "orangered"]
 
-        sns.histplot(data=data, binwidth=0.025, palette=pal, ax=ax)
+        # sometimes there are no violations, so we can't make this plot
+        if data.isna().all().all() or data.empty:
+            return
+        elif len(data) < 30:
+            binwidth = None
+        else:
+            # only plot vlines if there is enough data
+            binwidth = 0.025
+            # Plot avg failed cpoke
+            avg_viol_cpoke = trials_df.query("violations == 1").cpoke_dur.mean()
+            ax.axvline(avg_viol_cpoke, color=pal[1], lw=3)
 
-        # Plot avg failed cpoke
-        avg_viol_cpoke = trials_df.query("violations == 1").cpoke_dur.mean()
-        ax.axvline(avg_viol_cpoke, color=pal[1], lw=3)
+            # Plot avg failed settling in
+            avg_settling_in = trials_df.avg_settling_in.mean()
+            ax.axvline(avg_settling_in, color=pal[0], lw=3)
 
-        # Plot avg failed settling in
-        avg_settling_in = trials_df.avg_settling_in.mean()
-        ax.axvline(avg_settling_in, color=pal[0], lw=3)
+        sns.histplot(data=data, binwidth=binwidth, palette=pal, ax=ax)
 
         ax.axvline(trials_df.fixation_dur.mean(), color="k", lw=3)
 
@@ -197,14 +214,18 @@ def plot_avg_valid_cpoke_dur(trials_df: pd.DataFrame, ax: plt.Axes = None):
     if ax is None:
         _, ax = pu.make_fig("s")
 
-    if np.sum(trials_df.cpoke_dur) == 0:
-        print("No valid cpokes, skipping plot!")
-        return None
+    if len(trials_df.query("violations == 0")) == 0:
+        # no valid cpokes to plot
+        return
+    elif len(trials_df.query("violations == 0")) < 30:
+        binwidth = None
+    else:
+        binwidth = 0.025
 
     sns.histplot(
         trials_df.query("violations == 0").cpoke_dur,
         color="lightgreen",
-        binwidth=0.025,
+        binwidth=binwidth,
         ax=ax,
     )
 
@@ -374,5 +395,80 @@ def plot_cpoke_fix_stats_relative(
         ax.legend(title="Was Valid")
 
     _ = ax.set(title=title, ylabel="Duration [s]", xlabel="")
+
+    return None
+
+
+######################################################################################
+#########                        TRIAL STRUCTURE                             #########
+
+
+def plot_trial_structure(
+    trials_df, ax=None, kind="bar", title="", legend=True, rotate_x_labels=False
+):
+    """
+    Plot the trial structure over date range in trials_df. Note that this
+    assumes that the stimuli are on and playing.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `settling_in_dur`, `adj_pre_dur`,
+        `stimulus_dur`, `delay_dur`, `post_dur` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    kind : str (optional, default = "bar")
+        kind of plot to make
+    title : str (optional, default = "")
+        title for the plot
+    legend : bool (optional, default = True)
+        whether to include the legend or not
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+
+    stim_on = trials_df.stimuli_on.iloc[-1] > 0
+
+    if stim_on:
+        columns_to_plot = [
+            "date",
+            "settling_in_dur",
+            "adj_pre_dur",
+            "stimulus_dur",
+            "delay_dur",
+            "post_dur",
+        ]
+    else:
+        columns_to_plot = ["date", "settling_in_dur", "pre_go_dur"]
+
+    day_avgs = trials_df[columns_to_plot].groupby("date").mean().reset_index()
+    day_avgs.columns = day_avgs.columns.str.replace("_dur", "")
+    if stim_on:
+        day_avgs.insert(5, "s_b", day_avgs["stimulus"])
+        day_avgs.rename(columns={"stimulus": "s_a"}, inplace=True)
+    else:
+        # rename pre go to delay as this is the delay duration adjusted
+        # for settling in dur
+        day_avgs.rename(columns={"pre_go": "delay"}, inplace=True)
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    day_avgs.plot(
+        x="date",
+        kind=kind,
+        stacked=True,
+        ax=ax,
+        legend=legend,
+        color=pu.trial_period_palette,
+    )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(title=title, xlabel="", ylabel="Trial Timing [s]")
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.5, axis="y")
+    ax.legend(loc="upper left")
 
     return None
