@@ -15,6 +15,7 @@ from behav_viz.visualize.df_preperation import (
     rename_give_types,
     rename_curricula,
     compute_failed_fixation_rate_penalty_off,
+    make_long_trial_dur_df,
 )
 
 ######################################################################################
@@ -125,6 +126,51 @@ def plot_run_time(days_df, ax=None, title="", rotate_x_labels=False):
     ax.set_ylim(days_df.starttime_hrs.min() - 1, days_df.endtime_hrs.max() + 1)
     ax.set_ylim(days_df.starttime_hrs.min() - 1, days_df.endtime_hrs.max() + 1)
     ax.invert_yaxis()
+
+    return None
+
+
+def plot_trial_durs(trials_df, ax=None, title="", rotate_x_labels=False):
+    """
+    Plot the trial and ITI durations across days. The ITI is the
+    time set by the SMA. The trial duration is the time from the
+    start of the trial to the start of the next trial, including
+    the ITI.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `trial_dur`,
+        `inter_trial_dur`, `trial` and `animal_id` with
+        trials as row index
+    ax : matplotlib.axes.Axes, optional
+        axes to plot on, if None, a new figure is created
+    title : str, optional
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    trial_dur_df = make_long_trial_dur_df(trials_df)
+
+    sns.lineplot(
+        data=trial_dur_df,
+        x="date",
+        y="duration",
+        hue="type",
+        hue_order=["Trial", "ITI"],
+        palette=["Black", "Gray"],
+        ax=ax,
+        marker="o",
+    )
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    ax.grid()
+    _ = ax.set(ylabel="Duration [s]", xlabel="", title=title, ylim=(0, None))
 
     return None
 

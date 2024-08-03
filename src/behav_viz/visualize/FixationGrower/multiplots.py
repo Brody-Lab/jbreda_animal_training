@@ -226,12 +226,6 @@ def over_days_summary_spoke(animal_id, animal_days_df, animal_trials_df):
     trials_df : pd.DataFrame
         trials dataframe created by create_trials_df_from_dj() with
         trial as row index
-
-    # TODO
-    1. Run time
-    2. Inter Trial Stats
-
-
     """
 
     layout = """
@@ -278,8 +272,7 @@ def over_days_summary_spoke(animal_id, animal_days_df, animal_trials_df):
     plot_sidebias_params(animal_trials_df, ax_dict["L"], title="Side Bias Params")
 
     ## ROW 5 - inter trial stats -- time to spoke - give type/curriculum/condition
-    # TODO plot_inter_trial_states(animal_trials_df, ax_dict["M"], title="Inter Trial Stats")
-    ax_dict["M"].set_title("Inter Trial Stats")
+    plot_trial_durs(animal_trials_df, ax_dict["M"], title="Trial Dur Stats")
     plot_time_to_spoke(animal_trials_df, ax_dict["N"], title="Time to Spoke")
 
     pu.adjust_mosaic_axes(ax_dict, letters, bar_plots, bottom_row, animal_days_df)
@@ -299,7 +292,6 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
         trial as row index
 
     # TODO
-    4. Inter Trial Stats
     8. Min/Max Deltas
     9. Fix Dur Delta Over Days
 
@@ -350,7 +342,7 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     plot_sidebias_params(animal_trials_df, ax_dict["L"], title="Side Bias Params")
 
     ## ROW 5 - inter trial stats -- time to spoke - give type/curriculum/condition
-    # TODO plot_inter_trial_states(animal_trials_df, ax_dict["M"], title="Inter Trial Stats")
+    plot_trial_durs(animal_trials_df, ax_dict["M"], title="Trial Dur Stats")
     plot_time_to_spoke(animal_trials_df, ax_dict["N"], title="Time to Spoke")
     FG.plot_trial_structure(animal_trials_df, ax_dict["O"], title="Trial Structure")
 

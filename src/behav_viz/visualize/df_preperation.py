@@ -49,7 +49,7 @@ def rename_curricula(df):
     return df.curriculum.str.replace("JB_", "")
 
 
-def compute_failed_fixation_rate_penalty_off(df):
+def compute_failed_fixation_rate_penalty_off(df: pd.DataFrame) -> pd.DataFrame:
     """
     Compute the failed fixation rates for each animal_id, date
     in the dataframe. This will compute the failed fixation rate
@@ -93,3 +93,27 @@ def compute_failed_fixation_rate_penalty_off(df):
     )
 
     return failed_fix_rates_df
+
+
+def make_long_trial_dur_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make a long dataframe with animal_id, date, trial, type,
+    and duration columns. The type column will be "Trial" or
+    "ITI" and the durationcolumn will be the trial_dur or
+    inter_trial_dur in seconds
+
+    Trial relates to how long the trial actually took (inlcuding
+    the ITI). The ITI is the time set by the SMA.
+    """
+    trial_dur_df = df.melt(
+        id_vars=["animal_id", "date", "trial"],
+        value_vars=["trial_dur", "inter_trial_dur"],
+        var_name="type",
+        value_name="duration",
+    )
+
+    trial_dur_df["type"] = trial_dur_df.type.replace(
+        {"trial_dur": "Trial", "inter_trial_dur": "ITI"}
+    )
+
+    return trial_dur_df
