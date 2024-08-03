@@ -242,7 +242,7 @@ def over_days_summary_spoke(animal_id, animal_days_df, animal_trials_df):
     MMMNNNOOO
     """
     letters = sorted(list(set(layout.replace("\n", "").replace(" ", ""))))
-    bar_plots = list("CFIL")  # manual input axes with bar plots
+    bar_plots = list("CIL")  # manual input axes with bar plots
     bottom_row = letters[-3:]
 
     exp_condition = animal_trials_df.fix_experiment.iloc[-1]
@@ -262,7 +262,7 @@ def over_days_summary_spoke(animal_id, animal_days_df, animal_trials_df):
     ## ROW 2- stage -- run time --trials
     plot_rig_tech_foodpuck(animal_days_df, ax_dict["D"], title="Tech & Rig Info")
     plot_trials(animal_days_df, ax_dict["E"], title="Trials", legend=True)
-    # TODO plot_run_time(animal_days_df, ax_dict["F"], title="Run Time")
+    plot_run_time(animal_days_df, ax_dict["F"], title="Run Time")
     ax_dict["F"].set_title("Run Time")
 
     ## ROW 3- perf -- perf bars -- ?
@@ -299,14 +299,9 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
         trial as row index
 
     # TODO
-    2. Run Time plot
     4. Inter Trial Stats
-    5. Trial Structure for FG
-    6. Cpoke Failure Rates
-    7. N Settling Ins
     8. Min/Max Deltas
     9. Fix Dur Delta Over Days
-
 
     """
 
@@ -320,7 +315,7 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     SSSTTTUUU
     """
     letters = sorted(list(set(layout.replace("\n", "").replace(" ", ""))))
-    bar_plots = list("CFILO")  # manual input axes with bar plots
+    bar_plots = list("CILO")  # manual input axes with bar plots
     bottom_row = letters[-3:]
 
     exp_condition = animal_trials_df.fix_experiment.iloc[-1]
@@ -340,7 +335,7 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     ## ROW 2- stage -- run time --trials
     plot_rig_tech_foodpuck(animal_days_df, ax_dict["D"], title="Tech & Rig Info")
     plot_trials(animal_days_df, ax_dict["E"], title="Trials", legend=True)
-    # TODO plot_run_time(animal_days_df, ax_dict["F"], title="Run Time")
+    plot_run_time(animal_days_df, ax_dict["F"], title="Run Time")
 
     ## ROW 3- perf -- perf bars -- ?
     plot_curriculum_and_give_types(
@@ -365,9 +360,6 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
         animal_trials_df, ax_dict["P"], title="Failed Fixation Rate"
     )
     plot_n_settling_ins_days(animal_trials_df, ax_dict["Q"], title="N Settling Ins")
-
-    # TODO plot_cpoke_failure_rates(animal_trials_df, ax_dict["P"], title="Failure Rates")
-    # TODO plot_n_settling_ins(animal_trials_df, ax_dict["Q"], title="N Settling Ins")
     # TODO plot_delta_fix_dur(animal_trials_df, ax_dict["R"], title="Min/Max Deltas")
 
     ## ROW 7 - cpoke dur raw -- cpoke dur relative -- delta over days
