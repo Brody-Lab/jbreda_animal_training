@@ -177,7 +177,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
         pal = ["blue", "orangered"]
 
         # sometimes there are no violations, so we can't make this plot
-        if data.isna().all().all() or data.empty:
+        if data.Viol.isna().all() or data.empty:
             return
         elif len(data) < 30:
             binwidth = None
