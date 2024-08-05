@@ -307,6 +307,11 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
 
         # df.loc[df["cpoke_dur"] < 0, "cpoke_dur"] = pd.NA
 
+        # had a typo in HistorySection send summary, fixed on 2024-08-06
+        if "delay_grwoth" in df.columns:
+            # Rename 'delay_grwoth' to 'delay_growth'
+            df.rename(columns={"delay_grwoth": "delay_growth"}, inplace=True)
+
         # !Note have stopped updating this code after DMS2 due to the read
         # !in and plots having no issues. If a plot needs a different dtype,
         # !then I take care of it within the plotting function. This allows
