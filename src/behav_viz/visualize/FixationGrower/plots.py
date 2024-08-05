@@ -13,6 +13,7 @@ from behav_viz.utils import plot_utils as pu
 from behav_viz.visualize.FixationGrower.df_preperation import (
     make_long_cpoking_stats_df,
     determine_settling_in_mode,
+    make_fixation_delta_df,
 )
 
 from behav_viz.visualize.plots import (
@@ -322,6 +323,7 @@ def plot_cpoke_fix_stats_raw(
         linestyle="--",
     )
 
+    # aesthetics
     if rotate_x_labels:
         ax.tick_params(axis="x", rotation=45)
 
@@ -329,6 +331,7 @@ def plot_cpoke_fix_stats_raw(
     if legend:
         ax.legend(title="Was Valid")
     _ = ax.set(title=title, ylabel="Duration [s]", xlabel="", ylim=(0, None))
+    ax.grid()
 
     return None
 
@@ -393,6 +396,7 @@ def plot_cpoke_fix_stats_relative(
         ax=ax,
     )
 
+    # aesthetics
     if rotate_x_labels:
         ax.tick_params(axis="x", rotation=45)
 
@@ -401,8 +405,88 @@ def plot_cpoke_fix_stats_relative(
         ax.legend(title="Was Valid")
 
     _ = ax.set(title=title, ylabel="Duration [s]", xlabel="", ylim=(0, None))
+    ax.grid()
 
     return None
+
+
+############################ FIXATION DELTA ######################################
+
+
+def plot_delta_fixation_dur(trials_df, ax=None, title="", rotate_x_labels=False):
+    """
+
+    Plot the delta fixation dur over days. This is computed as the
+    difference between the max fixation durs on consecutive days.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date` and `fixation_dur`
+        with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    max_fixation_df = make_fixation_delta_df(trials_df)
+    sns.lineplot(
+        data=max_fixation_df,
+        x="date",
+        y="fixation_delta",
+        ax=ax,
+        marker="o",
+        color="#B19220",
+    )
+
+    ax.axhline(
+        max_fixation_df.fixation_delta.mean(),
+        color="#B19220",
+        linestyle="--",
+        alpha=0.5,
+    )
+
+    # aesthetics
+    min_delta = max_fixation_df.fixation_delta.min() - 0.1
+    if rotate_x_labels:
+        plt.xticks(rotation=45)
+    _ = ax.set(
+        title=title + f" Avg: {max_fixation_df.fixation_delta.mean():.2f}",
+        ylabel="$\Delta$ Fix Dur [s]",
+        xlabel="",
+        ylim=(min(min_delta, 0), None),
+    )
+    ax.grid()
+
+    return None
+
+
+def plot_fixation_dur_box_plot(trials_df, ax=None, title="", rotate_x_labels=False):
+    """ """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    flierprops = dict(marker=".", markersize=1.5, linestyle="none")
+
+    sns.boxplot(
+        x="date",
+        y="fixation_dur",
+        data=trials_df,
+        ax=ax,
+        color="#B19220",
+        flierprops=flierprops,
+    )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+    _ = ax.set(title=title, ylabel="Fixation Dur [s]", xlabel="", ylim=(0, None))
 
 
 ############################ FAILED FIX (VIOLATIONS) ######################################

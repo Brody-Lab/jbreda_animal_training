@@ -307,7 +307,9 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     SSSTTTUUU
     """
     letters = sorted(list(set(layout.replace("\n", "").replace(" ", ""))))
-    bar_plots = list("CILO")  # manual input axes with bar plots
+    bar_plots = list(
+        "CILOR"
+    )  # manual input axes with cat plots (sns.boxplot or pandas bar)
     bottom_row = letters[-3:]
 
     exp_condition = animal_trials_df.fix_experiment.iloc[-1]
@@ -352,7 +354,9 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
         animal_trials_df, ax_dict["P"], title="Failed Fixation Rate"
     )
     plot_n_settling_ins_days(animal_trials_df, ax_dict["Q"], title="N Settling Ins")
-    # TODO plot_delta_fix_dur(animal_trials_df, ax_dict["R"], title="Min/Max Deltas")
+    FG.plot_fixation_dur_box_plot(
+        animal_trials_df, ax_dict["R"], title="Fixation Durations"
+    )
 
     ## ROW 7 - cpoke dur raw -- cpoke dur relative -- delta over days
     FG.plot_cpoke_fix_stats_raw(
@@ -361,6 +365,8 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
     FG.plot_cpoke_fix_stats_relative(
         animal_trials_df, ax_dict["T"], title="Cpoke Fix Dur Relative"
     )
-    # TODO plot_fix_dur_delta_over_days(animal_trials_df, ax_dict["U"], title="Fix Dur Delta Over Days")
+    FG.plot_delta_fixation_dur(
+        animal_trials_df, ax_dict["U"], title="Fix Dur Delta Over Days"
+    )
 
     pu.adjust_mosaic_axes(ax_dict, letters, bar_plots, bottom_row, animal_days_df)

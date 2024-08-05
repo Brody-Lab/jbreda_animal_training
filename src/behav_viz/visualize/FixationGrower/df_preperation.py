@@ -85,3 +85,22 @@ def make_long_cpoking_stats_df(trials_df: pd.DataFrame, relative: bool) -> pd.Da
         )
 
     return combined_cpoke_durs
+
+
+def make_fixation_delta_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make a dataframe with the max fixation duration for each animal_id, date
+    and the change in fixation duration from the previous day
+    """
+    max_fixation_df = (
+        df.query("stage >=5")  # only look at cpoking stages
+        .groupby(["date", "animal_id"])
+        .fixation_dur.max()
+        .reset_index()
+    )
+    max_fixation_df = max_fixation_df.rename(
+        columns={"fixation_dur": "max_fixation_dur"}
+    )
+    max_fixation_df["fixation_delta"] = max_fixation_df.max_fixation_dur.diff()
+
+    return max_fixation_df
