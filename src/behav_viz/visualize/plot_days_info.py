@@ -375,7 +375,13 @@ def plot_water_restriction(
         fig, ax = pu.make_fig()
     # iterate over dates to plot volume target black line
     for i, row in days_df.reset_index().iterrows():
-        ax.hlines(y=row["volume_target"], xmin=i - 0.35, xmax=i + 0.35, color="black")
+        # if percent target is 20, then pub is effectively off
+        if row["percent_target"] == 20:
+            continue
+        else:
+            ax.hlines(
+                y=row["volume_target"], xmin=i - 0.35, xmax=i + 0.35, color="black"
+            )
     pu.set_legend(ax, legend)
     ax.set(title=title, xlabel="", ylabel="Volume [mL]")
 
