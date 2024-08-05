@@ -77,9 +77,7 @@ def over_days_summaries(animal_id, days_df, trials_df):
                 FixationGrower.multiplots.over_days_summary_spoke(
                     animal_id, animal_days_df, animal_trials_df
                 )
-            elif current_stage <= 8:
+            else:
                 FixationGrower.multiplots.over_days_summary_cpoke_learning(
                     animal_id, animal_days_df, animal_trials_df
                 )
-            else:
-                print(f"Stage is {current_stage}, multiplot not implemented yet!")
