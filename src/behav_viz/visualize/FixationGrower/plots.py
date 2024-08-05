@@ -125,6 +125,7 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
     _ = ax.set(
         xlabel="Cpoke Dur Relative to Go [s]",
         title=f"Failure_rate {failure_rate:.2f},  Avg Cpoke Dur: {avg_cpoke_dur:.2f}",
+        ylim=(0, None),
     )
 
     return None
@@ -327,7 +328,7 @@ def plot_cpoke_fix_stats_raw(
     pu.set_legend(ax, legend)  # ax.legend(["Valid", "Invalid", "Fix", "Init"])
     if legend:
         ax.legend(title="Was Valid")
-    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="")
+    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="", ylim=(0, None))
 
     return None
 
@@ -399,7 +400,7 @@ def plot_cpoke_fix_stats_relative(
     if legend:
         ax.legend(title="Was Valid")
 
-    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="")
+    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="", ylim=(0, None))
 
     return None
 
