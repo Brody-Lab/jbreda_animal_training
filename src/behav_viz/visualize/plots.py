@@ -461,3 +461,67 @@ def plot_n_settling_ins_days(trials_df, ax=None, title="", rotate_x_labels=False
     ax.grid()
 
     return None
+
+
+############################ STAGE ######################################
+def plot_stage(
+    trials_df,
+    ax=None,
+    title="",
+    x_var="date",
+    ylim=None,
+    rotate_x_labels=False,
+    **kwargs,
+):
+    """
+    Plot stage over group variable.
+
+    Having the group variable allows you to group by other
+    things like "start_date" if you want to try and make a plot
+    with multiple animals that started at different times.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date`, `stage` with trials as row index
+    ax : matplotlib.axes.Axes (optional, default = None)
+        axes to plot on
+    title : str (optional, default = "")
+        title for the plot
+    group : str (optional, default = "date")
+        column to group by for x axis (e.g. "date", "start_date")
+    ylim : tuple (optional, default = None)
+        y-axis limits
+    rotate_x_labels : bool (optional, default = False)
+        whether to rotate the x-axis labels or not
+    """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=trials_df.groupby(x_var).stage.mean(),
+        drawstyle="steps-post",
+        ax=ax,
+        marker="o",
+        **kwargs,
+    )
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+
+    if ylim:
+        ylim = ylim
+        yticks = range(ylim[0], ylim[1] + 1)
+    else:
+        max_stage = int(trials_df.stage.max())
+        ylim = (0, max_stage + 1)
+        yticks = range(max_stage + 1)
+
+    ax.set(
+        ylabel="Stage #",
+        title=title,
+        ylim=ylim,
+        yticks=yticks,
+    )
+    ax.grid()

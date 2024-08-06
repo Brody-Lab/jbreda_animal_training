@@ -119,6 +119,10 @@ def set_legend(ax, legend):
         ax.get_legend().remove()
 
 
+### curriculum colors
+ALPHA_V1_color = "#9C1D4F"
+ALPHA_V2_color = "#1D9C6A"
+
 ### Result column utilities ###
 
 RESULT_MAP = {
