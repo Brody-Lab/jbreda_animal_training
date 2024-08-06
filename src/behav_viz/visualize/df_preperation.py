@@ -123,3 +123,48 @@ def make_long_trial_dur_df(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     return trial_dur_df
+
+
+def compute_days_relative_to_stage(
+    df: pd.DataFrame, stage: str, date_col_name: str = "date"
+) -> pd.DataFrame:
+    """
+    Compute the number of days relative to a specific stage in the dataframe.
+
+    params:
+    -------
+    df : pd.DataFrame
+        DataFrame containing the data
+    stage : str
+        The specific stage to compute the relative days for
+    date_col_name : str, optional
+        The name of the column containing the dates, by default "date"
+
+    returns:
+    --------
+    pd.DataFrame
+    DataFrame with an additional column indicating the number of days relative to the stage
+    """
+    # convert to date time
+    df["datetime_col"] = pd.to_datetime(df[date_col_name])
+
+    # find first day in stage for each animal
+    min_date_stage = (
+        df.query("stage == @stage")
+        .groupby("animal_id")["datetime_col"]
+        .min()
+        .reset_index()
+    )
+    min_date_stage.rename(
+        columns={"datetime_col": f"min_date_stage_{stage}"}, inplace=True
+    )
+
+    # merge on animal_id & subtract min column wise
+    df = df.merge(min_date_stage, on="animal_id", how="left")
+    df[f"days_relative_to_stage_{stage}"] = (
+        df["datetime_col"] - df[f"min_date_stage_{stage}"]
+    ).dt.days
+
+    df.drop(columns=["datetime_col", f"min_date_stage_{stage}"], inplace=True)
+
+    return df
