@@ -404,7 +404,7 @@ def plot_cpoke_fix_stats_relative(
     if legend:
         ax.legend(title="Was Valid")
 
-    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="", ylim=(0, None))
+    _ = ax.set(title=title, ylabel="Duration [s]", xlabel="")
     ax.grid()
 
     return None
@@ -436,6 +436,12 @@ def plot_delta_fixation_dur(trials_df, ax=None, title="", rotate_x_labels=False)
         fig, ax = pu.make_fig()
 
     max_fixation_df = make_fixation_delta_df(trials_df)
+
+    # check to make sure there has been > 1 day of fixation data
+    # to be able to have a diff
+    if len(max_fixation_df) == 1:
+        return
+
     sns.lineplot(
         data=max_fixation_df,
         x="date",
@@ -452,15 +458,18 @@ def plot_delta_fixation_dur(trials_df, ax=None, title="", rotate_x_labels=False)
         alpha=0.5,
     )
 
+    ax.axhline(0, color="k")
+
     # aesthetics
     min_delta = max_fixation_df.fixation_delta.min() - 0.1
+    max_delta = max_fixation_df.fixation_delta.max() + 0.1
     if rotate_x_labels:
         plt.xticks(rotation=45)
     _ = ax.set(
         title=title + f" Avg: {max_fixation_df.fixation_delta.mean():.2f}",
         ylabel="$\Delta$ Fix Dur [s]",
         xlabel="",
-        ylim=(min(min_delta, 0), None),
+        ylim=(min(min_delta, 0), max_delta),
     )
     ax.grid()
 

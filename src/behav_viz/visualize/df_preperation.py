@@ -68,8 +68,14 @@ def compute_failed_fixation_rate_penalty_off(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     def _compute_failed_fix_rates(group):
-        failed_fix_rate_by_trial = (group["n_settling_ins"] > 1).mean()
-        failed_fix_rate_by_poke = 1 - (len(group) / group["n_settling_ins"].sum())
+
+        # if there were no failed settling periods
+        if (group["n_settling_ins"] > 1).sum() == 0:
+            failed_fix_rate_by_trial = 0
+            failed_fix_rate_by_poke = 0
+        else:
+            failed_fix_rate_by_trial = (group["n_settling_ins"] > 1).mean()
+            failed_fix_rate_by_poke = 1 - (len(group) / group["n_settling_ins"].sum())
         return pd.Series(
             {
                 "by_trial": failed_fix_rate_by_trial,
