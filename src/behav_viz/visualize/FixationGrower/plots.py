@@ -14,11 +14,7 @@ from behav_viz.visualize.FixationGrower.df_preperation import (
     make_long_cpoking_stats_df,
     determine_settling_in_mode,
     make_fixation_delta_df,
-)
-
-from behav_viz.visualize.plots import (
-    plot_failed_fixation_rate_penalty_off,
-    plot_failed_fixation_rate_penalty_on,
+    compute_failed_fixation_rate_df,
 )
 
 ######################################################################################
@@ -525,25 +521,24 @@ def plot_failed_fixation_rate(trials_df, ax=None, title="", rotate_x_labels=Fals
     if ax is None:
         fig, ax = pu.make_fig()
 
-    settling_in_determines_fix = determine_settling_in_mode(trials_df)
+    failed_fix_df = compute_failed_fixation_rate_df(trials_df)
 
-    if settling_in_determines_fix:
-        plot_failed_fixation_rate_penalty_off(
-            trials_df,
-            only_trial_failures=False,
-            ax=ax,
-            title=title,
-            rotate_x_labels=rotate_x_labels,
-        )
-    else:
-        plot_failed_fixation_rate_penalty_on(
-            trials_df, ax=ax, title=title, rotate_x_labels=rotate_x_labels
-        )
+    sns.lineplot(
+        failed_fix_df,
+        x="date",
+        y="failure_rate",
+        hue="type",
+        hue_order=["by_trial", "by_poke", "violation"],
+        palette=["salmon", "purple", "orangered"],
+        marker="o",
+        ax=ax,
+    )
 
     # aesthetics
     if rotate_x_labels:
         ax.tick_params(axis="x", rotation=45)
     _ = ax.set(ylabel="Failed Fixation Rate", xlabel="", title=title, ylim=(-0.1, 1.1))
+    ax.grid()
 
     return None
 
