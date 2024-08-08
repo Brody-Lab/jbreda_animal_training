@@ -70,6 +70,31 @@ def plot_ma_stage_single_experiment(
     return None
 
 
+def plot_stage_compare_experiment(
+    df,
+    ax=None,
+    title="",
+    ylim=None,
+    rotate_x_labels=False,
+    relative_to_stage=None,
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    viz.plots.plot_stage(
+        df,
+        ax=ax,
+        hue="fix_experiment",
+        palette=pu.ALPHA_PALLETTE,
+        rotate_x_labels=rotate_x_labels,
+        ylim=ylim,
+        relative_to_stage=relative_to_stage,
+    )
+
+    return None
+
+
 ###################### STAGE DURATION ######################
 def compare_plot_days_in_stage(
     df,

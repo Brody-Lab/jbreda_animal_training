@@ -512,7 +512,7 @@ def plot_stage(
         x_var = f"days_relative_to_stage_{relative_to_stage}"
         xlabel = f"Days rel to stage {relative_to_stage}"
     else:
-        x_abel = ""
+        xlabel = ""
 
     if hue:
         cols = [x_var, hue]
