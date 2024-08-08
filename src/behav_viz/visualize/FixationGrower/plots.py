@@ -177,6 +177,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
             return
         elif len(data) < 30:
             binwidth = None
+            avg_viol_cpoke = np.nan
         else:
             # only plot vlines if there is enough data
             binwidth = 0.025
@@ -194,7 +195,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
 
         ax.set(
             xlabel="Failed Cpoke Dur [s]",
-            title="Avg dur Viol {:.2f}".format(avg_viol_cpoke),
+            title=f"Avg dur Viol {avg_viol_cpoke}",
         )
 
     return None
@@ -529,7 +530,7 @@ def plot_failed_fixation_rate(trials_df, ax=None, title="", rotate_x_labels=Fals
         y="failure_rate",
         hue="type",
         hue_order=["by_trial", "by_poke", "violation"],
-        palette=["salmon", "purple", "orangered"],
+        palette=["plum", "purple", "orangered"],
         marker="o",
         ax=ax,
     )
