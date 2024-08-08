@@ -1,6 +1,6 @@
 from ..utils import plot_utils
 from . import (
-    multi_animal,
+    multianimal_plots,
     multiplots,
     plot_days_info,
     plot_trials_info,

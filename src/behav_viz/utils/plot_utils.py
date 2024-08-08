@@ -122,6 +122,7 @@ def set_legend(ax, legend):
 ### curriculum colors
 ALPHA_V1_color = "#9C1D4F"
 ALPHA_V2_color = "#1D9C6A"
+ALPHA_PALLETTE = [ALPHA_V1_color, ALPHA_V2_color]
 
 ### Result column utilities ###
 

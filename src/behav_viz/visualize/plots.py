@@ -16,6 +16,7 @@ from behav_viz.visualize.df_preperation import (
     rename_curricula,
     compute_failed_fixation_rate_penalty_off,
     make_long_trial_dur_df,
+    compute_days_relative_to_stage,
 )
 
 ######################################################################################
@@ -471,6 +472,8 @@ def plot_stage(
     x_var="date",
     ylim=None,
     rotate_x_labels=False,
+    hue=None,
+    relative_to_stage=None,
     **kwargs,
 ):
     """
@@ -494,12 +497,35 @@ def plot_stage(
         y-axis limits
     rotate_x_labels : bool (optional, default = False)
         whether to rotate the x-axis labels or not
+    hue : str (optional, default = None)
+        column to color by
+    relative_to_stage : str (optional, default = None)
+        column to compute days relative to
     """
     if ax is None:
         fig, ax = pu.make_fig()
 
+    if relative_to_stage and x_var == "date":
+        trials_df = compute_days_relative_to_stage(
+            trials_df, stage=relative_to_stage
+        ).reset_index()
+        x_var = f"days_relative_to_stage_{relative_to_stage}"
+        xlabel = f"Days rel to stage {relative_to_stage}"
+    else:
+        x_abel = ""
+
+    if hue:
+        cols = [x_var, hue]
+    else:
+        cols = [x_var]
+
+    plot_df = trials_df.groupby(cols).stage.mean().reset_index()
+
     sns.lineplot(
-        data=trials_df.groupby(x_var).stage.mean(),
+        data=plot_df,
+        y="stage",
+        x=x_var,
+        hue=hue,
         drawstyle="steps-post",
         ax=ax,
         marker="o",
@@ -520,6 +546,7 @@ def plot_stage(
 
     ax.set(
         ylabel="Stage #",
+        xlabel=xlabel,
         title=title,
         ylim=ylim,
         yticks=yticks,

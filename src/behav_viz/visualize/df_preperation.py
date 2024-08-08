@@ -126,7 +126,7 @@ def make_long_trial_dur_df(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def compute_days_relative_to_stage(
-    df: pd.DataFrame, stage: str, date_col_name: str = "date"
+    df: pd.DataFrame, stage: int, date_col_name: str = "date"
 ) -> pd.DataFrame:
     """
     Compute the number of days relative to a specific stage in the dataframe.
@@ -135,7 +135,7 @@ def compute_days_relative_to_stage(
     -------
     df : pd.DataFrame
         DataFrame containing the data
-    stage : str
+    stage : int
         The specific stage to compute the relative days for
     date_col_name : str, optional
         The name of the column containing the dates, by default "date"
@@ -170,17 +170,39 @@ def compute_days_relative_to_stage(
     return df
 
 
-def make_days_in_stage_df(df, min_stage=None, max_stage=None):
-    """ """
+def make_days_in_stage_df(df, min_stage=None, max_stage=None, hue_var=None):
+    """
+    Compute the number of days spent in each stage, for each animal in the df
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        DataFrame containing the data
+    min_stage : int, optional
+        The minimum stage value to include in the computation, by default None
+    max_stage : int, optional
+        The maximum stage value to include in the computation, by default None
+    hue_var : str, optional
+        The variable to use for grouping, by default None
+
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame with an additional column indicating the number of days relative to the stage
+    """
     # query the df for stage >= min_stage and stage <= max_stage
     # if they are not None
     if min_stage is not None:
         df = df.query("stage >= @min_stage")
     if max_stage is not None:
         df = df.query("stage <= @max_stage")
+    if hue_var is None:
+        cols = ["animal_id", "stage"]
+    else:
+        cols = ["animal_id", "stage", hue_var]
 
     days_in_stage_df = (
-        df.groupby(["animal_id", "stage"])
+        df.groupby(cols)
         .agg(n_days=pd.NamedAgg(column="date", aggfunc="nunique"))
         .reset_index()
     )
