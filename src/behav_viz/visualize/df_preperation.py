@@ -168,3 +168,21 @@ def compute_days_relative_to_stage(
     df.drop(columns=["datetime_col", f"min_date_stage_{stage}"], inplace=True)
 
     return df
+
+
+def make_days_in_stage_df(df, min_stage=None, max_stage=None):
+    """ """
+    # query the df for stage >= min_stage and stage <= max_stage
+    # if they are not None
+    if min_stage is not None:
+        df = df.query("stage >= @min_stage")
+    if max_stage is not None:
+        df = df.query("stage <= @max_stage")
+
+    days_in_stage_df = (
+        df.groupby(["animal_id", "stage"])
+        .agg(n_days=pd.NamedAgg(column="date", aggfunc="nunique"))
+        .reset_index()
+    )
+
+    return days_in_stage_df
