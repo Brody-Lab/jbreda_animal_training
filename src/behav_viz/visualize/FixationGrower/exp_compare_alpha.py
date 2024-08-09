@@ -96,49 +96,52 @@ def plot_stage_compare_experiment(
 
 
 ###################### STAGE DURATION ######################
-def compare_plot_days_in_stage(
+def plot_days_in_stage_single_experiment(
     df,
+    experiment,
     ax=None,
     min_stage=None,
     max_stage=None,
+    title="",
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig((6, 4))
+
+    plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
+    color = pu.ALPHA_V1_color if "1" in experiment else pu.ALPHA_V2_color
+
+    viz.multianimal_plots.plot_ma_days_in_stage(
+        plot_df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        plot_individuals=True,
+        color=color,
+        title=title,
+    )
+
+    return None
+
+
+def plot_days_in_stage_compare_experiment(
+    df, ax=None, min_stage=None, max_stage=None, title=""
 ):
     """TODO: first make a general one then specific"""
 
     if ax is None:
         fig, ax = pu.make_fig((6, 4))
 
-    days_in_stage_df = viz.df_preperation.make_days_in_stage_df(
-        df, min_stage, max_stage, hue_var="fix_experiment"
-    )
-
-    sns.boxplot(
-        data=days_in_stage_df,
-        x="stage",
-        y="n_days",
-        hue="fix_experiment",
-        hue_order=["V1", "V2"],
-        palette=[pu.ALPHA_V1_color, pu.ALPHA_V2_color],
+    viz.multianimal_plots.plot_ma_days_in_stage_by_condition(
+        df,
+        condition="fix_experiment",
         ax=ax,
-        showfliers=False,
-        dodge=True,
-    )
-    sns.swarmplot(
-        data=days_in_stage_df,
-        x="stage",
-        y="n_days",
-        hue="fix_experiment",
+        min_stage=min_stage,
+        max_stage=max_stage,
+        plot_individuals=True,
         hue_order=["V1", "V2"],
-        palette=[pu.ALPHA_V1_color, pu.ALPHA_V2_color],
-        alpha=0.5,
-        dodge=True,
-        ax=ax,
+        palette=pu.ALPHA_PALLETTE,
+        title=title,
     )
-
-    _ = ax.set(ylabel="N Days", xlabel="Stage")
-    sns.despine()
-
-    # Optionally adjust the legend
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles[0:2], labels[0:2], title="fix_experiment", frameon=False)
 
     return None
