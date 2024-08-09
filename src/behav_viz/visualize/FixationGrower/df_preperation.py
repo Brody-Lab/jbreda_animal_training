@@ -120,14 +120,18 @@ def make_fixation_delta_df(df: pd.DataFrame) -> pd.DataFrame:
     max_fixation_df = max_fixation_df.rename(
         columns={"fixation_dur": "max_fixation_dur"}
     )
-    max_fixation_df["fixation_delta"] = max_fixation_df.max_fixation_dur.diff()
+    max_fixation_df["fixation_delta"] = max_fixation_df.groupby(
+        "animal_id"
+    ).max_fixation_dur.diff()
 
     return max_fixation_df
 
 
 def compute_failed_fixation_rate_df(df: pd.DataFrame) -> pd.DataFrame:
     # Group by date and apply the existing function
-    grouped_results = df.groupby("date").apply(compute_failed_fixation_rate)
+    grouped_results = df.groupby(["animal_id", "date"]).apply(
+        compute_failed_fixation_rate
+    )
 
     # Reset index to flatten the multi-index created by groupby
     failed_fix_df = grouped_results.reset_index(drop=True)
