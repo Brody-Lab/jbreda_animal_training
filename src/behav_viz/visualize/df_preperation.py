@@ -183,7 +183,8 @@ def make_days_in_stage_df(df, min_stage=None, max_stage=None, hue_var=None):
     max_stage : int, optional
         The maximum stage value to include in the computation, by default None
     hue_var : str, optional
-        The variable to use for grouping, by default None
+        Additional variable to use for grouping, by default None  and groups by
+        animal_id, stage, and fix_experiment
 
     Returns:
     --------
@@ -197,9 +198,9 @@ def make_days_in_stage_df(df, min_stage=None, max_stage=None, hue_var=None):
     if max_stage is not None:
         df = df.query("stage <= @max_stage")
     if hue_var is None:
-        cols = ["animal_id", "stage"]
+        cols = ["animal_id", "stage", "fix_experiment"]
     else:
-        cols = ["animal_id", "stage", hue_var]
+        cols = ["animal_id", "stage", "fix_experiment", hue_var]
 
     days_in_stage_df = (
         df.groupby(cols)

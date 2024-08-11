@@ -145,3 +145,25 @@ def plot_days_in_stage_compare_experiment(
     )
 
     return None
+
+
+def plot_stage_in_stage_by_animal_single_experiment(
+    df, experiment, ax=None, min_stage=None, max_stage=None, title=""
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig((8, 4))
+
+    plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
+    pal = pu.ALPHA_V1_palette if "1" in experiment else pu.ALPHA_V2_palette
+
+    viz.multianimal_plots.plot_ma_days_in_stage_by_animal(
+        plot_df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        palette=pal,
+        title=title,
+    )
+
+    return None

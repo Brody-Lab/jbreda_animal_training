@@ -17,7 +17,7 @@ def plot_ma_stage(
     ylim=None,
     rotate_x_labels=False,
     relative_to_stage=None,
-    **kwargs
+    **kwargs,
 ):
 
     if ax is None:
@@ -42,7 +42,7 @@ def plot_ma_stage(
         rotate_x_labels=rotate_x_labels,
         ylim=ylim,
         relative_to_stage=relative_to_stage,
-        **kwargs
+        **kwargs,
     )
 
 
@@ -56,7 +56,7 @@ def plot_ma_stage_by_condition(
     ylim=None,
     rotate_x_labels=False,
     relative_to_stage=None,
-    **kwargs
+    **kwargs,
 ):
 
     if ax is None:
@@ -76,7 +76,7 @@ def plot_ma_stage_by_condition(
                 alpha=0.5,
                 color=color,
                 relative_to_stage=relative_to_stage,
-                **kwargs
+                **kwargs,
             )
 
     # plot the mean of the animals
@@ -89,7 +89,7 @@ def plot_ma_stage_by_condition(
         ylim=ylim,
         palette=pal,
         relative_to_stage=relative_to_stage,
-        **kwargs
+        **kwargs,
     )
 
     _ = ax.set(
@@ -107,7 +107,7 @@ def plot_ma_days_in_stage(
     max_stage=None,
     plot_individuals=True,
     title="",
-    **kwargs
+    **kwargs,
 ):
 
     if ax is None:
@@ -139,14 +139,16 @@ def plot_ma_days_in_stage_by_condition(
     max_stage=None,
     plot_individuals=True,
     title="",
-    **kwargs
+    **kwargs,
 ):
 
     if ax is None:
         fig, ax = pu.make_fig((6, 4))
 
     days_in_stage_df = viz.df_preperation.make_days_in_stage_df(
-        df, min_stage, max_stage, hue_var=condition
+        df,
+        min_stage,
+        max_stage,
     )
 
     sns.boxplot(
@@ -157,7 +159,7 @@ def plot_ma_days_in_stage_by_condition(
         **kwargs,
         ax=ax,
         showfliers=False,
-        dodge=True
+        dodge=True,
     )
     if plot_individuals:
         sns.swarmplot(
@@ -168,7 +170,7 @@ def plot_ma_days_in_stage_by_condition(
             ax=ax,
             dodge=True,
             alpha=0.5,
-            **kwargs
+            **kwargs,
         )
 
     # Only plot legend for boxplot
@@ -182,6 +184,39 @@ def plot_ma_days_in_stage_by_condition(
     )
 
     _ = ax.set(ylabel="N Days", xlabel="Stage", title=title)
+    sns.despine()
+
+    return None
+
+
+def plot_ma_days_in_stage_by_animal(
+    df,
+    ax=None,
+    min_stage=None,
+    max_stage=None,
+    title="",
+    **kwargs,
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig((8, 4))
+
+    days_in_stage_df = viz.df_preperation.make_days_in_stage_df(
+        df, min_stage, max_stage
+    )
+
+    sns.barplot(
+        data=days_in_stage_df,
+        x="animal_id",
+        y="n_days",
+        hue="stage",
+        **kwargs,
+        ax=ax,
+    )
+
+    _ = ax.set(ylabel="N Days", xlabel="", title=title)
+    ax.tick_params(axis="x", rotation=90)
+    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), title="Stage")
     sns.despine()
 
     return None
