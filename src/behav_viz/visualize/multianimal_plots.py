@@ -73,7 +73,7 @@ def plot_ma_stage_by_condition(
                 sub_sub_df,
                 x_var=x_var,
                 ax=ax,
-                alpha=0.5,
+                alpha=0.25,
                 color=color,
                 relative_to_stage=relative_to_stage,
                 **kwargs,
@@ -125,7 +125,7 @@ def plot_ma_days_in_stage(
             data=days_in_stage_df, x="stage", y="n_days", label="", color="gray", ax=ax
         )
 
-    _ = ax.set(ylabel="N Days", xlabel="Stage", title=title)
+    _ = ax.set(ylabel="N Days", xlabel="Stage", title=title, ylim=(0, None))
     sns.despine()
 
     return None
@@ -179,11 +179,13 @@ def plot_ma_days_in_stage_by_condition(
     ax.legend(
         handles[0:n_conditons],
         labels[0:n_conditons],
-        title="fix_experiment",
+        title="Exp",
         frameon=False,
+        loc="center left",
+        bbox_to_anchor=(1, 0.5),
     )
 
-    _ = ax.set(ylabel="N Days", xlabel="Stage", title=title)
+    _ = ax.set(ylabel="N Days", xlabel="Stage", title=title, ylim=(0, None))
     sns.despine()
 
     return None
