@@ -222,3 +222,37 @@ def plot_ma_days_in_stage_by_animal(
     sns.despine()
 
     return None
+
+
+###################### DURATION TO REACH TARGET FIXATION  ######################
+def days_to_reach_target_fix_histogram(
+    df,
+    ax=None,
+    relative_stage=5,
+    title="",
+    binwidth=0.9,
+    **kwargs,
+):
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    target_fix_df = viz.FixationGrower.df_preperation.compute_days_to_target_fix_df(
+        df, relative_stage=relative_stage
+    )
+
+    sns.histplot(
+        data=target_fix_df,
+        x="days_to_target",
+        binwidth=binwidth,
+        ax=ax,
+        **kwargs,
+    )
+
+    _ = ax.set(
+        xlabel="Days to reach target fixation",
+        ylabel="N Animals",
+        title=title,
+    )
+
+    return None

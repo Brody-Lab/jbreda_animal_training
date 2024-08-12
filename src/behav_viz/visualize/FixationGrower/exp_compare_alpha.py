@@ -167,3 +167,117 @@ def plot_stage_in_stage_by_animal_single_experiment(
     )
 
     return None
+
+
+###################### DURATION TO REACH TARGET FIXATION  ######################
+
+
+def plot_days_to_reach_target_fix_boxplot_compare_experiment(
+    df, ax=None, title="", relative_stage=5
+):
+    """
+    Plots a comparison of days to reach the target fixation for different
+    experiments using a boxplot and swarmplot.
+
+    Parameters:
+        df (DataFrame):
+            DataFrame containing the data with columns like "fix_experiment" and "days_to_target".
+        ax (matplotlib.axes._subplots.AxesSubplot, optional):
+            Axes object to draw the plot onto, otherwise creates a new figure.
+        title (str, optional):
+            Title for the plot.
+        relative_stage (int, optional):
+            Which stage to consider for the relative days calculation.
+
+    """
+
+    # Compute target fix df
+    target_fix_df = viz.FixationGrower.df_preperation.compute_days_to_target_fix_df(
+        df, relative_stage=relative_stage
+    )
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    # order it so V1 is first on x axis
+    target_fix_df["fix_experiment"] = pd.Categorical(
+        target_fix_df["fix_experiment"], categories=["V1", "V2"], ordered=True
+    )
+    # Boxplot
+    sns.boxplot(
+        data=target_fix_df,
+        x="fix_experiment",
+        y="days_to_target",
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        dodge=False,
+        ax=ax,
+        boxprops=dict(alpha=0.5),
+    )
+
+    # Swarmplot
+    sns.swarmplot(
+        data=target_fix_df,
+        x="fix_experiment",
+        y="days_to_target",
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        ax=ax,
+        size=7,
+    )
+
+    # Set labels, title, and limits
+    ax.set(ylabel="Days to Target Fix", xlabel="", ylim=(3, None), title=title)
+
+    # Remove the extra legend if hue was used in both plots
+    if ax.get_legend():
+        ax.legend_.remove()
+
+    return None
+
+
+def plot_days_to_reach_target_fix_histogram_single_experiment(
+    df,
+    experiment,
+    ax=None,
+    title="",
+    relative_stage=5,
+    binwidth=0.9,
+):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
+    color = pu.ALPHA_V1_color if "1" in experiment else pu.ALPHA_V2_color
+
+    viz.multianimal_plots.days_to_reach_target_fix_histogram(
+        plot_df,
+        ax=ax,
+        relative_stage=relative_stage,
+        title=title,
+        binwidth=binwidth,
+        color=color,
+    )
+
+    return None
+
+
+def plot_days_to_reach_target_fix_histogram_compare_experiment(
+    df, ax=None, title="", relative_stage=5, binwidth=0.9
+):
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(6, 4))
+
+    viz.multianimal_plots.days_to_reach_target_fix_histogram(
+        df,
+        ax=ax,
+        relative_stage=relative_stage,
+        title=title,
+        binwidth=binwidth,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        element="step",
+    )

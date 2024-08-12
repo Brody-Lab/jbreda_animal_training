@@ -167,7 +167,7 @@ def compute_days_relative_to_stage(
 
     df.drop(columns=["datetime_col", f"min_date_stage_{stage}"], inplace=True)
 
-    return df
+    return df.copy()
 
 
 def make_days_in_stage_df(df, min_stage=None, max_stage=None, hue_var=None):

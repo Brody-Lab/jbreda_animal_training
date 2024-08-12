@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from behav_viz.utils import plot_utils as pu
+import behav_viz.visualize as viz
 
 
 def determine_settling_in_mode(df: pd.DataFrame):
@@ -180,3 +181,41 @@ def compute_failed_fixation_rate_penalty_on(group: pd.DataFrame) -> pd.DataFrame
             "failure_rate": [group.violations.mean()],
         }
     )
+
+
+def compute_days_to_target_fix_df(
+    df: pd.DataFrame, relative_stage: int = 5
+) -> pd.DataFrame:
+    """
+    Computes the minimum days relative to a given stage for animals that have reached target fixation.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        DataFrame containing the trial data. Must include columns 'has_reached_target_fixation',
+        'animal_id', 'fix_experiment', and 'days_relative_to_stage_{relative_stage}'.
+    relative_stage : int, optional
+        The stage relative to which the days are computed, by default 5.
+
+    Returns:
+    -------
+    pd.DataFrame
+        DataFrame with columns 'animal_id', 'fix_experiment', and 'days_to_target'.
+    """
+    df = viz.df_preperation.compute_days_relative_to_stage(df, stage=relative_stage)
+
+    target_fix_df = (
+        df.query("has_reached_target_fixation == True")
+        .groupby(["animal_id", "fix_experiment"])[
+            f"days_relative_to_stage_{relative_stage}"
+        ]
+        .min()
+        .reset_index()
+    )
+
+    target_fix_df.rename(
+        columns={f"days_relative_to_stage_{relative_stage}": "days_to_target"},
+        inplace=True,
+    )
+
+    return target_fix_df
