@@ -6,6 +6,114 @@ import matplotlib.pyplot as plt
 from behav_viz.utils import plot_utils as pu
 import behav_viz.visualize as viz
 
+
+###################### FAILED FIXATIONS & VIOLATIONS  ######################
+
+
+def plot_failed_fix_median_line(ax, df, **kwargs):
+
+    hue = kwargs.get("hue", None)
+    palette = kwargs.get("palette", "Set2")
+    color = kwargs.get("color", None)
+    hue_order = kwargs.get("hue_order", None)
+
+    if hue:
+
+        if hue_order:
+            df = df.sort_values(by=hue)
+            categories = hue_order
+        elif hue:
+            categories = sorted(df[hue].unique())
+
+        for idx, category in enumerate(categories):
+            median_value = df[df[hue] == category]["failure_rate"].median()
+            pal_color = palette[idx]
+            ax.axvline(
+                median_value,
+                linestyle="--",
+                color=pal_color,
+            )
+
+            ax.text(
+                median_value,
+                0.1,
+                f"{median_value:.2f}",
+                rotation=90,
+                verticalalignment="bottom",
+                horizontalalignment="right",
+            )
+    else:
+        median_value = df["failure_rate"].median()
+        ax.axvline(
+            median_value,
+            linestyle="--",
+            label=f"Median: {median_value:.2f}",
+            color=color,
+        )
+        ax.text(
+            median_value,
+            0.1,
+            f"{median_value:.2f}",
+            rotation=90,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+        )
+
+    return None
+
+
+def plot_failed_fixation_histogram(
+    df,
+    settling_in_type="by_poke",
+    min_stage=5,
+    max_stage=None,
+    ax=None,
+    title="",
+    **kwargs,
+):
+
+    # Prepare df and filter as needed
+    failed_fix_rates_df = (
+        viz.FixationGrower.df_preperation.compute_failed_fixation_rate_df(df)
+    )
+
+    failed_fix_rates_df = viz.FixationGrower.df_preperation.filter_failed_fix_df(
+        failed_fix_rates_df, min_stage, max_stage, settling_in_type
+    )
+
+    # Plot
+    if ax is None:
+        fig, ax = pu.make_fig("m")
+
+    try:
+        sns.histplot(
+            data=failed_fix_rates_df,
+            x="failure_rate",
+            binwidth=0.05,
+            ax=ax,
+            **kwargs,
+        )
+    except:
+        sns.histplot(
+            data=failed_fix_rates_df,
+            x="failure_rate",
+            binwidth=None,
+            ax=ax,
+            **kwargs,
+        )
+
+    # Plot median lines
+    plot_failed_fix_median_line(ax, failed_fix_rates_df, **kwargs)
+
+    # Aesthetics
+    _ = ax.set(
+        title=title,
+        xlabel="Failed Fixation Rate",
+        ylabel="Session Count",
+        xlim=(0, 1),
+    )
+
+
 ###################### STAGE  ######################
 
 
@@ -111,7 +219,7 @@ def plot_ma_days_in_stage(
 ):
 
     if ax is None:
-        fig, ax = pu.make_fig((6, 4))
+        fig, ax = pu.make_fig("m")
 
     days_in_stage_df = viz.df_preperation.make_days_in_stage_df(
         df, min_stage, max_stage

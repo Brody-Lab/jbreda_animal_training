@@ -130,9 +130,9 @@ def make_fixation_delta_df(df: pd.DataFrame) -> pd.DataFrame:
 
 def compute_failed_fixation_rate_df(df: pd.DataFrame) -> pd.DataFrame:
     # Group by date and apply the existing function
-    grouped_results = df.groupby(["animal_id", "date"]).apply(
-        compute_failed_fixation_rate
-    )
+    grouped_results = df.groupby(
+        ["animal_id", "date", "stage", "fix_experiment"]
+    ).apply(compute_failed_fixation_rate)
 
     # Reset index to flatten the multi-index created by groupby
     failed_fix_df = grouped_results.reset_index(drop=True)
@@ -163,6 +163,8 @@ def compute_failed_fixation_rate_penalty_off(group: pd.DataFrame) -> pd.DataFram
     return pd.DataFrame(
         {
             "animal_id": [group.animal_id.iloc[0]] * 2,
+            "stage": [group.stage.iloc[0]] * 2,
+            "fix_experiment": [group.fix_experiment.iloc[0]] * 2,
             "date": [group.date.iloc[0]] * 2,
             "type": ["by_trial", "by_poke"],
             "failure_rate": [failed_fix_rate_by_trial, failed_fix_rate_by_poke],
@@ -176,11 +178,28 @@ def compute_failed_fixation_rate_penalty_on(group: pd.DataFrame) -> pd.DataFrame
     return pd.DataFrame(
         {
             "animal_id": [group.animal_id.iloc[0]],
+            "stage": [group.stage.iloc[0]],
+            "fix_experiment": [group.fix_experiment.iloc[0]],
             "date": [group.date.iloc[0]],
             "type": ["violation"],
             "failure_rate": [group.violations.mean()],
         }
     )
+
+
+def filter_failed_fix_df(df: pd.DataFrame, min_stage, max_stage, settling_in_type):
+    """
+    Used for multi animal plots to filter the failed fixation rate dataframe
+    """
+    if min_stage is not None:
+        df = df[df["stage"] >= min_stage]
+    if max_stage is not None:
+        df = df[df["stage"] <= max_stage]
+    if settling_in_type == "by_poke":
+        df = df.query("type != 'by_trial'")
+    elif settling_in_type == "by_trial":
+        df = df.query("type != 'by_poke'")
+    return df
 
 
 def compute_days_to_target_fix_df(

@@ -16,6 +16,8 @@ def make_fig(dims=None):
 
     if dims == "s":
         dims = (4, 4)
+    elif dims == "m":
+        dims = (6, 4)
     elif dims == "w" or dims is None:
         dims = (12, 4)
 

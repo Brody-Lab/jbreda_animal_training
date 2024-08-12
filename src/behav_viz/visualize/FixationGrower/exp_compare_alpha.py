@@ -8,6 +8,73 @@ import behav_viz.visualize as viz
 from behav_viz.visualize.df_preperation import compute_days_relative_to_stage
 
 
+###################### FAILED FIXATION & VIOLATIONS  ######################
+
+######## HISTOGRAMS  ########
+
+
+def plot_failed_fixation_histogram_single_experiment(
+    df,
+    experiment,
+    ax=None,
+    title="",
+    min_stage=5,
+    max_stage=None,
+    settling_in_type="by_poke",
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig("m")
+
+    plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
+    color = pu.ALPHA_V1_color if "1" in experiment else pu.ALPHA_V2_color
+
+    viz.multianimal_plots.plot_failed_fixation_histogram(
+        plot_df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        settling_in_type=settling_in_type,
+        title=title,
+        color=color,
+    )
+
+    return None
+
+
+def plot_failed_fixation_histogram_compare_experiment(
+    df,
+    ax=None,
+    title="",
+    min_stage=5,
+    max_stage=None,
+    settling_in_type="by_poke",
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig("m")
+
+    # order it so V1 is first on x axis
+    df["fix_experiment"] = pd.Categorical(
+        df["fix_experiment"], categories=["V1", "V2"], ordered=True
+    )
+
+    viz.multianimal_plots.plot_failed_fixation_histogram(
+        df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        settling_in_type=settling_in_type,
+        title=title,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        element="step",
+    )
+
+    return None
+
+
 ###################### STAGE PROGRESS OVER DATE ######################
 
 
@@ -197,7 +264,7 @@ def plot_days_to_reach_target_fix_boxplot_compare_experiment(
     )
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = pu.make_fig("m")
 
     # order it so V1 is first on x axis
     target_fix_df["fix_experiment"] = pd.Categorical(
@@ -247,7 +314,7 @@ def plot_days_to_reach_target_fix_histogram_single_experiment(
     binwidth=0.9,
 ):
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = pu.make_fig("m")
 
     plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
     color = pu.ALPHA_V1_color if "1" in experiment else pu.ALPHA_V2_color
@@ -268,7 +335,7 @@ def plot_days_to_reach_target_fix_histogram_compare_experiment(
     df, ax=None, title="", relative_stage=5, binwidth=0.9
 ):
     if ax is None:
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = pu.make_fig("m")
 
     viz.multianimal_plots.days_to_reach_target_fix_histogram(
         df,
