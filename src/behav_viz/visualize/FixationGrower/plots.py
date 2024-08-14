@@ -93,7 +93,9 @@ def plot_cpoke_dur_distributions(trials_df, ax=None):
         _, ax = pu.make_fig()
 
     # to avoid binning issues
-    if len(plot_df) < 30:
+    if plot_df.empty:
+        return
+    elif len(plot_df) < 30:
         binwidth = None
     else:
         binwidth = 0.025

@@ -654,6 +654,10 @@ def plot_first_spoke_summary_by_loc_and_result(trials_df, ax, title="", legend=F
     legend : bool, (default = False)
         whether to include legend or not
     """
+
+    if (trials_df["min_time_to_spoke"]).isna().all():
+        return None
+
     sns.stripplot(
         data=trials_df.query("first_spoke != 'n'"),
         x="first_spoke",
