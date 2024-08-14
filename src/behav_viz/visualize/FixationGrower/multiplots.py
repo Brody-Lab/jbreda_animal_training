@@ -275,8 +275,10 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
 
     ## ROW 6 - failure rates -- n settling ins/trial -- min/max deltas
 
-    FG.plot_failed_fixation_rate(
-        animal_trials_df, ax_dict["P"], title="Failed Fixation Rate"
+    FG.plot_failed_fixation_rate_ods(
+        animal_trials_df,
+        ax=ax_dict["P"],
+        title="Failed Fixation Rate",
     )
     plot_n_settling_ins_days(animal_trials_df, ax_dict["Q"], title="N Settling Ins")
     FG.plot_fixation_dur_box_plot(

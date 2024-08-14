@@ -15,7 +15,9 @@ from behav_viz.visualize.FixationGrower.df_preperation import (
     determine_settling_in_mode,
     make_fixation_delta_df,
     compute_failed_fixation_rate_df,
+    filter_failed_fix_df,
 )
+from behav_viz.visualize.df_preperation import compute_days_relative_to_stage
 
 ######################################################################################
 #########                        SINGLE DAY PLOTS                            #########
@@ -500,7 +502,17 @@ def plot_fixation_dur_box_plot(trials_df, ax=None, title="", rotate_x_labels=Fal
 ############################ FAILED FIX (VIOLATIONS) ######################################
 
 
-def plot_failed_fixation_rate(trials_df, ax=None, title="", rotate_x_labels=False):
+def plot_failed_fixation_rate(
+    trials_df,
+    settling_in_type,
+    min_stage=None,
+    max_stage=None,
+    relative_to_stage=None,
+    ax=None,
+    title="",
+    rotate_x_labels=False,
+    **kwargs,
+):
     """
     Plot the failed fixation rate over days. This function determines
     how the failed fixation rate is calculated based on the settling in
@@ -521,27 +533,87 @@ def plot_failed_fixation_rate(trials_df, ax=None, title="", rotate_x_labels=Fals
         whether to rotate the x-axis labels or not
     """
 
+    # Prepare Data
+    failed_fix_df = compute_failed_fixation_rate_df(trials_df)
+
+    failed_fix_df = filter_failed_fix_df(
+        failed_fix_df, min_stage, max_stage, settling_in_type
+    )
+
+    if relative_to_stage:
+        failed_fix_df = compute_days_relative_to_stage(
+            failed_fix_df, relative_to_stage
+        ).reset_index()
+        x_var = f"days_relative_to_stage_{relative_to_stage}"
+        xlabel = f"Days rel to stage {relative_to_stage}"
+    else:
+        x_var = "date"
+        xlabel = ""
+
+    # Plot
     if ax is None:
         fig, ax = pu.make_fig()
 
-    failed_fix_df = compute_failed_fixation_rate_df(trials_df)
-
     sns.lineplot(
         failed_fix_df,
-        x="date",
+        x=x_var,
         y="failure_rate",
-        hue="type",
-        hue_order=["by_trial", "by_poke", "violation"],
-        palette=["plum", "purple", "orangered"],
         marker="o",
         ax=ax,
+        **kwargs,
     )
+    # Handle legend for hue only
+
+    hue = kwargs.get("hue", None)
+    style = kwargs.get("style", None)
+    if hue and style:
+        handles, labels = ax.get_legend_handles_labels()
+        cutoff_index = labels.index(style)
+        hue_handles = handles[:cutoff_index]
+        hue_labels = labels[:cutoff_index]
+        ax.legend(hue_handles, hue_labels)
 
     # aesthetics
     if rotate_x_labels:
         ax.tick_params(axis="x", rotation=45)
-    _ = ax.set(ylabel="Failed Fixation Rate", xlabel="", title=title, ylim=(-0.1, 1.1))
+    _ = ax.set(
+        ylabel="Failed Fixation Rate", xlabel=xlabel, title=title, ylim=(-0.1, 1.1)
+    )
     ax.grid()
+
+    return None
+
+
+def plot_failed_fixation_rate_ods(
+    trials_df,
+    ax,
+    title,
+):
+    """
+    Quick wrapper function specific to the over days summary plot that
+    passes in the desired formatting for the plot.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        trials dataframe with columns `date` and `violations`
+        `settling_in_determines_fixation` with trials as row index
+    ax : matplotlib.axes.Axes
+        axes to plot on
+    title : str
+        title for the plot
+    """
+
+    plot_failed_fixation_rate(
+        trials_df,
+        settling_in_type="all",
+        ax=ax,
+        title=title,
+        rotate_x_labels=False,
+        hue="type",
+        hue_order=["by_trial", "by_poke", "violation"],
+        palette=["plum", "purple", "orangered"],
+    )
 
     return None
 

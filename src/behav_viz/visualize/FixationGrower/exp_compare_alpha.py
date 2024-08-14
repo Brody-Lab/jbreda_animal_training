@@ -10,7 +10,137 @@ from behav_viz.visualize.df_preperation import compute_days_relative_to_stage
 
 ###################### FAILED FIXATION & VIOLATIONS  ######################
 
-######## HISTOGRAMS  ########
+#### OVER DAYS ####
+
+
+def plot_failed_fixation_rate_single_experiment(
+    df,
+    experiment,
+    ax=None,
+    title="",
+    min_stage=5,
+    max_stage=None,
+    settling_in_type="by_poke",
+    relative_to_stage=5,
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    plot_df = df[df["fix_experiment"].str.contains(experiment, case=False)].copy()
+    color = pu.ALPHA_V1_color if "1" in experiment else pu.ALPHA_V2_color
+
+    viz.multianimal_plots.plot_ma_failed_fixation_rate(
+        plot_df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        settling_in_type=settling_in_type,
+        relative_to_stage=relative_to_stage,
+        title=title,
+        color=color,
+        style="type",
+    )
+
+    return None
+
+
+def plot_failed_fixation_rate_turn_penalty_on(
+    df,
+    ax=None,
+    title="",
+    min_stage=7,
+    max_stage=8,
+    day_range=(-3, 3),
+    settling_in_type="by_poke",
+    style="type",
+):
+    """
+    Note this plot is only relevant for the V2 Condition
+
+    """
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    plot_df = df[df["fix_experiment"].str.contains("V2", case=False)].copy()
+    color = pu.ALPHA_V2_color
+
+    # hacky way to pre-filter the data so x lims are nice
+    plot_df = compute_days_relative_to_stage(plot_df, stage=8).reset_index()
+    plot_df = plot_df.query(
+        f"days_relative_to_stage_8 >= {day_range[0]} & days_relative_to_stage_8 <= {day_range[1]}"
+    ).copy()
+
+    viz.multianimal_plots.plot_ma_failed_fixation_rate(
+        plot_df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        settling_in_type=settling_in_type,
+        title=title,
+        color=color,
+        relative_to_stage=8,
+        style=style,
+    )
+
+    ax.grid()
+    ax.axvline(-0.5, color="black", linestyle="--")
+
+    return None
+
+
+def plot_failed_fixation_rate_compare_experiment(
+    df,
+    ax=None,
+    title="",
+    min_stage=5,
+    max_stage=7,
+    settling_in_type="by_poke",
+    relative_to_stage=5,
+    plot_individuals=True,
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    # order it so V1 is first on x axis
+    df["fix_experiment"] = pd.Categorical(
+        df["fix_experiment"], categories=["V1", "V2"], ordered=True
+    )
+
+    if plot_individuals:
+
+        viz.multianimal_plots.plot_ma_failed_fixation_rate_by_condition(
+            df,
+            condition="fix_experiment",
+            ax=ax,
+            min_stage=min_stage,
+            max_stage=max_stage,
+            settling_in_type=settling_in_type,
+            relative_to_stage=relative_to_stage,
+            title=title,
+            hue_order=["V1", "V2"],
+            palette=pu.ALPHA_PALLETTE,
+        )
+
+    else:
+        viz.FixationGrower.plots.plot_failed_fixation_rate(
+            df,
+            ax=ax,
+            min_stage=min_stage,
+            max_stage=max_stage,
+            settling_in_type=settling_in_type,
+            relative_to_stage=relative_to_stage,
+            hue="fix_experiment",
+            hue_order=["V1", "V2"],
+            palette=pu.ALPHA_PALLETTE,
+            title=title,
+        )
+
+    return None
+
+
+#### SUMMARIES  ####
 
 
 def plot_failed_fixation_histogram_single_experiment(
@@ -78,29 +208,42 @@ def plot_failed_fixation_histogram_compare_experiment(
 ###################### STAGE PROGRESS OVER DATE ######################
 
 
-def plot_ma_stage_compare_experiments(
+def plot_stage_compare_experiments(
     df,
     ax=None,
     title="",
     ylim=None,
     rotate_x_labels=False,
     relative_to_stage=None,
+    plot_individuals=True,
 ):
 
     if ax is None:
         fig, ax = pu.make_fig()
 
-    viz.multianimal_plots.plot_ma_stage_by_condition(
-        df,
-        condition="fix_experiment",
-        ax=ax,
-        title=title,
-        palette=pu.ALPHA_PALLETTE,
-        hue_order=["V1", "V2"],
-        ylim=ylim,
-        rotate_x_labels=rotate_x_labels,
-        relative_to_stage=relative_to_stage,
-    )
+    if plot_individuals:
+
+        viz.multianimal_plots.plot_ma_stage_by_condition(
+            df,
+            condition="fix_experiment",
+            ax=ax,
+            title=title,
+            palette=pu.ALPHA_PALLETTE,
+            hue_order=["V1", "V2"],
+            ylim=ylim,
+            rotate_x_labels=rotate_x_labels,
+            relative_to_stage=relative_to_stage,
+        )
+    else:
+        viz.plots.plot_stage(
+            df,
+            ax=ax,
+            hue="fix_experiment",
+            palette=pu.ALPHA_PALLETTE,
+            rotate_x_labels=rotate_x_labels,
+            ylim=ylim,
+            relative_to_stage=relative_to_stage,
+        )
 
     return None
 
@@ -133,31 +276,6 @@ def plot_ma_stage_single_experiment(
     )
 
     _ = ax.set(title=title)
-
-    return None
-
-
-def plot_stage_compare_experiment(
-    df,
-    ax=None,
-    title="",
-    ylim=None,
-    rotate_x_labels=False,
-    relative_to_stage=None,
-):
-
-    if ax is None:
-        fig, ax = pu.make_fig()
-
-    viz.plots.plot_stage(
-        df,
-        ax=ax,
-        hue="fix_experiment",
-        palette=pu.ALPHA_PALLETTE,
-        rotate_x_labels=rotate_x_labels,
-        ylim=ylim,
-        relative_to_stage=relative_to_stage,
-    )
 
     return None
 

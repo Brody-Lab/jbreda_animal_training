@@ -10,58 +10,112 @@ import behav_viz.visualize as viz
 ###################### FAILED FIXATIONS & VIOLATIONS  ######################
 
 
-def plot_failed_fix_median_line(ax, df, **kwargs):
+#### OVER DAYS ####
+def plot_ma_failed_fixation_rate(
+    df: pd.DataFrame,
+    settling_in_type: str,
+    min_stage=None,
+    max_stage=None,
+    relative_to_stage=None,
+    ax=None,
+    title="",
+    rotate_x_labels=False,
+    **kwargs,
+):
+    """
+    Wrapper on the FixationGrower plot_failed_fixation_rate function to allow for
+    each animal to be a gray line and the mean of all the animals to be plotted
+    """
 
-    hue = kwargs.get("hue", None)
-    palette = kwargs.get("palette", "Set2")
-    color = kwargs.get("color", None)
-    hue_order = kwargs.get("hue_order", None)
+    if ax is None:
+        fig, ax = pu.make_fig()
 
-    if hue:
-
-        if hue_order:
-            df = df.sort_values(by=hue)
-            categories = hue_order
-        elif hue:
-            categories = sorted(df[hue].unique())
-
-        for idx, category in enumerate(categories):
-            median_value = df[df[hue] == category]["failure_rate"].median()
-            pal_color = palette[idx]
-            ax.axvline(
-                median_value,
-                linestyle="--",
-                color=pal_color,
-            )
-
-            ax.text(
-                median_value,
-                0.1,
-                f"{median_value:.2f}",
-                rotation=90,
-                verticalalignment="bottom",
-                horizontalalignment="right",
-            )
-    else:
-        median_value = df["failure_rate"].median()
-        ax.axvline(
-            median_value,
-            linestyle="--",
-            label=f"Median: {median_value:.2f}",
-            color=color,
+    # plot each animal as a gray line
+    for _, sub_df in df.groupby("animal_id"):
+        viz.FixationGrower.plots.plot_failed_fixation_rate(
+            sub_df,
+            settling_in_type=settling_in_type,
+            min_stage=min_stage,
+            max_stage=max_stage,
+            relative_to_stage=relative_to_stage,
+            ax=ax,
+            alpha=0.5,
+            color="gray",
         )
-        ax.text(
-            median_value,
-            0.1,
-            f"{median_value:.2f}",
-            rotation=90,
-            verticalalignment="bottom",
-            horizontalalignment="right",
-        )
+
+    # plot the mean of the animals
+    viz.FixationGrower.plots.plot_failed_fixation_rate(
+        df,
+        settling_in_type=settling_in_type,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        relative_to_stage=relative_to_stage,
+        ax=ax,
+        rotate_x_labels=rotate_x_labels,
+        **kwargs,
+    )
 
     return None
 
 
+def plot_ma_failed_fixation_rate_by_condition(
+    df: pd.DataFrame,
+    condition: str,
+    settling_in_type: str,
+    min_stage=None,
+    max_stage=None,
+    relative_to_stage=None,
+    ax=None,
+    title="",
+    palette="husl",
+    **kwargs,
+):
+    """
+    Wrapper on the FixationGrower plot_failed_fixation_rate function to allow for
+    a condition to be a hue and individual animals within that condition to be plotted
+    as well.
+    """
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    # hacky way of plot multi animals with respective colors
+    pal = sns.color_palette(palette, len(df[condition].unique()))
+    for ii, (cond, sub_df) in enumerate(df.groupby([condition], observed=True)):
+
+        color = pal[ii]
+
+        for _, sub_sub_df in sub_df.groupby("animal_id"):
+            viz.FixationGrower.plots.plot_failed_fixation_rate(
+                sub_sub_df,
+                settling_in_type=settling_in_type,
+                min_stage=min_stage,
+                max_stage=max_stage,
+                relative_to_stage=relative_to_stage,
+                ax=ax,
+                alpha=0.25,
+                color=color,
+                **kwargs,
+            )
+
+    # plot the mean of the animals
+    viz.FixationGrower.plots.plot_failed_fixation_rate(
+        df,
+        hue=condition,
+        settling_in_type=settling_in_type,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        relative_to_stage=relative_to_stage,
+        ax=ax,
+        palette=pal,
+        title=title,
+        **kwargs,
+    )
+
+    return None
+
+
+#### SUMMARIES  ####
 def plot_failed_fixation_histogram(
     df,
     settling_in_type="by_poke",
@@ -112,6 +166,58 @@ def plot_failed_fixation_histogram(
         ylabel="Session Count",
         xlim=(0, 1),
     )
+
+
+def plot_failed_fix_median_line(ax, df, **kwargs):
+
+    hue = kwargs.get("hue", None)
+    palette = kwargs.get("palette", "Set2")
+    color = kwargs.get("color", None)
+    hue_order = kwargs.get("hue_order", None)
+
+    if hue:
+
+        if hue_order:
+            df = df.sort_values(by=hue)
+            categories = hue_order
+        elif hue:
+            categories = sorted(df[hue].unique())
+
+        for idx, category in enumerate(categories):
+            median_value = df[df[hue] == category]["failure_rate"].median()
+            pal_color = palette[idx]
+            ax.axvline(
+                median_value,
+                linestyle="--",
+                color=pal_color,
+            )
+
+            ax.text(
+                median_value,
+                0.1,
+                f"{median_value:.2f}",
+                rotation=90,
+                verticalalignment="bottom",
+                horizontalalignment="right",
+            )
+    else:
+        median_value = df["failure_rate"].median()
+        ax.axvline(
+            median_value,
+            linestyle="--",
+            label=f"Median: {median_value:.2f}",
+            color=color,
+        )
+        ax.text(
+            median_value,
+            0.1,
+            f"{median_value:.2f}",
+            rotation=90,
+            verticalalignment="bottom",
+            horizontalalignment="right",
+        )
+
+    return None
 
 
 ###################### STAGE  ######################
@@ -172,7 +278,7 @@ def plot_ma_stage_by_condition(
 
     # hacky way of plot multi animals with respective colors
     pal = sns.color_palette(palette, len(df[condition].unique()))
-    for ii, (cond, sub_df) in enumerate(df.groupby([condition])):
+    for ii, (cond, sub_df) in enumerate(df.groupby([condition], observed=True)):
 
         color = pal[ii]
 

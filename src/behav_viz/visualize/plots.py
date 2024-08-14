@@ -519,7 +519,7 @@ def plot_stage(
     else:
         cols = [x_var]
 
-    plot_df = trials_df.groupby(cols).stage.mean().reset_index()
+    plot_df = trials_df.groupby(cols, observed=True).stage.mean().reset_index()
 
     sns.lineplot(
         data=plot_df,

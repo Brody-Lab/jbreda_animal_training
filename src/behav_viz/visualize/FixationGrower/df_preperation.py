@@ -131,7 +131,7 @@ def make_fixation_delta_df(df: pd.DataFrame) -> pd.DataFrame:
 def compute_failed_fixation_rate_df(df: pd.DataFrame) -> pd.DataFrame:
     # Group by date and apply the existing function
     grouped_results = df.groupby(
-        ["animal_id", "date", "stage", "fix_experiment"]
+        ["animal_id", "date", "stage", "fix_experiment"], observed=False
     ).apply(compute_failed_fixation_rate)
 
     # Reset index to flatten the multi-index created by groupby
