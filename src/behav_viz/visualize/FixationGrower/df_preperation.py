@@ -107,23 +107,47 @@ def compute_cpoke_stats(trials_df: pd.DataFrame, relative: bool) -> pd.DataFrame
     return combined_cpoke_durs
 
 
-def make_fixation_delta_df(df: pd.DataFrame) -> pd.DataFrame:
+def make_fixation_delta_df(df: pd.DataFrame, relative_stage: int = 5) -> pd.DataFrame:
     """
     Make a dataframe with the max fixation duration for each animal_id, date
     and the change in fixation duration from the previous day
     """
+
+    df = viz.df_preperation.compute_days_relative_to_stage(df, stage=relative_stage)
+
     max_fixation_df = (
         df.query("stage >=5")  # only look at cpoking stages
-        .groupby(["date", "animal_id"])
-        .fixation_dur.max()
+        .groupby(
+            [
+                "date",
+                "animal_id",
+                "stage",
+                f"days_relative_to_stage_{relative_stage}",
+                "fix_experiment",
+            ]
+        )
+        .agg(
+            max_fixation_dur=("fixation_dur", "max"),
+            trials=("trial", "nunique"),
+            n_violations=("violations", "sum"),
+        )
         .reset_index()
     )
-    max_fixation_df = max_fixation_df.rename(
-        columns={"fixation_dur": "max_fixation_dur"}
-    )
+
     max_fixation_df["fixation_delta"] = max_fixation_df.groupby(
         "animal_id"
     ).max_fixation_dur.diff()
+
+    max_fixation_df["valid_trials"] = (
+        max_fixation_df["trials"] - max_fixation_df["n_violations"]
+    )
+
+    max_fixation_df["trials"] = max_fixation_df.groupby("animal_id").trials.shift(1)
+    max_fixation_df["valid_trials"] = max_fixation_df.groupby(
+        "animal_id"
+    ).valid_trials.shift(1)
+
+    max_fixation_df.drop(columns=["n_violations"], inplace=True)
 
     return max_fixation_df
 
