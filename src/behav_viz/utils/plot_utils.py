@@ -21,7 +21,7 @@ def make_fig(dims=None):
     elif dims == "w" or dims is None:
         dims = (12, 4)
 
-    fig, ax = plt.subplots(figsize=dims)
+    fig, ax = plt.subplots(figsize=dims, dpi=300)
     return fig, ax
 
 
