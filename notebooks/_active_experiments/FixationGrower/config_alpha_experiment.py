@@ -4,6 +4,7 @@ that can easily be imported into other scripts.
 """
 
 from datetime import datetime
+import pandas as pd
 
 # ANIMAL IDS
 
@@ -114,3 +115,15 @@ def get_start_date(group, type="datetime"):
     if type == "datetime":
         return datetime.strptime(start_date, "%Y-%m-%d")
     return start_date
+
+
+ALPHA_DATE_DROPS = {
+    "R046": pd.Timestamp(
+        "2024-08-12"
+    ).date(),  # 2 trials shy of EOD on day before, should have manually moved into stage 9
+    "R052": pd.Timestamp(
+        "2024-08-14"
+    ).date(),  # rig restart set fixation duration to 0.01 and restarted stage
+    "R051": pd.Timestamp("2024-08-21").date(),  # accidental extra days in stage 9
+    "R051": pd.Timestamp("2024-08-22").date(),  # accidental extra days in stage 9
+}
