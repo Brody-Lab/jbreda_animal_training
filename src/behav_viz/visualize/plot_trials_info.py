@@ -238,7 +238,7 @@ def plot_side_bias_summary(trials_df, ax):
     lr_hits.plot(kind="bar", color=pu.get_side_colors(trials_df.sides), ax=ax)
 
     # calculate overall bias for plot title if there are both sides
-    if len(lr_hits) == 2:
+    if len(lr_hits) == 2 and not lr_hits.isna().any():
         bias = lr_hits["l"] - lr_hits["r"]
     else:
         bias = np.nan
@@ -439,6 +439,9 @@ def plot_npokes_summary(trials_df, ax, title=""):
         var_name="poke_side",
         value_name="n_pokes",
     )
+
+    if pokes_df.n_pokes.isna().all():
+        return None
 
     # plot stripplot
     sns.stripplot(

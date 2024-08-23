@@ -150,7 +150,7 @@ def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
 
     settling_in_determines_fix = determine_settling_in_mode(trials_df)
 
-    if settling_in_determines_fix:
+    if settling_in_determines_fix & len(trials_df) > 1:
         # Plot the avg failed cpoke which is the settling in dur
         sns.histplot(
             trials_df.avg_settling_in,
@@ -539,6 +539,9 @@ def plot_failed_fixation_rate(
     failed_fix_df = filter_failed_fix_df(
         failed_fix_df, min_stage, max_stage, settling_in_type
     )
+
+    if failed_fix_df.empty:
+        return
 
     if relative_to_stage:
         failed_fix_df = compute_days_relative_to_stage(
