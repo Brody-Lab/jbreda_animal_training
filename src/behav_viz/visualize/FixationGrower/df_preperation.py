@@ -262,3 +262,119 @@ def compute_days_to_target_fix_df(
     )
 
     return target_fix_df
+
+
+def create_fixed_growth_stats_df(df, relative_stage):
+    """Create a fixed growth statistics DataFrame.
+     This DataFrame contains statistics such as the maximum fixation duration,
+     number of trials, number of violations, and warm-up status for each training
+     session. It is used as input for simulating fixed growth later.
+
+
+    Params
+    ------
+    df (pandas.DataFrame):
+        The input DataFrame containing the training session data.
+    relative_stage (int):
+        The stage relative to which the statistics should be calculated.
+
+    Returns:
+    -------
+    pandas.DataFrame:
+        The fixed growth statistics DataFrame.
+    """
+    fixed_growth_stats_df = (
+        df.groupby(
+            [
+                "date",
+                "animal_id",
+                "stage",
+                f"days_relative_to_stage_{relative_stage}",
+            ]
+        )
+        .agg(
+            max_fixation_dur=("fixation_dur", "max"),
+            n_trials=("trial", "nunique"),
+            n_violations=("violations", "sum"),
+            warm_up_on=("delay_warm_up_on", "max"),
+        )
+        .reset_index()
+    )
+
+    fixed_growth_stats_df["violation_rate"] = (
+        fixed_growth_stats_df["n_violations"] / fixed_growth_stats_df["n_trials"]
+    )
+    fixed_growth_stats_df["prev_day_max_fixation_dur"] = fixed_growth_stats_df.groupby(
+        "animal_id"
+    )["max_fixation_dur"].shift()
+
+    return fixed_growth_stats_df
+
+
+def simulate_fixed_growth_data(
+    df, relative_stage, viol_rate=0, min_step_s=0.001, growth_frac=0.001
+):
+    """
+    Simulate fixed growth for each training session in the input DataFrame.
+    The simulated growth is stored in a new column called 'simulated_growth'.
+    The specific use case of the function is to see how much an animal *could*
+    grow in a session given a certain growth rate and violation rate.
+
+    Params
+    ------
+    df (pandas.DataFrame):
+        The input DataFrame containing the trial-by-trial data for each training
+        session for multiple animals.
+    relative_stage (int):
+        The stage relative to which the statistics should be calculated.
+
+    """
+
+    fixed_growth_df = viz.df_preperation.compute_days_relative_to_stage(
+        df.query("stage >= 5 and fix_experiment == 'V1'").copy(),
+        stage=relative_stage,
+    )
+
+    fixed_growth_stats_df = create_fixed_growth_stats_df(
+        fixed_growth_df, relative_stage
+    )
+
+    for idx, row in fixed_growth_stats_df.iterrows():
+        starting_value = row.prev_day_max_fixation_dur
+
+        growth_trials = row.n_trials - (20 * int(row.warm_up_on))
+        simulated_growth_max, _ = simulate_fixed_growth(
+            starting_value=starting_value,
+            n_trials=growth_trials,
+            viol_rate=viol_rate,
+            min_step_s=min_step_s,
+            growth_frac=growth_frac,
+        )
+        fixed_growth_stats_df.loc[idx, "simulated_max_fixation_dur"] = (
+            simulated_growth_max
+        )
+
+    return fixed_growth_stats_df
+
+
+def simulate_fixed_growth(
+    starting_value, n_trials, min_step_s=0.001, growth_frac=0.001, viol_rate=0
+):
+    """
+    Simulated fixed growth for a session of trials (post-warm up) given
+    growth rate parameters and violation rate.
+    """
+    fix_dur = starting_value
+    fix_durs = [fix_dur]
+
+    for t in range(n_trials):
+        # Determine if violation occurred
+        if np.random.rand() < viol_rate:
+            growth_step = 0
+        else:
+            growth_step = max(min_step_s, fix_dur * growth_frac)
+
+        fix_dur += growth_step
+        fix_durs.append(fix_dur)
+
+    return fix_dur, fix_durs
