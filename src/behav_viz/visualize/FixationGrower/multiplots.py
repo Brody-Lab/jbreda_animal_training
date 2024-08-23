@@ -241,10 +241,18 @@ def over_days_summary_cpoke_learning(animal_id, animal_days_df, animal_trials_df
 
     fig = plt.figure(constrained_layout=True, figsize=(30, 25))
     ax_dict = fig.subplot_mosaic(layout)  # ax to plot to
-    plt.suptitle(
-        f"{exp_condition} Condition | {animal_id} Daily Summary Plot",
-        fontweight="semibold",
-    )
+
+    current_stage = animal_trials_df.stage.iloc[-1]
+    if current_stage >= 11:
+        plt.suptitle(
+            f"------------------- EXP COMPLETE {exp_condition} Condition | {animal_id} |------------------- ",
+            fontweight="semibold",
+        )
+    else:
+        plt.suptitle(
+            f"{exp_condition} Condition | {animal_id} Daily Summary Plot",
+            fontweight="semibold",
+        )
 
     ## ROW 1- rig/techsession/foodpuck -- mass -- water
     plot_stage(animal_trials_df, ax_dict["A"], title="Stage")
