@@ -173,7 +173,7 @@ def drop_empty_sessions(pd_blobs, sess_ids, dates, trials, verbose=False):
     of dimension errors, so they need to be dropped
     """
 
-    trial_filter = (trials != 0) & (trials != 1)
+    trial_filter = trials != 0  # & (trials != 1)
 
     if verbose:
         print(
@@ -342,3 +342,12 @@ def append_and_clean_protocol_dfs(dfs, animal_id, sess_ids, dates, trials, proto
             "go_type",
         ]
         df[category_columns] = df[category_columns].astype("category")
+
+
+def drop_dates(df, date_drop_dict):
+
+    for animal_id, date in date_drop_dict.items():
+        print("dropping", animal_id, date)
+        df = df[~((df["animal_id"] == animal_id) & (df["date"] == date))]
+
+    return df
