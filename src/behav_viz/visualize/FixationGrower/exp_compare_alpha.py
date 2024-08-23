@@ -137,6 +137,8 @@ def plot_failed_fixation_rate_compare_experiment(
             title=title,
         )
 
+    ax.set(ylim=(0, 0.5))
+
     return None
 
 
@@ -349,6 +351,7 @@ def plot_stage_in_stage_by_animal_single_experiment(
         max_stage=max_stage,
         palette=pal,
         title=title,
+        errorbar=None,
     )
 
     return None
