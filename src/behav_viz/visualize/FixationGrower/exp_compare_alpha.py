@@ -8,6 +8,49 @@ import behav_viz.visualize as viz
 from behav_viz.visualize.df_preperation import compute_days_relative_to_stage
 
 
+###################### FIXATION DUR  #####################
+
+#### OVER DAYS ####
+
+
+def plot_fixation_dur_compare_experiment(
+    df,
+    ax=None,
+    title="",
+    min_stage=5,
+    max_stage=7,
+    relative_to_stage=5,
+):
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    viz.FixationGrower.plots.plot_fixation_dur_over_days(
+        df,
+        ax=ax,
+        min_stage=min_stage,
+        max_stage=max_stage,
+        relative_to_stage=relative_to_stage,
+        title=title,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        style="animal_id",
+        marker=".",
+    )
+
+    # handles, labels = ax.get_legend_handles_labels()
+    # from matplotlib.legend import Legend
+
+    # legend = Legend(
+    #     ax, handles[0:2], labels[0:2], loc="best"
+    # )  # Adjust the index based on how many items you want
+    # ax.add_artist(legend)
+    # ax.legend(bbox_to_anchor=(1, 1))
+
+    return None
+
+
 ###################### FAILED FIXATION & VIOLATIONS  ######################
 
 #### OVER DAYS ####
@@ -422,6 +465,8 @@ def plot_days_to_reach_target_fix_boxplot_compare_experiment(
     # Remove the extra legend if hue was used in both plots
     if ax.get_legend():
         ax.legend_.remove()
+
+    sns.despine()
 
     return None
 

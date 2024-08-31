@@ -693,3 +693,44 @@ def plot_trial_structure(
     ax.legend(loc="upper left")
 
     return None
+
+
+############################ FIXATION DUR ######################################
+
+
+def plot_fixation_dur_over_days(
+    df,
+    min_stage=None,
+    max_stage=None,
+    relative_to_stage=5,
+    ax=None,
+    title="",
+    rotate_x_labels=False,
+    **kwargs,
+):
+
+    df = compute_days_relative_to_stage(df, relative_to_stage)
+    x_var = f"days_relative_to_stage_{relative_to_stage}"
+    xlabel = f"Days rel to stage {relative_to_stage}"
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=df.query("stage >= @min_stage and stage <= @max_stage"),
+        x=x_var,
+        y="fixation_dur",
+        estimator="max",
+        ax=ax,
+        **kwargs,
+    )
+
+    ax.grid()
+    ax.axhline(2, color="k", lw=2)
+
+    _ = ax.set(ylabel="Fix Dur [s]", xlabel=xlabel, title=title)
+
+    if rotate_x_labels:
+        ax.tick_params(rotation=0)
+
+    return None
