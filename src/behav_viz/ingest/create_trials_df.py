@@ -173,7 +173,7 @@ def drop_empty_sessions(pd_blobs, sess_ids, dates, trials, verbose=False):
     of dimension errors, so they need to be dropped
     """
 
-    trial_filter = trials != 0  # & (trials != 1)
+    trial_filter = (trials != 0) & (trials != 1)
 
     if verbose:
         print(
