@@ -124,6 +124,9 @@ ALPHA_DATE_DROPS = {
     "R052": pd.Timestamp(
         "2024-08-14"
     ).date(),  # rig restart set fixation duration to 0.01 and restarted stage
-    "R051": pd.Timestamp("2024-08-21").date(),  # accidental extra days in stage 9
-    "R051": pd.Timestamp("2024-08-22").date(),  # accidental extra days in stage 9
+    "R051": [
+        pd.Timestamp("2024-08-20").date(),
+        pd.Timestamp("2024-08-21").date(),
+        pd.Timestamp("2024-08-22").date(),
+    ],  # accidental extra days in stage 9 after probe complete
 }
