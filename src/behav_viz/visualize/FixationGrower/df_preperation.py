@@ -124,7 +124,8 @@ def make_fixation_delta_df(df: pd.DataFrame, relative_stage: int = 5) -> pd.Data
                 "stage",
                 f"days_relative_to_stage_{relative_stage}",
                 "fix_experiment",
-            ]
+            ],
+            observed=True,
         )
         .agg(
             max_fixation_dur=("fixation_dur", "max"),
@@ -249,7 +250,7 @@ def compute_days_to_target_fix_df(
 
     target_fix_df = (
         df.query("has_reached_target_fixation == True")
-        .groupby(["animal_id", "fix_experiment"])[
+        .groupby(["animal_id", "fix_experiment"], observed=True)[
             f"days_relative_to_stage_{relative_stage}"
         ]
         .min()

@@ -250,7 +250,7 @@ def make_days_in_stage_df(df, min_stage=None, max_stage=None, hue_var=None):
         cols = ["animal_id", "stage", "fix_experiment", hue_var]
 
     days_in_stage_df = (
-        df.groupby(cols)
+        df.groupby(cols, observed=True)
         .agg(n_days=pd.NamedAgg(column="date", aggfunc="nunique"))
         .reset_index()
     )
