@@ -34,17 +34,21 @@ def determine_settling_in_mode(df: pd.DataFrame):
     return bool(df.settling_in_determines_fixation.iloc[-1])
 
 
-def make_long_cpoking_stats_df(trials_df: pd.DataFrame, relative: bool) -> pd.DataFrame:
+def make_long_cpoking_stats_df(
+    trials_df: pd.DataFrame, relative: bool, relative_to_stage: int = 5
+) -> pd.DataFrame:
     """
     Wrapper function to apply make_long_cpoking_stats_df on groups by date
     and concatenate the results.This allows for variaton in settling in
     determines fixation from day to day to be handled, such that the settings
     from the most recent day (last trial) don't apply to all days.
     """
-
+    trials_df = viz.df_preperation.compute_days_relative_to_stage(
+        trials_df, stage=relative_to_stage
+    )
     # Group by date and apply the existing function
-    grouped_results = trials_df.groupby("date").apply(
-        lambda group: compute_cpoke_stats(group, relative)
+    grouped_results = trials_df.groupby(["date"], observed=True).apply(
+        lambda group: compute_cpoke_stats(group, relative, relative_to_stage)
     )
 
     # Reset index to flatten the multi-index created by groupby
@@ -53,7 +57,9 @@ def make_long_cpoking_stats_df(trials_df: pd.DataFrame, relative: bool) -> pd.Da
     return combined_cpoke_durs_long
 
 
-def compute_cpoke_stats(trials_df: pd.DataFrame, relative: bool) -> pd.DataFrame:
+def compute_cpoke_stats(
+    trials_df: pd.DataFrame, relative: bool, relative_to_stage: int = 5
+) -> pd.DataFrame:
     """
     Function to create a long dataframe of cpoking statistics for plotting
     with columns for animal_id, date, trial, cpoke_dur, was_valid, and fixation_dur
@@ -88,9 +94,17 @@ def compute_cpoke_stats(trials_df: pd.DataFrame, relative: bool) -> pd.DataFrame
         [valid_cpoke_durs, non_valid_cpoke_durs], ignore_index=True
     )
 
-    # Add the fixation_dur column from the original dataframe
+    # Add the fixation_dur and relative to stage column from the original dataframe
     combined_cpoke_durs = combined_cpoke_durs.merge(
-        trials_df[["animal_id", "date", "trial", "fixation_dur"]],
+        trials_df[
+            [
+                "animal_id",
+                "date",
+                "trial",
+                "fixation_dur",
+                f"days_relative_to_stage_{relative_to_stage}",
+            ]
+        ],
         on=["animal_id", "date", "trial"],
         how="left",
     )
