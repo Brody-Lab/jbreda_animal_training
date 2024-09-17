@@ -604,6 +604,9 @@ def plot_first_spokes_summary_by_correct_side_and_loc(
         "first_", ""
     ).str.replace("poke", "")
 
+    if first_spoke_df.poke_time.isna().all():
+        return None
+
     sns.stripplot(
         data=first_spoke_df,
         x="correct_side",
