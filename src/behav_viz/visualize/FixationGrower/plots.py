@@ -463,6 +463,9 @@ def plot_delta_fixation_dur(trials_df, ax=None, title="", rotate_x_labels=False)
 
     max_fixation_df = make_fixation_delta_df(trials_df)
 
+    if max_fixation_df.empty:
+        return
+
     # check to make sure there has been > 1 day of fixation data
     # to be able to have a diff
     if len(max_fixation_df) == 1:
