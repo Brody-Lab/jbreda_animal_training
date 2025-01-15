@@ -129,7 +129,44 @@ def box_swarm_v1_vs_v2(data, x, order, y, ax=None, **kwargs):
 
     ax.legend(title=None, frameon=False)
 
-    return ax
+    return fig, ax
+
+
+def box_strip_v1_vs_v2(data, x, order, y, ax, **kwargs):
+    """ """
+
+    sns.despine()
+
+    sns.boxplot(
+        x=x,
+        y=y,
+        data=data,
+        order=order,
+        ax=ax,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        fill=None,
+        showfliers=False,
+        dodge=True,
+        **kwargs,
+    )
+    sns.stripplot(
+        x=x,
+        y=y,
+        data=data,
+        order=order,
+        ax=ax,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=pu.ALPHA_PALLETTE,
+        dodge=True,
+        legend=False,
+        alpha=0.5,
+        **kwargs,
+    )
+
+    ax.legend(title=None, frameon=False)
 
 
 def plot_fixation_growth_over_trials(
@@ -141,6 +178,7 @@ def plot_fixation_growth_over_trials(
     # If n_days_back is provided, select the most recent n days
     if n_days_back is not None:
         days = animal_df.date.unique()[-n_days_back:]
+        print(f"Analyzing data from the following days: {days}")
         animal_df = animal_df.query("date in @days").copy()
 
     # Add a cumulative trial column

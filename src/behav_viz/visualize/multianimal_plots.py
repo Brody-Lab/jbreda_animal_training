@@ -123,6 +123,7 @@ def plot_failed_fixation_histogram(
     max_stage=None,
     ax=None,
     title="",
+    show_median_text=True,
     **kwargs,
 ):
 
@@ -157,7 +158,7 @@ def plot_failed_fixation_histogram(
         )
 
     # Plot median lines
-    plot_failed_fix_median_line(ax, failed_fix_rates_df, **kwargs)
+    plot_failed_fix_median_line(ax, failed_fix_rates_df, show_median_text, **kwargs)
 
     # Aesthetics
     _ = ax.set(
@@ -168,7 +169,7 @@ def plot_failed_fixation_histogram(
     )
 
 
-def plot_failed_fix_median_line(ax, df, **kwargs):
+def plot_failed_fix_median_line(ax, df, show_median_text, **kwargs):
 
     hue = kwargs.get("hue", None)
     palette = kwargs.get("palette", "Set2")
@@ -192,14 +193,15 @@ def plot_failed_fix_median_line(ax, df, **kwargs):
                 color=pal_color,
             )
 
-            ax.text(
-                median_value,
-                0.1,
-                f"{median_value:.2f}",
-                rotation=90,
-                verticalalignment="bottom",
-                horizontalalignment="right",
-            )
+            if show_median_text:
+                ax.text(
+                    median_value,
+                    0.1,
+                    f"{median_value:.2f}",
+                    rotation=90,
+                    verticalalignment="bottom",
+                    horizontalalignment="right",
+                )
     else:
         median_value = df["failure_rate"].median()
         ax.axvline(
@@ -208,14 +210,15 @@ def plot_failed_fix_median_line(ax, df, **kwargs):
             label=f"Median: {median_value:.2f}",
             color=color,
         )
-        ax.text(
-            median_value,
-            0.1,
-            f"{median_value:.2f}",
-            rotation=90,
-            verticalalignment="bottom",
-            horizontalalignment="right",
-        )
+        if show_median_text:
+            ax.text(
+                median_value,
+                0.1,
+                f"{median_value:.2f}",
+                rotation=90,
+                verticalalignment="bottom",
+                horizontalalignment="right",
+            )
 
     return None
 

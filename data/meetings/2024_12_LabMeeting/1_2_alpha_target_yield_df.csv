@@ -1,0 +1,5 @@
+fix_experiment,outcome,count
+V1,Succeed,8
+V1,Fail,0
+V2,Succeed,9
+V2,Fail,0

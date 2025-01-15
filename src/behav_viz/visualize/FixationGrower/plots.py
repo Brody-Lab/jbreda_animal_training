@@ -145,6 +145,91 @@ def plot_cpoke_dur_distributions(
     return None
 
 
+def plot_cpoke_dur_distributions_prettier(
+    trials_df, ax=None, xmin=None, xmax=None, title=None, title_color="k", **kwargs
+):
+    """
+    plot histogram of cpoke timing relative to the go cue for failed and valid
+    cpokes across trials. This plot accounts for the SMA logic being used
+    (e.g. settling_in_determines_fixation) to determine which cpokes are valid
+    and which are not.
+
+    params
+    ------
+    trials_df : DataFrame
+        trials dataframe with columns `avg_settling_in`, `cpoke_dur`,
+        `pre_go_dur`, `settling_in_dur` `n_settling_ins` with trials as row index
+    ax : matplotlib.axes (optional, default = None)
+        axis to plot to
+    """
+
+    # Prepare Data
+    plot_df = make_long_cpoking_stats_df(trials_df, relative=True)
+    settling_in_determines_fix = determine_settling_in_mode(trials_df)
+
+    if xmin:
+        plot_df = plot_df.query("relative_cpoke_dur > @xmin")
+    if xmax:
+        plot_df = plot_df.query("relative_cpoke_dur < @xmax")
+
+    # Settings
+    if settling_in_determines_fix:
+        pal = ["#b89f32", "#1762bd"]
+        failure_rate = np.sum(trials_df.n_settling_ins > 1) / len(trials_df)
+    else:
+        pal = ["#bd7217", "#1762bd"]
+        failure_rate = trials_df.violations.mean()
+
+    # Plot
+    if ax is None:
+        _, ax = pu.make_fig()
+
+    # to avoid binning issues
+    if plot_df.empty:
+        return
+    elif len(plot_df) < 30:
+        binwidth = None
+    else:
+        binwidth = 0.025
+
+    sns.histplot(
+        data=plot_df,
+        x="relative_cpoke_dur",
+        binwidth=binwidth,
+        hue="was_valid",
+        palette=pal,
+        hue_order=[False, True],
+        ax=ax,
+        **kwargs,
+    )
+
+    if failure_rate != 0:
+        avg_failed_dur = plot_df.query("was_valid == False").relative_cpoke_dur.mean()
+        ax.axvline(avg_failed_dur, color=pal[0], lw=3, label="Avg Failed Duration")
+    if failure_rate <= 0.99:
+        avg_valid_dur = plot_df.query("was_valid == True").relative_cpoke_dur.mean()
+        ax.axvline(avg_valid_dur, color=pal[1], lw=3, label="Avg Valid Duration")
+
+    avg_cpoke_dur = plot_df.cpoke_dur.mean()
+
+    ax.axvline(0, color="k")
+
+    if title is None:
+        title = f"Failure_rate {failure_rate:.2f},  Avg Cpoke Dur: {avg_cpoke_dur:.2f}"
+
+    ax.legend(title="", loc="upper left")
+
+    # aesthetics
+    _ = ax.set(
+        xlabel="Fixation Dur Relative to Go [s]",
+        ylim=(0, None),
+        xlim=(xmin, xmax),
+    )
+    ax.set_title(title, color=title_color, fontweight="bold")
+
+    return None
+
+
 def plot_avg_failed_cpoke_dur(trials_df: pd.DataFrame, ax=None):
     """
     plot avg failed cpoke dur for per trial
@@ -357,6 +442,7 @@ def plot_cpoke_fix_stats_relative(
     rotate_x_labels=True,
     legend=True,
     relative_to_stage=None,
+    max_days=None,
     **kwargs,
 ):
     """
@@ -398,6 +484,11 @@ def plot_cpoke_fix_stats_relative(
         trials_df, relative=True, relative_to_stage=relative_to_stage
     )
 
+    if max_days and relative_to_stage:
+        plot_df = plot_df.query(
+            f"days_relative_to_stage_{relative_to_stage} <= @max_days"
+        )
+
     if ax is None:
         fig, ax = pu.make_fig()
 
@@ -431,6 +522,92 @@ def plot_cpoke_fix_stats_relative(
         ax.legend(title="Was Valid")
 
     _ = ax.set(title=title, ylabel="Duration [s]", xlabel=xlabel)
+    ax.grid()
+
+    return None
+
+
+def plot_cpoke_fix_stats_relative_prettier(
+    trials_df,
+    ax=None,
+    title="Relative Fixation Stats",
+    rotate_x_labels=True,
+    legend=True,
+    relative_to_stage=None,
+    max_days=None,
+    title_color="black",
+    **kwargs,
+):
+    """
+    Plot the relative fixation statistics over days. Relative
+    here means relative to the required fixation duration. This
+    is helpful for curricula where the fixation duration changes
+    on a trial-by-trial (rather than session) basis.
+
+    params
+    ------
+    trials_df : pd.DataFrame
+        The trials dataframe with columns:
+        - date
+        - animal_id
+        - trial
+        - fixation_dur
+        - cpoke_dur
+        - violations
+        - avg_settling_in
+    ax : matplotlib.axes.Axes, optional (default=None)
+        The axes to plot on.
+    title : str, optional (default="Raw Fixation Stats")
+        The title of the plot.
+    rotate_x_labels : bool, optional (default=True)
+        Whether to rotate the x-axis labels.
+    legend : bool, optional (default=True)
+        Whether to include the legend.
+
+    """
+    if relative_to_stage:
+        x_var = f"days_relative_to_stage_{relative_to_stage}"
+        xlabel = f"Days rel to stage {relative_to_stage}"
+    else:
+        x_var = "date"
+        xlabel = ""
+
+    # compute center poking stats
+    plot_df = make_long_cpoking_stats_df(
+        trials_df, relative=True, relative_to_stage=relative_to_stage
+    )
+
+    if max_days and relative_to_stage:
+        plot_df = plot_df.query(
+            f"days_relative_to_stage_{relative_to_stage} <= @max_days"
+        )
+
+    if ax is None:
+        fig, ax = pu.make_fig()
+
+    sns.lineplot(
+        data=plot_df,
+        x=x_var,
+        y="relative_cpoke_dur",
+        hue="was_valid",
+        hue_order=[True, False],
+        palette=["#1762bd", "#bd7217"],
+        ax=ax,
+        **kwargs,
+    )
+
+    ax.axhline(0, color="k")
+
+    # aesthetics
+    if rotate_x_labels:
+        ax.tick_params(axis="x", rotation=45)
+
+    pu.set_legend(ax, legend)  # ax.legend(["Valid", "Invalid", "Fix", "Init"])
+    if legend:
+        ax.legend(title="Was Valid Cpoke")
+
+    _ = ax.set(ylabel="Time Relative to Go [s]", xlabel=xlabel)
+    _ = ax.set_title(title, color=title_color, fontweight="bold")
     ax.grid()
 
     return None

@@ -224,6 +224,7 @@ def plot_failed_fixation_histogram_compare_experiment(
     min_stage=5,
     max_stage=None,
     settling_in_type="by_poke",
+    show_median_text=True,
 ):
 
     if ax is None:
@@ -245,6 +246,7 @@ def plot_failed_fixation_histogram_compare_experiment(
         hue_order=["V1", "V2"],
         palette=pu.ALPHA_PALLETTE,
         element="step",
+        show_median_text=show_median_text,
     )
 
     return None

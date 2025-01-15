@@ -393,3 +393,285 @@ def simulate_fixed_growth(
         fix_durs.append(fix_dur)
 
     return fix_dur, fix_durs
+
+
+def simulate_fixed_growth_w_warm_up(
+    n_trials,
+    warm_up_target,
+    warm_up_viol_rate,
+    non_warm_up_viol_rate,
+    starting_value=0.01,
+    n_warm_up=20,
+    min_step_s=0.001,
+    growth_frac=0.001,
+):
+    """
+    Simulate fixation duration growth over a session that includes a warm-up phase
+    and a post-warm-up phase.
+
+    Parameters
+    ----------
+    n_trials : int
+        Total number of trials in the session (includes warm-up + non-warm-up).
+    warm_up_target : float
+        The target fixation duration to reach by the end of the warm-up phase.
+    warm_up_viol_rate : float
+        Probability of a violation during warm-up trials.
+    non_warm_up_viol_rate : float
+        Probability of a violation during non-warm-up trials.
+    starting_value : float, optional
+        Initial fixation duration (in seconds). Default is 0.01.
+    n_warm_up : int, optional
+        Number of warm-up trials. Default is 20.
+    min_step_s : float, optional
+        Minimum step size (in seconds) for growth in non-warm-up trials. Default is 0.001.
+    growth_frac : float, optional
+        Fraction of the current duration to use as a growth step if larger than min_step_s.
+        Default is 0.001.
+
+    Returns
+    -------
+    final_fix_dur : float
+        The final fixation duration after all trials.
+    fix_durs : list of float
+        The fixation duration after each trial.
+    """
+
+    fix_dur = starting_value
+    fix_durs = [fix_dur]
+
+    if n_warm_up > 0:
+        warm_up_step = (warm_up_target - starting_value) / n_warm_up
+    else:
+        warm_up_step = 0  # no warm up steps if n_warm_up=0
+
+    # Warm-up phase
+    for t in range(n_warm_up):
+        # Determine if violation occurred
+        if np.random.rand() < warm_up_viol_rate:
+            growth_step = 0
+        else:
+            growth_step = warm_up_step
+
+        fix_dur += growth_step
+        fix_durs.append(fix_dur)
+
+    # Non-warm-up phase
+    for t in range(n_warm_up, n_trials):
+        # Determine if violation occurred
+        if np.random.rand() < non_warm_up_viol_rate:
+            growth_step = 0
+        else:
+            # Growth step is the maximum of min_step_s or 0.1% of the current duration
+            growth_step = max(min_step_s, fix_dur * growth_frac)
+
+        fix_dur += growth_step
+        fix_durs.append(fix_dur)
+
+    return fix_dur, fix_durs
+
+
+def simulate_fixed_growth_data_w_warm_up(
+    df,
+    relative_stage,
+    warm_up_viol_rate,
+    non_warm_up_viol_rate,
+    starting_value=0.01,
+    n_warm_up=20,
+    min_step_s=0.001,
+    growth_frac=0.001,
+    max_days=14,
+):
+    """
+    Simulate fixed growth for each training session, including handling the warm-up phase.
+    We will compute a 'simulated_max_fixation_dur' for each session given the parameters.
+
+    Steps:
+    -----
+    1. We prepare the data by computing days relative to a given stage and creating a
+       fixed growth stats DataFrame which contains info per day.
+    2. We iterate through each day for each animal in chronological order.
+    3. For each day:
+       - If warm_up is on (row.warm_up_on == 1):
+         starting_value = 0.01
+         warm_up_target = previous day's simulated_max_fixation_dur if available,
+                          else fallback to prev_day_max_fixation_dur if that's not null.
+         run simulate_fixed_growth_w_warm_up with n_warm_up=20 (default)
+       - If warm_up is off:
+         starting_value = 0.01
+         run simulate_fixed_growth_w_warm_up with n_warm_up=0, effectively no warm-up phase.
+    4. Store the result in 'simulated_max_fixation_dur' for that day.
+    """
+
+    # Prepare data
+    fixed_growth_df = viz.df_preperation.compute_days_relative_to_stage(
+        df.query("stage >= 5 and stage < 9and fix_experiment == 'V1'").copy(),
+        stage=relative_stage,
+    )
+
+    fixed_growth_df = fixed_growth_df.query(
+        f"days_relative_to_stage_{relative_stage} < {max_days}"
+    )
+
+    fixed_growth_stats_df = create_fixed_growth_stats_df(
+        fixed_growth_df, relative_stage
+    )
+
+    # Sort by animal_id and day relative to stage to ensure proper chronological order
+    fixed_growth_stats_df = fixed_growth_stats_df.sort_values(
+        by=["animal_id", f"days_relative_to_stage_{relative_stage}"]
+    ).reset_index(drop=True)
+
+    # We will store the simulated values here
+    simulated_values = []
+
+    # Keep track of previous day's simulated max per animal
+    prev_simulated_max = {}
+
+    for idx, row in fixed_growth_stats_df.iterrows():
+        animal_id = row.animal_id
+
+        # Determine if warm-up is on
+        warm_up_on = bool(row.warm_up_on)
+
+        # If warm-up is on, we need a warm-up target
+        if warm_up_on:
+            # Try to get warm-up target from previous day's simulated max for this animal
+            if animal_id in prev_simulated_max and not pd.isnull(
+                prev_simulated_max[animal_id]
+            ):
+                warm_up_target = prev_simulated_max[animal_id]
+            else:
+                # Fallback: if we have no previous simulated max, use prev_day_max_fixation_dur
+                if not pd.isnull(row.prev_day_max_fixation_dur):
+                    warm_up_target = row.prev_day_max_fixation_dur
+                else:
+                    # If no previous day data is available at all, fallback to current day's max?
+                    # This scenario can happen if this is the animal's first day.
+                    # For a first day, warm-up might not make sense, but we can at least do something reasonable:
+                    warm_up_target = row.max_fixation_dur
+        else:
+            # If warm-up is off, we don't need a warm-up target. Just set it equal to starting_value or something neutral.
+            warm_up_target = 0.01  # This won't matter since no warm-up trials will run.
+
+        # Number of trials is row.n_trials
+        n_trials = row.n_trials
+
+        # Simulate
+        final_fix_dur, fix_durs = simulate_fixed_growth_w_warm_up(
+            n_trials=n_trials,
+            warm_up_target=warm_up_target,
+            warm_up_viol_rate=warm_up_viol_rate,
+            non_warm_up_viol_rate=non_warm_up_viol_rate,
+            starting_value=starting_value,
+            n_warm_up=n_warm_up,
+            min_step_s=min_step_s,
+            growth_frac=growth_frac,
+        )
+
+        # The simulated maximum fixation duration is the max of fix_durs
+        simulated_max_fixation_dur = max(fix_durs)
+
+        # Store this in the DataFrame
+        fixed_growth_stats_df.loc[idx, "simulated_max_fixation_dur"] = (
+            simulated_max_fixation_dur
+        )
+        # Store the warm-up and non-warm-up violation rates
+        fixed_growth_stats_df.loc[idx, "warm_up_viol_rate"] = warm_up_viol_rate
+        fixed_growth_stats_df.loc[idx, "non_warm_up_viol_rate"] = non_warm_up_viol_rate
+
+        # Update the prev_simulated_max for this animal
+        prev_simulated_max[animal_id] = simulated_max_fixation_dur
+
+    return fixed_growth_stats_df
+
+
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+
+def prepare_v1_plot_data(fixed_growth_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepare the DataFrame for plotting by computing deltas and melting into a long format.
+
+    Parameters
+    ----------
+    fixed_growth_df : pd.DataFrame
+        The DataFrame with simulated growth data including 'simulated_max_fixation_dur',
+        'prev_day_max_fixation_dur', and 'max_fixation_dur'.
+
+    Returns
+    -------
+    pd.DataFrame
+        A melted DataFrame (v1_plot_df) suitable for plotting lineplots.
+    """
+
+    # Compute the true delta from actual data
+    fixed_growth_df["V1_true_delta"] = fixed_growth_df.groupby("animal_id")[
+        "max_fixation_dur"
+    ].diff()
+
+    # Compute the simulated ceiling (difference from previous day's max)
+    fixed_growth_df["V1_simulated_ceiling"] = (
+        fixed_growth_df["simulated_max_fixation_dur"]
+        - fixed_growth_df["prev_day_max_fixation_dur"]
+    )
+
+    # Melt into long format for seaborn lineplot
+    v1_plot_df = fixed_growth_df.melt(
+        id_vars=["animal_id", "days_relative_to_stage_5"],
+        value_vars=["V1_true_delta", "V1_simulated_ceiling"],
+        var_name="delta_type",
+        value_name="fixation_delta",
+    )
+    return v1_plot_df
+
+
+def plot_v1_fixation_growth(
+    v1_plot_df: pd.DataFrame, fixed_growth_df: pd.DataFrame, ylim=(-0.5, None)
+):
+    """
+    Plot the V1 fixation growth using the prepped plot DataFrame.
+
+    Parameters
+    ----------
+    v1_plot_df : pd.DataFrame
+        The DataFrame returned by prepare_v1_plot_data.
+    fixed_growth_df : pd.DataFrame
+        The original DataFrame used to extract warm-up and non-warm-up violation rates
+        for title labeling or other annotation purposes
+    ylim : tuple, optional
+        The y-axis limits for the plot. default is (-0.5, None)
+    """
+
+    # Extract violation rates (assuming they're consistent across sessions)
+    # If they vary, you may need another strategy.
+    warm_up_viol_rate = fixed_growth_df["warm_up_viol_rate"].dropna().unique()
+    non_warm_up_viol_rate = fixed_growth_df["non_warm_up_viol_rate"].dropna().unique()
+
+    # Fallback if arrays have more than one element or empty
+    wuvr = warm_up_viol_rate[0] if len(warm_up_viol_rate) > 0 else 0
+    nwuvr = non_warm_up_viol_rate[0] if len(non_warm_up_viol_rate) > 0 else 0
+
+    fig, ax = pu.make_fig()
+    sns.lineplot(
+        data=v1_plot_df,
+        x="days_relative_to_stage_5",
+        y="fixation_delta",
+        style="delta_type",
+        color=pu.ALPHA_V1_color,
+        marker="o",
+        ax=ax,
+    )
+    ax.axhline(0, color="k", lw=2)
+    ax.grid()
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+
+    ax.set(
+        xlabel="Days Relative to Stage 5",
+        ylabel="Fixation Duration Delta (s)",
+        title=f"V1 Fixation Growth Simulated Ceiling vs True Delta: WUV = {wuvr}, NWUV = {nwuvr}",
+        ylim=ylim,
+    )
+    return fig, ax
