@@ -145,24 +145,19 @@ def make_fixation_delta_df(df: pd.DataFrame, relative_stage: int = 5) -> pd.Data
             max_fixation_dur=("fixation_dur", "max"),
             trials=("trial", "nunique"),
             n_violations=("violations", "sum"),
+            n_settling_ins=("n_settling_ins", "sum"),
         )
         .reset_index()
     )
-
-    max_fixation_df["fixation_delta"] = max_fixation_df.groupby(
-        "animal_id"
-    ).max_fixation_dur.diff()
-
     max_fixation_df["valid_trials"] = (
         max_fixation_df["trials"] - max_fixation_df["n_violations"]
     )
-
-    max_fixation_df["trials"] = max_fixation_df.groupby("animal_id").trials.shift(1)
-    max_fixation_df["valid_trials"] = max_fixation_df.groupby(
-        "animal_id"
-    ).valid_trials.shift(1)
-
     max_fixation_df.drop(columns=["n_violations"], inplace=True)
+
+    # Compute the difference in fixation duration from the previous day
+    max_fixation_df["fixation_delta"] = max_fixation_df.groupby(
+        "animal_id"
+    ).max_fixation_dur.diff()
 
     return max_fixation_df
 
