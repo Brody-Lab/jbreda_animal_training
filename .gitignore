@@ -159,3 +159,6 @@ data/meetings/2024_TCM/4_2_alpha_v1_transition_to_probe_df.csv
 data/meetings/2024_TCM/4_3_alpha_voil_iti_df.csv
 data/meetings/2024_TCM/2024_09_01_tcm_alpha_trials.csv
 data/meetings/2024_TCM/2024_09_05_tcm_alpha_trials.csv
+notebooks/fixation_publication/days_df.parquet
+notebooks/fixation_publication/trials_df.parquet
+notebooks/fixation_publication/poke_df.parquet
