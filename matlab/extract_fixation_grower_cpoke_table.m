@@ -1,33 +1,35 @@
 %% Parameters
 % Define an array of animal IDs (folders) to process.
-animals = {'R041'};  % Add additional animal IDs as needed
-% animals = {'R041', 'R042', 'R043', 'R045', 'R046', 'R047', 'R048', 'R049', 'R050', ...
-%            'R051', 'R052', 'R053', 'R054', 'R055', 'R056', 'R057'};
+% animals = {'R041'};  % Add additional animal IDs as needed
+% animals = {'R042', 'R043', 'R045', 'R046', 'R047', 'R048', 'R049', 'R050', ...
+%             'R051', 'R052', 'R053', 'R054', 'R055', 'R056', 'R057'};
+animals = {'R049', 'R053', 'R054'};
+animals = {'R054'};
 % % Define the minimum and maximum dates (using yyyy-MM-dd format)
 % min_date_str = '2024-08-06';
 % max_date_str = '2024-10-17';
 % min_date = datetime(min_date_str, 'InputFormat', 'yyyy-MM-dd');
 % max_date = datetime(max_date_str, 'InputFormat', 'yyyy-MM-dd');
 
-% Define animal-specific date ranges as a structure.
+% Define animal-specific date ranges as a structure (grow stages).
 animal_dates = struct();
-animal_dates.R040 = struct('min', '2024-08-01', 'max', '2024-08-13');
-animal_dates.R041 = struct('min', '2024-07-30', 'max', '2024-08-09');
-animal_dates.R042 = struct('min', '2024-07-30', 'max', '2024-08-10');
-animal_dates.R043 = struct('min', '2024-07-30', 'max', '2024-08-05');
-animal_dates.R045 = struct('min', '2024-07-30', 'max', '2024-08-09');
-animal_dates.R046 = struct('min', '2024-07-30', 'max', '2024-08-11');
-animal_dates.R047 = struct('min', '2024-08-01', 'max', '2024-08-27');
-animal_dates.R048 = struct('min', '2024-08-04', 'max', '2024-09-15');
-animal_dates.R049 = struct('min', '2024-08-07', 'max', '2024-08-17');
-animal_dates.R050 = struct('min', '2024-08-06', 'max', '2024-08-27');
-animal_dates.R051 = struct('min', '2024-08-02', 'max', '2024-08-09');
-animal_dates.R052 = struct('min', '2024-08-01', 'max', '2024-10-03');
-animal_dates.R053 = struct('min', '2024-08-04', 'max', '2024-08-22');
-animal_dates.R054 = struct('min', '2024-08-06', 'max', '2024-09-04');
-animal_dates.R055 = struct('min', '2024-08-03', 'max', '2024-08-11');
-animal_dates.R056 = struct('min', '2024-08-04', 'max', '2024-10-04');
-animal_dates.R057 = struct('min', '2024-08-05', 'max', '2024-08-11');
+animal_dates.R040 = struct('min', '2024-08-01', 'max', '2024-08-23');
+animal_dates.R041 = struct('min', '2024-07-30', 'max', '2024-08-20');
+animal_dates.R042 = struct('min', '2024-07-30', 'max', '2024-08-20');
+animal_dates.R043 = struct('min', '2024-07-30', 'max', '2024-08-16');
+animal_dates.R045 = struct('min', '2024-07-30', 'max', '2024-08-20');
+animal_dates.R046 = struct('min', '2024-07-30', 'max', '2024-08-22');
+animal_dates.R047 = struct('min', '2024-08-01', 'max', '2024-09-13');
+animal_dates.R048 = struct('min', '2024-08-04', 'max', '2024-09-25');
+animal_dates.R049 = struct('min', '2024-08-07', 'max', '2024-08-28');
+animal_dates.R050 = struct('min', '2024-08-06', 'max', '2024-09-12');
+animal_dates.R051 = struct('min', '2024-08-02', 'max', '2024-08-19');
+animal_dates.R052 = struct('min', '2024-08-01', 'max', '2024-10-13');
+animal_dates.R053 = struct('min', '2024-08-04', 'max', '2024-09-06');
+animal_dates.R054 = struct('min', '2024-08-06', 'max', '2024-09-16');
+animal_dates.R055 = struct('min', '2024-08-03', 'max', '2024-08-23');
+animal_dates.R056 = struct('min', '2024-08-04', 'max', '2024-10-15');
+animal_dates.R057 = struct('min', '2024-08-05', 'max', '2024-08-22');
 
 % Base data directory (change if needed)
 base_dir = '/Volumes/brody/RATTER/SoloData/Data/JessB';
@@ -54,7 +56,7 @@ for iAnimal = 1:length(animals)
     files = dir(fullfile(data_dir, 'data_@FixationGrower_*.mat'));
     all_cpoke_table = table(); % initalize table
     
-    fprintf('Processing animal: %s (Date range: %s to %s)\n', animal_id, datestr(min_date), datestr(max_date));
+    fprintf('\n\nProcessing animal: %s (Date range: %s to %s)\n', animal_id, datestr(min_date), datestr(max_date));
     
     % Loop over each file for this animal.
     for iFile = 1:length(files)
@@ -132,7 +134,7 @@ function cpoke_data = extract_cpoke_data_for_session(fullpath, animal_id, sessio
     n_trials = saved.ProtocolsSection_n_done_trials;
     sess_id = saved.FixationGrower_sessid;
     stage = saved.HistorySection_stage_history(end);
-    if (stage < 5 || stage > 7)
+    if (stage < 5 || stage > 11)
         fprintf('Skipping file %s: stage out of range (stage = %d).\n', fullpath, stage);
         cpoke_data = [];
         return;
@@ -142,20 +144,20 @@ function cpoke_data = extract_cpoke_data_for_session(fullpath, animal_id, sessio
     cpoke_data = struct('sessid', {}, 'animal_id', {}, 'trial', {}, ...
                         'cpoke_dur', {}, 'cpoke_iti', {}, 'post_settling_violation', {}, ...
                         'settling_violation', {}, 'was_rewarded', {}, 'fixation_dur', {},...
-                        'date', {});
+                        'date', {}, 'stage', {});
 
-    for trial = 1:n_trials
+    for trial = 1:length(peh) % some times peh doesn't get final trial written
         try
             parsed_events = peh{trial};
 
             % Skip if the 'cpoke' field is missing or empty.
             if ~isfield(parsed_events.states, 'cpoke') || isempty(parsed_events.states.cpoke)
+                last_cpoke_time = 0; % in a stage with no cpoke to start session
                 continue;
             end
 
             settling_ins = parsed_events.states.settling_in;
             n_settling_ins = size(settling_ins, 1);
-            go_time = parsed_events.states.go_state(1);
             was_post_settling_violation = ~isempty(parsed_events.states.violation_state);
             fixation_dur = saved_history.ShapingSection_fixation_dur{trial};
             % TODO Get the fixation dur
@@ -183,7 +185,8 @@ function cpoke_data = extract_cpoke_data_for_session(fullpath, animal_id, sessio
                         'trial', trial, 'cpoke_dur', cpoke_dur, 'cpoke_iti', cpoke_iti, ...
                         'post_settling_violation', false, ...
                         'settling_violation', settling_violation, 'was_rewarded', false, ...
-                        'fixation_dur', fixation_dur, 'date', session_date);
+                        'fixation_dur', fixation_dur, 'date', session_date, ...
+                        'stage', stage);
                 end
             end
 
@@ -194,30 +197,48 @@ function cpoke_data = extract_cpoke_data_for_session(fullpath, animal_id, sessio
 
             if ~was_post_settling_violation
                 % Choose the first c_out after go_time.
+                % Choose the first c_out after go_time.
+                try
+                    go_time = parsed_events.states.go_state(1);
+                catch
+                    go_time = NaN; % 1 animal, trial there was a missing go
+                end
                 c_out = min(c_outs(c_outs >= go_time));
+                if isempty(c_out)
+                    c_out = NaN; % animal didn't answer (or machine got stuck)
+                end
                 post_settling_violation = false;
             else
-                % Choose the last c_out before the violation time.
-                violation_time = parsed_events.states.violation_state(1);
-                c_out = max(c_outs(c_outs < violation_time));
+                % Choose the last c_out before the violation time
+                if ~isempty(parsed_events.states.violation_due_to_concurrent_spoke)
+                    c_out=NaN;
+                else
+                    violation_time = parsed_events.states.violation_state(1);
+                    c_out = max(c_outs(c_outs < violation_time));
+                end
                 post_settling_violation = true;
             end
-
+    
             cpoke_dur = c_out - valid_c_in;
             if last_cpoke_time == 0
                 cpoke_iti = NaN;
             else
                 cpoke_iti = valid_c_in - last_cpoke_time;
             end
-            last_cpoke_time = c_out;
-            was_rewarded = ~isempty(parsed_events.states.hit_state);
 
+            if isnan(c_out)
+                last_cpoke_time = valid_c_in;
+            else
+                last_cpoke_time = c_out;
+            end
+        was_rewarded = ~isempty(parsed_events.states.hit_state);
             % Append the valid cpoke event.
             cpoke_data(end+1) = struct('sessid', sess_id, 'animal_id', animal_id, ...
                         'trial', trial, 'cpoke_dur', cpoke_dur, 'cpoke_iti', cpoke_iti, ...
                         'post_settling_violation', post_settling_violation, ...
                         'settling_violation', false, 'was_rewarded', was_rewarded, ...
-                        'fixation_dur', fixation_dur, 'date', session_date);
+                        'fixation_dur', fixation_dur, 'date', session_date, ...
+                        'stage', stage);
         catch ME_trial
             % Report error with file name, session id, and trial number.
             [~,fname,~] = fileparts(fullpath);
