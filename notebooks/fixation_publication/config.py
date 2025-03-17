@@ -161,6 +161,7 @@ EXP_PALETTE = [V1_COLOR, V2_COLOR]
 V1_PALETTE = sns.color_palette("flare", len(V1_ANIMALS))
 V2_PALETTE = sns.color_palette("crest", len(V2_ANIMALS))
 
+
 # Create a lookup dictionary mapping each animal to its color
 ANIMAL_PALETTE = {}
 for animal, color in zip(V1_ANIMALS, V1_PALETTE):

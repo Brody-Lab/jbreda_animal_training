@@ -1,6 +1,7 @@
 from pathlib import Path
 import pandas as pd
-
+import config as c
+import seaborn as sns
 
 ## LOADING DATA
 def load_trials_df(stages="all", root_dir=None):
@@ -150,3 +151,70 @@ def compute_relative_dense_dates(df: pd.DataFrame, stage: int) -> pd.DataFrame:
     df.drop(columns=["dense_rank"], inplace=True)
 
     return df
+
+
+## PLOTs
+
+def box_strip_v1_vs_v2(
+    data,
+    x,
+    order,
+    y,
+    ax,
+    hue_type="experiment",
+    alpha=0.75,
+    ylabel=None,
+    xlabel=None,
+    dodge="auto",
+    whis=0, 
+    **kwargs,
+):
+    sns.despine()
+
+    sns.boxplot(
+        x=x,
+        y=y,
+        data=data,
+        order=order,
+        ax=ax,
+        hue="fix_experiment",
+        hue_order=["V1", "V2"],
+        palette=c.EXP_PALETTE,
+        fill=False,
+        showfliers=False,
+        dodge=dodge,
+        whis=whis,
+        width=0.5,
+        **kwargs,
+    )
+
+    if hue_type == "animal":
+        hue = "animal_id"
+        hue_order = c.HUE_ORDER_ANIMALS
+        palette = c.ANIMAL_PALETTE
+    else:
+        hue = "fix_experiment"
+        hue_order = ["V1", "V2"]
+        palette = c.EXP_PALETTE
+
+    sns.stripplot(
+        x=x,
+        y=y,
+        data=data,
+        order=order,
+        ax=ax,
+        hue=hue,
+        hue_order=hue_order,
+        palette=palette,
+        dodge=False,
+        legend=False,
+        alpha=alpha,
+        **kwargs,
+    )
+
+    ax.legend(title=None, frameon=False)
+
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
