@@ -168,3 +168,10 @@ for animal, color in zip(V1_ANIMALS, V1_PALETTE):
     ANIMAL_PALETTE[animal] = color
 for animal, color in zip(V2_ANIMALS, V2_PALETTE):
     ANIMAL_PALETTE[animal] = color
+
+
+## Stages
+
+PROBE_STAGES = [9, 10]
+GROWING_STAGES = [5,6,7]
+SPOKE_STAGES = [1,2,3,4]
