@@ -2,6 +2,9 @@ from pathlib import Path
 import pandas as pd
 import config as c
 import seaborn as sns
+from scipy.stats import shapiro, ttest_ind, mannwhitneyu
+import statsmodels.stats.multitest as smm
+import statsmodels.formula.api as smf
 
 ## LOADING DATA
 def load_trials_df(stages="all", root_dir=None):
@@ -9,7 +12,7 @@ def load_trials_df(stages="all", root_dir=None):
     if root_dir is None:
         root_dir = Path.cwd()
     print(f"Loading days data from directory: {root_dir}")
-    tdf = pd.read_parquet(Path(root_dir) / "days_df.parquet")
+    tdf = pd.read_parquet(Path(root_dir) / "trials_df.parquet")
 
     if stages == "spoke":
         print("Filtering for spoke stages")
@@ -166,8 +169,10 @@ def box_strip_v1_vs_v2(
     ylabel=None,
     xlabel=None,
     dodge="auto",
-    whis=0, 
+    whis=0,
+    s=5,
     **kwargs,
+
 ):
     sns.despine()
 
@@ -206,9 +211,10 @@ def box_strip_v1_vs_v2(
         hue=hue,
         hue_order=hue_order,
         palette=palette,
-        dodge=False,
+        dodge=dodge,
         legend=False,
         alpha=alpha,
+        s=s,
         **kwargs,
     )
 
@@ -218,3 +224,139 @@ def box_strip_v1_vs_v2(
         ax.set_ylabel(ylabel)
     if xlabel is not None:
         ax.set_xlabel(xlabel)
+
+
+## STATS
+
+"""Statistical Functions"""
+def check_normality(data, alpha=0.05):
+    """
+    Returns True if data passes the Shapiro–Wilk test for normality
+    at the specified alpha level, False otherwise.
+    """
+    stat, p = shapiro(data)
+    return p >= alpha
+
+def compare_two_groups(v1_values, v2_values, alpha=0.05):
+    """
+    Given two arrays of values (V1 and V2), checks normality in each group.
+    If both pass, runs Welch's t-test. Otherwise, runs Mann–Whitney U.
+    Returns a dict with test results.
+    """
+    normal_v1 = check_normality(v1_values, alpha=alpha)
+    normal_v2 = check_normality(v2_values, alpha=alpha)
+
+    results = {
+        "normality_V1": normal_v1,
+        "normality_V2": normal_v2,
+        "n_V1": len(v1_values),
+        "n_V2": len(v2_values),
+    }
+
+    if normal_v1 and normal_v2:
+        # Use Welch’s t-test (two-sample, unequal variance)
+        stat, p_val = ttest_ind(v1_values, v2_values, equal_var=False)
+        results["test_type"] = "welch_t"
+        results["test_statistic"] = stat
+        results["p_val_raw"] = p_val
+    else:
+        # Use Mann–Whitney U for non-normal data
+        stat, p_val = mannwhitneyu(v1_values, v2_values, alternative="two-sided")
+        results["test_type"] = "mannwhitney"
+        results["test_statistic"] = stat
+        results["p_val_raw"] = p_val
+
+    return results
+
+def compare_v1_v2(df, metric_col, alpha=0.05):
+    """
+    Compare experimental groups V1 and V2 for data in a single stage.
+    Assumes that the DataFrame `df` contains data for only one stage.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Must contain columns:
+            'fix_experiment' (with values 'V1' or 'V2')
+            and the specified metric_col (the numeric variable to compare).
+    metric_col : str
+        The numeric variable to compare.
+    alpha : float, optional
+        Significance level for normality tests and final threshold (default 0.05).
+
+    Returns
+    -------
+    pd.DataFrame
+        A tidy DataFrame with a single row summarizing the test results.
+    """
+    # Extract data for V1 and V2
+    v1_data = df.loc[df["fix_experiment"] == "V1", metric_col].to_numpy()
+    v2_data = df.loc[df["fix_experiment"] == "V2", metric_col].to_numpy()
+
+    # Compare the two groups
+    result = compare_two_groups(v1_data, v2_data, alpha=alpha)
+    
+    # Return the result as a DataFrame with one row.
+    result_df = pd.DataFrame([result])
+    return result_df
+
+def compare_v1_v2_multi_sample(df, metric_col, alpha=0.05):
+    """
+    Fit a mixed effects model to compare V1 and V2 for data in a single stage.
+    Assumes that the DataFrame `df` contains data for only one stage.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Must contain columns:
+            'animal_id', 'fix_experiment' (with values 'V1' or 'V2'),
+            and the specified metric_col (the numeric variable to compare).
+    metric_col : str
+        The numeric variable to compare.
+    alpha : float, optional
+        Significance level for the normality check of residuals (default 0.05).
+
+    Returns
+    -------
+    pd.DataFrame
+        A tidy DataFrame with a single row summarizing the mixed model test results.
+    """
+    required_cols = ["animal_id", "fix_experiment", metric_col]
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"DataFrame is missing required column: '{col}'")
+
+    # Ensure both groups exist in the data
+    v1_df = df[df["fix_experiment"] == "V1"]
+    v2_df = df[df["fix_experiment"] == "V2"]
+    if v1_df.empty or v2_df.empty:
+        raise ValueError("Both experimental groups (V1 and V2) must be present in the data.")
+
+    # Fit the mixed effects model: metric_col ~ fix_experiment with a random intercept for animal_id
+    model = smf.mixedlm(formula=f"{metric_col} ~ fix_experiment",
+                        data=df,
+                        groups=df["animal_id"])
+    try:
+        model_fit = model.fit(method="lbfgs", disp=False)
+    except Exception as e:
+        raise RuntimeError(f"Model fitting failed with error: {e}")
+
+    coef_key = "fix_experiment[T.V2]"
+    if coef_key not in model_fit.params.index:
+        raise ValueError("Coefficient for fix_experiment[T.V2] not found in model fit.")
+
+    t_val = model_fit.tvalues[coef_key]
+    p_val = model_fit.pvalues[coef_key]
+
+    # Check normality of the residuals from the model
+    residuals = model_fit.resid
+    residuals_are_normal = check_normality(residuals, alpha=alpha)
+
+    result = {
+        "test_type": "mixedlm_random_intercept",
+        "test_statistic": t_val,
+        "p_val_raw": p_val,
+        "residuals_normal": residuals_are_normal,
+    }
+    result_df = pd.DataFrame([result])
+    return result_df
