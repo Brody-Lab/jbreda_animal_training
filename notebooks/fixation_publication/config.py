@@ -160,6 +160,7 @@ EXP_PALETTE = [V1_COLOR, V2_COLOR]
 # Generate the color palettes for each group using seaborn
 V1_PALETTE = sns.color_palette("flare", len(V1_ANIMALS))
 V2_PALETTE = sns.color_palette("crest", len(V2_ANIMALS))
+VALID_PALETTE = ["#e1c63c", "#75b6df"]
 
 
 # Create a lookup dictionary mapping each animal to its color
