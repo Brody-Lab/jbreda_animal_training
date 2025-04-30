@@ -176,3 +176,8 @@ for animal, color in zip(V2_ANIMALS, V2_PALETTE):
 PROBE_STAGES = [9, 10]
 GROWING_STAGES = [5,6,7]
 SPOKE_STAGES = [1,2,3,4]
+
+## fig saving
+def save_fig(fig, name, path = "figures/"):
+    """Saves a figure with the given name and path"""
+    fig.savefig(path + name + ".png", dpi=300, bbox_inches="tight")
