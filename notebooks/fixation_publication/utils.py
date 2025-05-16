@@ -156,6 +156,61 @@ def compute_relative_dense_dates(df: pd.DataFrame, stage: int) -> pd.DataFrame:
     return df
 
 
+def determine_fixation_dur(row):
+    """
+    Function for data coming from DMS2 protocol where
+    fixation_dur wasn't computed in a direct way
+    """
+    if row["stage"] in (5, 6, 7, 8):
+        if (
+            row["session"] == 1 and row["cumulative_trial"] == 1
+        ):  # pre go is sometimes set to 0.45
+            return row.settling_in_dur
+        else:
+            return row.settling_in_dur + row.pre_go_dur
+    elif row["stage"] >= 9:
+        return row.pre_go_dur  # settling in dur now accounted for in pre_go_dur
+    else:
+        KeyError("Stage not found")
+
+
+def make_fixation_growth_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make a dataframe with the max fixation duration for each animal_id, date
+    and the change in fixation duration from the previous day
+    """
+
+    max_fixation_df = (
+        df.query("stage >=5")  # only look at cpoking stages
+        .groupby(
+            [
+                "date",
+                "animal_id",
+                f"days_relative_to_stage_5",
+                "fix_experiment",
+            ],
+            observed=True,
+        )
+        .agg(
+            max_fixation_dur=("fixation_dur", "max"),
+            trials=("trial", "nunique"),
+            n_violations=("violations", "sum"),
+            n_settling_ins=("n_settling_ins", "sum"),
+        )
+        .reset_index()
+    )
+    max_fixation_df["valid_trials"] = (
+        max_fixation_df["trials"] - max_fixation_df["n_violations"]
+    )
+    max_fixation_df.drop(columns=["n_violations"], inplace=True)
+
+    # Compute the difference in fixation duration from the previous day
+    max_fixation_df["fixation_growth"] = max_fixation_df.groupby(
+        "animal_id"
+    ).max_fixation_dur.diff()
+
+    return max_fixation_df
+
 ## PLOTs
 
 def box_strip_v1_vs_v2(
@@ -171,6 +226,7 @@ def box_strip_v1_vs_v2(
     dodge="auto",
     whis=0,
     s=5,
+    width=0.5,
     **kwargs,
 
 ):
@@ -189,7 +245,7 @@ def box_strip_v1_vs_v2(
         showfliers=False,
         dodge=dodge,
         whis=whis,
-        width=0.5,
+        width=width,
         **kwargs,
     )
 
