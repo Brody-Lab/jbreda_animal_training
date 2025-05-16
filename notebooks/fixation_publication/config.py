@@ -79,6 +79,8 @@ V2_ANIMALS = [  # animals in V2 growth fixation
 ]
 
 
+MICE = ["R512", "R513", "R621", "R622", "R623"]
+
 ## DATES
 
 START_DATES = {"group_1": "2024-07-20", "group_2": "2024-07-27"}
@@ -154,14 +156,35 @@ DROP_COLUMNS = [
 ## Aesthetic parameters
 HUE_ORDER_ANIMALS = V1_ANIMALS + V2_ANIMALS
 HUE_ORDER_EXP = ["V1", "V2"]
-V1_COLOR = "#9C1D4F"
-V2_COLOR = "#1D9C6A"
+V1_COLOR = "#752F8F"
+V2_COLOR = "#56B4E9"
 EXP_PALETTE = [V1_COLOR, V2_COLOR]
 # Generate the color palettes for each group using seaborn
-V1_PALETTE = sns.color_palette("flare", len(V1_ANIMALS))
-V2_PALETTE = sns.color_palette("crest", len(V2_ANIMALS))
-VALID_PALETTE = ["#e1c63c", "#75b6df"]
+
+# Create custom palette 1: Cyan → Light Blue → Yellow/White
+# Create custom palette 2: Black → Dark Purple → Red
+V1_PALETTE = sns.color_palette("RdPu", len(V1_ANIMALS))
+
+V2_PALETTE = sns.color_palette("YlGnBu", len(V2_ANIMALS))
+
+MOUSE_COLOR = "darkblue"
+SB_COLOR = "teal"
+
+
+# V2_PALETTE = sns.color_palette("blend:#7AB,#EDA", len(V2_ANIMALS))
+
+
+VALID_COLOR = "#079d4b"
 VIOLATION_COLOR = "#e1c63c"
+HIT_COLOR = "lime"
+N_TRIAL_COLOR ="purple"
+
+LEFT_COLOR = "salmon"
+RIGHT_COLOR = "cornflowerblue"
+MULTI_CHOICE_PAL = [LEFT_COLOR, RIGHT_COLOR, VIOLATION_COLOR]
+
+
+VALID_PALETTE = [VIOLATION_COLOR, VALID_COLOR]
 
 
 # Create a lookup dictionary mapping each animal to its color
