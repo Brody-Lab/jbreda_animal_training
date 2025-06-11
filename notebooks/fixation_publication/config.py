@@ -78,8 +78,11 @@ V2_ANIMALS = [  # animals in V2 growth fixation
     "R057",
 ]
 
+DEMO_ANIMAL = "R043"
 
 MICE = ["R512", "R513", "R621", "R622", "R623"]
+
+
 
 ## DATES
 
