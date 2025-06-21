@@ -1,10 +1,10 @@
-animal_id,adj_n_days_fix_target
-R010,16
-R012,15
-R021,3
+animal_id,n_days_fix_target
+R010,7
+R012,5
+R021,5
 R022,6
 R023,6
-R027,11
+R027,10
 R030,8
 R031,5
 R032,6
