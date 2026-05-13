@@ -205,6 +205,27 @@ GROWING_STAGES = [5,6,7]
 SPOKE_STAGES = [1,2,3,4]
 
 ## fig saving
-def save_fig(fig, name, path = "figures/"):
-    """Saves a figure with the given name and path"""
-    fig.savefig(path + name + ".png", dpi=300, bbox_inches="tight")
+def save_fig(fig, name, path="figures/", fmt="png"):
+    """
+    Saves a figure with the given name and path.
+    
+    Parameters:
+        fig: matplotlib.figure.Figure
+            The figure to save.
+        name: str
+            The base name of the file (without extension).
+        path: str, optional
+            The directory to save the figure in. Defaults to "figures/".
+        fmt: str, optional
+            The file format to save as ("png" or "svg"). Defaults to "png".
+    """
+    if fmt not in {"png", "svg"}:
+        raise ValueError("Format must be 'png' or 'svg'")
+    fig.savefig(f"{path}{name}.{fmt}", dpi=300, bbox_inches="tight")
+
+### FPO
+
+
+## FPO PRESENTATION
+VIOLATION_COLOR_FPO = "#D9A426"
+HIT_COLOR_FPO = "#92D050"
